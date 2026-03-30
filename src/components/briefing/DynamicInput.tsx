@@ -1,6 +1,6 @@
 "use client";
 
-import { Message, MultiSliderOption } from "@/lib/types";
+import { Message, MultiSliderOption, QuestionType } from "@/lib/types";
 import { MultiSliderQuestion } from "@/components/briefing/MultiSliderQuestion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -341,7 +341,17 @@ export function DynamicInput({
   const hasAnswered = Boolean(activeMessage.userAnswer && !inputText);
 
   // Fallback se não vier questionType na resposta da IA
-  const questionType = activeMessage.questionType || (activeMessage.options?.length ? 'single_choice' : 'text');
+  let questionTypeStr: string = activeMessage.questionType || (activeMessage.options?.length ? 'single_choice' : 'text');
+  
+  // Normalizar questionTypes comuns que a IA pode errar
+  if (questionTypeStr === 'multi_choice') questionTypeStr = 'multiple_choice';
+  if (questionTypeStr === 'boolean') questionTypeStr = 'boolean_toggle';
+  // Fallback de segurança: se for single/multiple choice e vier SEM opções, voltar pra text
+  if ((questionTypeStr === 'single_choice' || questionTypeStr === 'multiple_choice' || questionTypeStr === 'card_selector' || questionTypeStr === 'multi_slider') && (!activeMessage.options || activeMessage.options.length === 0)) {
+    questionTypeStr = 'text';
+  }
+
+  const questionType = questionTypeStr as QuestionType;
 
   // Audio recording state
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);

@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     CRITICAL RULE - MODULE DEMONSTRATION: This is a sandbox/showcase. You MUST use a DIFFERENT UI component (questionType) for almost every question. 
     You MUST showcase ALL of the following at least once by question 10:
     - \`single_choice\` (Use for Font/Typography style — Options MUST be formatted exactly as "FontName - Description" like "Inter - Moderna e Limpa")
-    - \`multi_choice\` (Use for selecting services or channels)
+    - \`multiple_choice\` (Use for selecting services or channels)
     - \`boolean_toggle\` (Use for a strategic Yes/No, it provides a very tactile drag UI)
     - \`card_selector\` (Use for selecting their ideal client persona - exactly 6 cards)
     - \`multi_slider\` (Use for Brand DNA/Tone of Voice profiling - 3 to 5 dimensions per question)
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     - \`slider\` (Use for asking about their agency's maturity, volume, or price positioning on a scale)
     - \`text\` (Use for the company name, website, or short mission statement)
     
-    CRITICAL RULE - VALID OPTIONS: For questions of type \`single_choice\`, \`multi_choice\`, and \`card_selector\`, you MUST provide a MEANINGFUL and NON-EMPTY \`options\` array (at least 3 to 8 context-specific and intelligent items). Do NOT leave \`options\` empty for these types.
+    CRITICAL RULE - VALID OPTIONS: For questions of type \`single_choice\`, \`multiple_choice\`, \`card_selector\`, and \`multi_slider\`, you MUST provide a MEANINGFUL and NON-EMPTY \`options\` array (at least 3 to 8 context-specific and intelligent items). Do NOT leave \`options\` empty for these types.
     
     If \`generateMore\` is true, ONLY change the \`options\` array (do not alter the text of the main question).
     ALL output text must be in Portuguese (pt-BR).
