@@ -9,6 +9,7 @@ import { Mic, ArrowRight, ArrowLeft, RefreshCw, Paperclip, CheckCircle2, Lock, C
 import { toast } from "sonner";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
+import { InsightsPanel } from "./InsightsPanel";
 
 const I18N: Record<string, Record<string, string>> = {
   pt: {
@@ -143,6 +144,7 @@ export function TypeformWizard() {
     selectedPackageDetails,
     briefingState,
     basalInfo,
+    detectedSignals,
   } = useBriefing();
 
   const t = I18N[chosenLanguage] || I18N.pt;
@@ -533,10 +535,23 @@ export function TypeformWizard() {
                   }
                 }}
               >
+                {/* Depth Question Badge */}
+                {activeMessage.isDepthQuestion && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-semibold w-fit mb-2"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                    {chosenLanguage === 'en' ? '🔍 Going deeper...' : chosenLanguage === 'es' ? '🔍 Profundizando...' : '🔍 Aprofundando...'}
+                  </motion.div>
+                )}
+
                 {/* The IA Formatted Question */}
                 <h1 className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
                   {activeMessage.content}
                 </h1>
+
 
                 {/* Box Híbrido Dinamico (Text, Audio, Single Choice, Multiple Choice, Slider, Color Picker) */}
                 <DynamicInput 
@@ -586,6 +601,9 @@ export function TypeformWizard() {
 
         </div>
       </main>
+
+      {/* Active Listening Insights Panel — visible only to agency owner */}
+      <InsightsPanel signals={detectedSignals} isOwner={true} />
     </div>
   );
 }

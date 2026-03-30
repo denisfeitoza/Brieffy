@@ -11,11 +11,14 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, category, objectives, core_fields } = body;
+    const { name, category, objectives, core_fields, briefing_purpose, depth_signals } = body;
 
-    // validation
+    // validation — briefing_purpose is mandatory
     if (!name) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
+    }
+    if (!briefing_purpose || !briefing_purpose.trim()) {
+      return NextResponse.json({ error: 'O Propósito Estratégico é obrigatório' }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -26,6 +29,8 @@ export async function POST(req: Request) {
           category: category || 'Geral',
           objectives: Array.isArray(objectives) ? objectives : [],
           core_fields: Array.isArray(core_fields) ? core_fields : [],
+          briefing_purpose: briefing_purpose.trim(),
+          depth_signals: Array.isArray(depth_signals) ? depth_signals : [],
           user_id: user.id
         }
       ])
@@ -43,4 +48,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Erro de servidor' }, { status: 500 });
   }
 }
-

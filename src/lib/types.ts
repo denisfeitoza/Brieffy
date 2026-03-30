@@ -61,6 +61,9 @@ export type Message = {
   // Active Listening: marks intercalated depth probe questions
   isDepthQuestion?: boolean;
   depthSignalCategory?: SignalCategory;
+
+  // Consultant Persona: micro-insight from AI between questions
+  microFeedback?: string;
 };
 
 export type BasalCoverageInfo = {
@@ -148,4 +151,6 @@ export type BriefingContextType = {
   isOnboarding?: boolean;
   // Active Listening
   detectedSignals: BriefingSignal[];
+  // Consultant Persona
+  engagementLevel: 'high' | 'medium' | 'low';
 };

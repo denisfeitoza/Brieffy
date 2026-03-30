@@ -9,7 +9,7 @@ import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { history, briefingState, assets, activeTemplate, chosenLanguage } = body;
+    const { history, briefingState, assets, activeTemplate, chosenLanguage, detectedSignals } = body;
 
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
@@ -20,6 +20,7 @@ export async function POST(req: Request) {
 
     const templateName = activeTemplate?.name || "Briefing Geral";
     const objectives = activeTemplate?.objectives?.join(", ") || "Criar briefing completo do negócio";
+    const briefingPurpose = activeTemplate?.briefing_purpose || "";
 
     // Build the full conversation transcript for the document
     const conversationTranscript = history.map((m: { role: string; content: string }) => {
@@ -34,6 +35,43 @@ export async function POST(req: Request) {
     };
     const targetLang = langMap[chosenLanguage || 'pt'] || 'Portuguese (pt-BR)';
 
+    // Build active listening section if signals exist
+    const categoryLabelMap: Record<string, Record<string, string>> = {
+      pt: {
+        contradiction: '⚡ Contradição',
+        implicit_pain: '🔥 Dor Implícita',
+        evasion: '👁 Evasão',
+        hidden_ambition: '💡 Ambição Oculta',
+        strategic_gap: '🗺 Lacuna Estratégica'
+      },
+      en: {
+        contradiction: '⚡ Contradiction',
+        implicit_pain: '🔥 Implicit Pain',
+        evasion: '👁 Evasion',
+        hidden_ambition: '💡 Hidden Ambition',
+        strategic_gap: '🗺 Strategic Gap'
+      },
+      es: {
+        contradiction: '⚡ Contradicción',
+        implicit_pain: '🔥 Dolor Implícito',
+        evasion: '👁 Evasión',
+        hidden_ambition: '💡 Ambición Oculta',
+        strategic_gap: '🗺 Brecha Estratégica'
+      }
+    };
+    const catLabels = categoryLabelMap[chosenLanguage || 'pt'] || categoryLabelMap.pt;
+
+    const activeListeningSection = (Array.isArray(detectedSignals) && detectedSignals.length > 0)
+      ? `\n## 10. 🔍 Inteligência de Escuta Ativa\n*Estes insights foram capturados a partir de sinais subliminares e implicações nas respostas do cliente. Visível apenas no relatório da agência.*\n\n${
+          detectedSignals.map((s: { category: string; summary: string; relevance_score: number; source_answer: string }) => {
+            const label = catLabels[s.category] || s.category;
+            const score = Math.round((s.relevance_score || 0) * 100);
+            const src = s.source_answer ? s.source_answer.substring(0, 120) + (s.source_answer.length > 120 ? '...' : '') : '';
+            return `### ${label} — ${score}% de relevância\n${s.summary}\n${src ? `> *Ativado por:* "${src}"\n` : ''}`;
+          }).join('\n')
+        }`
+      : '';
+
     const systemPrompt = `You are a Senior Brand Strategist creating a professional Briefing Document.
 
 CRITICAL LANGUAGE CONSTRAINT: Write the ENTIRE document in ${targetLang}. All section headers, bullet points, labels, and analytical text MUST be in ${targetLang}. If ${targetLang} is not Portuguese, translate any Portuguese template instructions into ${targetLang}.
@@ -42,6 +80,7 @@ TASK: Analyze the ENTIRE conversation below and produce a comprehensive, structu
 
 TEMPLATE: ${templateName}
 OBJECTIVES: ${objectives}
+${briefingPurpose ? `STRATEGIC PURPOSE: ${briefingPurpose}` : ''}
 
 COLLECTED DATA (structured):
 ${JSON.stringify(briefingState, null, 2)}
@@ -105,6 +144,7 @@ Rate each dimension 1-10 with a brief justification:
 
 ## 9. Actionable Next Steps
 Ordered list of recommended actions based on everything collected.
+${activeListeningSection}
 
 ═══ RULES ═══
 - Write in ${targetLang}
@@ -115,6 +155,7 @@ Ordered list of recommended actions based on everything collected.
 - Make it feel premium and professional
 - Use emojis sparingly for section headers only
 - Include quantitative data where possible
+- Section 10 (Active Listening Intelligence) if present should use professional strategic language and be in ${targetLang}
 
 Return the complete Markdown document.`;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail } from "./types";
+import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail, BriefingSignal, SignalCategory } from "./types";
 
 const DEFAULT_BRANDING: BrandingInfo = {
   display_name: 'Sua Empresa',
@@ -27,6 +27,8 @@ export interface SerializedTemplate {
   basal_fields: string[];
   suggested_questions: Record<string, unknown>[];
   sections: { id: string; title: string; priority: number }[];
+  briefing_purpose?: string;
+  depth_signals?: string[];
 }
 
 export function BriefingProvider({ 
@@ -75,6 +77,10 @@ export function BriefingProvider({
   // For new sessions (home page), we lazily create on first submitAnswer
   const [sessionId, setSessionId] = useState<string | null>(existingSessionId || null);
   const sessionCreatedRef = React.useRef(false);
+
+  // Active Listening — accumulated signals across the session
+  const [detectedSignals, setDetectedSignals] = useState<BriefingSignal[]>([]);
+  const [engagementLevel, setEngagementLevel] = useState<'high' | 'medium' | 'low'>('high');
 
   // Lazy session creation — only creates when user actually starts interacting
   const ensureSession = async (): Promise<string | null> => {
@@ -222,7 +228,8 @@ export function BriefingProvider({
             question_type: currentMsgToLog.questionType || 'text',
             question_text: currentMsgToLog.content,
             options_offered: currentMsgToLog.options ? currentMsgToLog.options : null,
-            user_answer: answer
+            user_answer: answer,
+            is_depth_question: currentMsgToLog.isDepthQuestion || false,
           }])
           .select('id')
           .single();
@@ -235,7 +242,6 @@ export function BriefingProvider({
     }
 
     // Constrói o histórico COMPLETO desde a primeira mensagem até o step atual
-    // A IA precisa de TODO o contexto pra manter coerência e gerar o documento final
     const historyPayload = messages.slice(0, currentStepIndex + 1).map(m => {
       const resp = Array.isArray(m.userAnswer) ? m.userAnswer.join(', ') : m.userAnswer;
       return {
@@ -261,7 +267,9 @@ export function BriefingProvider({
           activeTemplate,
           initialContext,
           chosenLanguage: activeLanguage,
-          selectedPackages
+          selectedPackages,
+          // Pass accumulated signals so the AI can avoid duplicating
+          detectedSignals: detectedSignals.map(s => s.summary),
         }),
       });
 
@@ -273,6 +281,51 @@ export function BriefingProvider({
       
       if (data.updates) {
         updateBriefingState(data.updates);
+      }
+
+      // ================================================================
+      // ACTIVE LISTENING — Process new signals from AI response
+      // ================================================================
+      if (data.active_listening?.signals?.length) {
+        const newSignals: BriefingSignal[] = data.active_listening.signals.map((s: {
+          category: SignalCategory;
+          summary: string;
+          relevance_score: number;
+        }) => ({
+          id: crypto.randomUUID(),
+          category: s.category,
+          summary: s.summary,
+          source_answer: typeof answer === 'string' ? answer : JSON.stringify(answer),
+          relevance_score: s.relevance_score,
+          step_index: currentStepIndex,
+          timestamp: Date.now(),
+        }));
+
+        setDetectedSignals(prev => [...prev, ...newSignals]);
+
+        // Persist signals to the session (async, non-blocking)
+        if (activeSessionId) {
+          supabase.from('briefing_sessions')
+            .update({ detected_signals: [...detectedSignals, ...newSignals] })
+            .eq('id', activeSessionId)
+            .then(({ error }) => {
+              if (error) console.error('[ActiveListening] Failed to persist signals:', error);
+            });
+        }
+
+        // Update interaction row with detected signal summary (async)
+        if (interactionId && newSignals.length > 0) {
+          supabase.from('briefing_interactions')
+            .update({ detected_signal: newSignals[0].summary })
+            .eq('id', interactionId)
+            .then(({ error }) => {
+              if (error) console.error('[ActiveListening] Failed to update interaction signal:', error);
+            });
+        }
+
+        console.log(`[ActiveListening] ${newSignals.length} new signal(s) detected:`, 
+          newSignals.map(s => `[${s.category}] ${s.summary} (${Math.round(s.relevance_score * 100)}%)`).join(', ')
+        );
       }
 
       // Persist inferences to the interaction row (async, non-blocking)
@@ -325,6 +378,7 @@ export function BriefingProvider({
             status: 'finished', 
             company_info: data.updates || briefingState,
             final_assets: data.assets,
+            detected_signals: detectedSignals,
             updated_at: new Date().toISOString()
           })
           .eq('id', activeSessionId)
@@ -332,26 +386,58 @@ export function BriefingProvider({
              if (error) console.error("Erro ao fechar sessão no DB:", error);
           });
         }
-      } else if (data.nextQuestion) {
-        // Se o usuário voltou pro passo 0, e respondeu, a gente poda o restante das mensagens futuras pq ele ramificou a conversa.
-        setMessages((prev) => {
-          const trunc = prev.slice(0, currentStepIndex + 1);
-          return [
-            ...trunc,
-            {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              content: data.nextQuestion.text,
-              type: "question",
-              questionType: data.nextQuestion.questionType || 'text',
-              options: data.nextQuestion.options,
-              allowMoreOptions: data.nextQuestion.allowMoreOptions || false,
-              minOption: data.nextQuestion.minOption,
-              maxOption: data.nextQuestion.maxOption,
-            }
-          ];
-        });
-        setCurrentStepIndex((prev) => prev + 1);
+      } else {
+        // ================================================================
+        // ACTIVE LISTENING — depth_question intercalates normal flow
+        // If the AI detected something worth probing deeper, insert it 
+        // BEFORE the next regular question.
+        // ================================================================
+        // Track engagement level from AI analysis
+        if (data.engagement_level) {
+          setEngagementLevel(data.engagement_level);
+        }
+
+        const questionsToAdd: Omit<Message, 'id'>[] = [];
+
+        if (data.active_listening?.depth_question) {
+          const dq = data.active_listening.depth_question;
+          questionsToAdd.push({
+            role: "assistant",
+            content: dq.text,
+            type: "question",
+            questionType: dq.questionType || 'text',
+            options: dq.options || [],
+            allowMoreOptions: false,
+            isDepthQuestion: true,
+            depthSignalCategory: dq.signal_category || 'implicit_pain',
+          });
+          console.log(`[ActiveListening] Depth question intercalated: "${dq.text}"`);
+        }
+
+        if (data.nextQuestion) {
+          questionsToAdd.push({
+            role: "assistant",
+            content: data.nextQuestion.text,
+            type: "question",
+            questionType: data.nextQuestion.questionType || 'text',
+            options: data.nextQuestion.options,
+            allowMoreOptions: data.nextQuestion.allowMoreOptions || false,
+            minOption: data.nextQuestion.minOption,
+            maxOption: data.nextQuestion.maxOption,
+            microFeedback: data.micro_feedback || undefined,
+          });
+        }
+
+        if (questionsToAdd.length > 0) {
+          setMessages((prev) => {
+            const trunc = prev.slice(0, currentStepIndex + 1);
+            return [
+              ...trunc,
+              ...questionsToAdd.map(q => ({ ...q, id: crypto.randomUUID() }))
+            ];
+          });
+          setCurrentStepIndex((prev) => prev + 1);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -452,7 +538,9 @@ export function BriefingProvider({
           briefingState,
           assets,
           activeTemplate,
-          chosenLanguage
+          chosenLanguage,
+          // Pass detected signals so the document includes them
+          detectedSignals,
         }),
       });
 
@@ -481,6 +569,7 @@ export function BriefingProvider({
           document_content: data.document,
           edit_token: newToken,
           edit_passphrase: currentPassphrase,
+          detected_signals: detectedSignals,
           updated_at: new Date().toISOString()
         })
         .eq('id', docSessionId)
@@ -527,6 +616,8 @@ export function BriefingProvider({
         editToken,
         editPassphrase,
         isOnboarding,
+        detectedSignals,
+        engagementLevel,
       }}
     >
       {children}
