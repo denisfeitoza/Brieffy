@@ -5,6 +5,11 @@ export async function POST(req: Request) {
   try {
     const { mainColors, context, type = "initial", hint, keptColors = [] } = await req.json();
 
+    // Validate type parameter
+    if (type !== "initial" && type !== "detail") {
+      return NextResponse.json({ error: `Invalid type: ${type}. Must be 'initial' or 'detail'.` }, { status: 400 });
+    }
+
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
 
@@ -46,7 +51,7 @@ PALETTE RULES:
 - Make them feel premium and modern
 
 Return ONLY valid JSON: {"colors": [${Array.from({length: numToGenerate}, (_, i) => `"#HEX${i+1}"`).join(', ')}]}`;
-    } else {
+    } else if (type === "detail") {
       // Step 2: Generate detail/accent colors that complement the main ones
       if (!mainColors || mainColors.length < 1) {
         return NextResponse.json({ error: "At least one main color is required." }, { status: 400 });

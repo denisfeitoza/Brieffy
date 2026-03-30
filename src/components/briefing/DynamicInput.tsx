@@ -255,7 +255,7 @@ export function DynamicInput({
   const [mainColors, setMainColors] = useState<string[]>([]);
   const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
-  const [detailColors, setDetailColors] = useState<string[]>(["#F8FAFC", "#94A3B8"]);
+
   const [isFetchingColors, setIsFetchingColors] = useState(false);
   const [colorHint, setColorHint] = useState<string>("");
   const [showHintInput, setShowHintInput] = useState(false);
@@ -289,14 +289,15 @@ export function DynamicInput({
         setInputText("");
       }
     } else if (activeMessage.questionType === 'color_picker') {
-      if (isEditing && Array.isArray(ans) && ans.length >= 6) {
-        setColorWizardStep(1); 
-        setSuggestedMainColors(ans.slice(0, 2) as string[]);
-        setSelectedMainColors(ans.slice(0, 2) as string[]);
-        setMainColors(ans.slice(0, 2) as string[]);
-        setSuggestedColors(ans.slice(2, 4) as string[]);
-        setSelectedSuggestions(ans.slice(2, 4) as string[]);
-        setDetailColors(ans.slice(4, 6) as string[]);
+      if (isEditing && Array.isArray(ans) && ans.length >= 2) {
+        // Restore: first half = main, second half = detail
+        const mc = Math.min(2, Math.ceil(ans.length / 2));
+        setMainColors(ans.slice(0, mc) as string[]);
+        setSelectedMainColors(ans.slice(0, mc) as string[]);
+        setSuggestedMainColors(ans.slice(0, mc) as string[]);
+        setSelectedSuggestions(ans.slice(mc) as string[]);
+        setSuggestedColors(ans.slice(mc) as string[]);
+        setColorWizardStep(1); // Will be overridden by summary-first check in render
       } else {
         setColorWizardStep(1);
         setSuggestedMainColors([]);
@@ -304,7 +305,6 @@ export function DynamicInput({
         setMainColors([]);
         setSuggestedColors([]);
         setSelectedSuggestions([]);
-        setDetailColors(["#F8FAFC", "#94A3B8"]);
       }
     } else if (activeMessage.questionType === 'slider') {
       if (isEditing && typeof ans === 'number') {
@@ -796,7 +796,7 @@ export function DynamicInput({
   // RENDER: COLOR WIZARD
   const getBrandContext = () => {
     return messages
-      .filter(m => m.role === 'assistant' && (m.userAnswer || m.content))
+      .filter(m => m.role === 'assistant' && m.userAnswer && m.content)
       .map(m => {
         const answerStr = Array.isArray(m.userAnswer) ? m.userAnswer.join(', ') : m.userAnswer || '';
         return `Q: ${m.content} - A: ${answerStr}`;
@@ -875,7 +875,10 @@ export function DynamicInput({
         setColorWizardStep(2);
       }
     } catch (e) {
-      console.error("[Colors] fetchComplementary error:", e);
+      console.error("[Colors] fetchDetail error:", e);
+      if (suggestedColors.length === 0) {
+        setSuggestedColors(["#F8FAFC", "#94A3B8", "#CBD5E1", "#E2E8F0"]);
+      }
       setColorWizardStep(2);
     } finally {
       setIsFetchingColors(false);
@@ -892,6 +895,46 @@ export function DynamicInput({
   }, [activeMessage.questionType, colorWizardStep, suggestedMainColors.length]);
 
   const renderColorPicker = () => {
+    // If answer already submitted, show summary immediately (Bug #3 fix)
+    if (activeMessage.userAnswer && Array.isArray(activeMessage.userAnswer) && (activeMessage.userAnswer as string[]).length >= 2) {
+      const ansArray = activeMessage.userAnswer as string[];
+      const mainCount = mainColors.length || Math.min(2, Math.ceil(ansArray.length / 2));
+      return (
+        <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
+          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
+            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
+              Paleta Final
+            </span>
+            <p className="text-[11px] text-neutral-500 mb-6 text-center">Sua paleta de marca selecionada</p>
+            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+              {ansArray.map((hex: string, idx: number) => {
+                const label = idx < mainCount ? "Principal" : "Detalhe";
+                return (
+                  <div key={idx} className="group flex flex-col items-center gap-3 relative">
+                    <div 
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-[1.5rem] border-2 border-white/10 relative overflow-hidden shadow-lg"
+                      style={{ backgroundColor: hex }}
+                    />
+                    <div className="flex flex-col items-center mt-1">
+                       <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider whitespace-nowrap">{label}</span>
+                       <span className="text-xs font-mono text-neutral-300 mt-1 px-2 py-0.5 rounded-md bg-neutral-900/50 border border-neutral-800">{hex}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {!isLoading && !isSubmittingLocal && (
+               <div className="flex gap-4 mt-8">
+                 <Button variant="outline" className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm" onClick={() => { setColorWizardStep(1); }}>
+                   Editar Cores
+                 </Button>
+               </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // Step 1: Primary Colors — select 1-2
     if (colorWizardStep === 1) {
       return (
@@ -1167,51 +1210,6 @@ export function DynamicInput({
                 {t.finishPalette}
               </Button>
             </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Summary view — after submission or when answer exists
-    const ansArray = Array.isArray(activeMessage.userAnswer) ? (activeMessage.userAnswer as string[]) : [];
-    const finalColors = ansArray.length >= 2 
-      ? ansArray 
-      : [...mainColors, ...selectedSuggestions];
-
-    if (finalColors.length >= 2) {
-      const mainCount = mainColors.length || Math.min(2, Math.ceil(finalColors.length / 2));
-      return (
-        <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
-          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
-            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
-              Paleta Final
-            </span>
-            <p className="text-[11px] text-neutral-500 mb-6 text-center">Sua paleta de marca selecionada</p>
-            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
-              {finalColors.map((hex: string, idx: number) => {
-                const label = idx < mainCount ? "Principal" : "Detalhe";
-                return (
-                  <div key={idx} className="group flex flex-col items-center gap-3 relative">
-                    <div 
-                      className="w-16 h-16 md:w-20 md:h-20 rounded-[1.5rem] border-2 border-white/10 relative overflow-hidden shadow-lg"
-                      style={{ backgroundColor: hex }}
-                    />
-                    <div className="flex flex-col items-center mt-1">
-                       <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider whitespace-nowrap">{label}</span>
-                       <span className="text-xs font-mono text-neutral-300 mt-1 px-2 py-0.5 rounded-md bg-neutral-900/50 border border-neutral-800">{hex}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {!activeMessage.userAnswer && !isLoading && !isSubmittingLocal && (
-               <div className="flex gap-4 mt-8">
-                 <Button variant="outline" className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm" onClick={() => setColorWizardStep(1)}>
-                   Editar Cores
-                 </Button>
-               </div>
-            )}
           </div>
         </div>
       );
