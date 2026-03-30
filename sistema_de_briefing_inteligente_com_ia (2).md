@@ -717,52 +717,235 @@ Ele conduz.
 
 ---
 
-## ANEXO S — SISTEMA DE PACOTES DE CATEGORIAS (AI SKILLS)
+## ANEXO S — SISTEMA DE PACOTES DE CATEGORIAS (AI SKILLS) ✅ REFATORADO
 
 ### Conceito
-O sistema permite **multi-seleção de categorias** na criação de cada sessão de briefing. Cada categoria é um **pacote de skill de IA** que injeta prompts especializados no motor conversacional, adicionando **até 10 perguntas únicas** por departamento.
+Pacotes de IA são **módulos de expertise invisíveis** que se injetam no motor conversacional. Para o cliente que responde, a experiência deve ser UMA conversa unificada — não uma série de formulários por categoria.
 
 ### Arquitetura
-- **Tabela**: `briefing_category_packages` (slug, name, description, icon, system_prompt_fragment, max_questions, is_default_enabled, sort_order, department)
+- **Tabela**: `briefing_category_packages` (slug, name, description, icon, system_prompt_fragment, max_questions, tier, briefing_purpose, depth_signals[], is_archived, is_default_enabled, sort_order)
 - **Sessão**: `briefing_sessions.selected_packages` (JSONB array de slugs)
-- **API CRUD**: `/api/briefing/packages` (GET, POST, PUT, DELETE)
+- **API CRUD**: `/api/briefing/packages` (GET com filtro `is_archived`, POST, PUT, DELETE)
 - **Admin UI**: `/dashboard/packages` — CRUD completo com editor de system prompt
-- **Seleção**: `GenerateLinkModal` — step intermediário com multi-select visual
+- **Seleção**: `GenerateLinkModal` — step intermediário com multi-select visual por tier
 
-### Pacotes Disponíveis (14 departamentos)
-| # | Slug | Nome | Departamento | Max Q | Default |
-|---|------|------|-------------|-------|---------|
-| 1 | `visual_identity` | Visual Identity & Applications | branding | 10 | ❌ |
-| 2 | `primal_branding` | Primal Branding Complete | branding | 10 | ✅ |
-| 3 | `ai_management_system` | AI Management System | technology | ∞ | ❌ |
-| 4 | `marketing` | Marketing & Communication | marketing | 10 | ❌ |
-| 5 | `ai_customer_service` | AI Customer Service | operations | 10 | ❌ |
-| 6 | `finance` | Finance & Revenue | finance | 8 | ❌ |
-| 7 | `hr_culture` | HR & Culture | people | 8 | ❌ |
-| 8 | `sales` | Sales & Commercial | commercial | 10 | ❌ |
-| 9 | `logistics` | Logistics & Operations | operations | 8 | ❌ |
-| 10 | `product_innovation` | Product & Innovation | product | 8 | ❌ |
-| 11 | `legal` | Legal & Compliance | legal | 8 | ❌ |
-| 12 | `it_infrastructure` | IT & Infrastructure | technology | 8 | ❌ |
-| 13 | `ecommerce` | E-commerce & Digital | digital | 8 | ❌ |
-| 14 | `content_media` | Content & Media | content | 8 | ❌ |
+### Taxonomia de Pacotes (4 Tiers)
+
+#### 🎨 Tier: Branding
+| Slug | Nome | Max Q | Foco |
+|------|------|-------|------|
+| `primal_branding` | Primal Branding Complete | 10 | 7 pilares da marca (historia, crença, ícones, rituais, palavras, inimigo, líder) |
+| `visual_identity` | Visual Identity & Applications | 10 | Estilo visual, tipografia, aplicações |
+| `rebranding` | Rebranding & Repositioning | 10 | Diagnóstico e aspiração para reforma de marca |
+| `founder_vision` | Founder Story & Vision | 8 | Narrativa pessoal do fundador, motivação, valores |
+
+#### 📊 Tier: Strategy
+| Slug | Nome | Max Q | Foco |
+|------|------|-------|------|
+| `business_model_canvas` | Business Model Canvas | 12 | Os 9 blocos do modelo de negócio |
+| `marketing` | Marketing & Communication | 10 | Estratégia e posicionamento (inicia com multi_slider DNA) |
+| `sales` | Customer Acquisition & Sales | 10 | Jornada de compra, objeções, conversão |
+
+#### 🚀 Tier: Execution
+| Slug | Nome | Max Q | Foco |
+|------|------|-------|------|
+| `campaign_launch` | Campaign Launch Briefing | 10 | Briefing completo de campanha específica |
+| `social_media` | Social Media Strategy | 10 | Plataformas, voz, conteúdo, competidores |
+| `content_media` | Content & Media | 8 | Estratégia editorial, voz do fundador |
+| `web_app_briefing` | Website / App Briefing | 12 | Escopo, features, conteúdo, visual, prazo |
+| `ecommerce` | E-commerce & Digital | 8 | Experiência de compra online, conversão |
+
+#### 🧠 Tier: Consulting
+| Slug | Nome | Max Q | Foco |
+|------|------|-------|------|
+| `ai_automation` | AI & Automation Opportunities | 10 | Processos manuais, automação, agentes IA |
+| `cx_mapping` | Customer Experience Mapping | 10 | Jornada completa do cliente, dores, momentos de encanto |
+| `ai_management_system` | AI Management System | ∞ | Stack de tecnologia, unificação, sistema de gestão com IA |
+
+#### 🗄️ Arquivados (internos — não relevantes para fluxo agência→cliente)
+`hr_culture`, `legal`, `finance`, `logistics`, `it_infrastructure`, `product_innovation`
+
+### Campos Novos na Tabela
+- **`tier`**: string — classifica o pacote (`branding`, `strategy`, `execution`, `consulting`, `internal`)
+- **`briefing_purpose`**: text — descrição do objetivo de extração para o Active Listening Engine
+- **`depth_signals`**: text[] — sinais que a IA deve caçar nas entrelinhas (ex: `brand_contradiction`, `positioning_gap`)
+- **`is_archived`**: boolean — oculta pacote da seleção sem deletar histórico
 
 ### Tipo de Pergunta: `multi_slider`
-Novo `questionType` para perguntas de perfil que medem múltiplas dimensões simultaneamente:
-- Renderiza até 8 mini-sliders em grid compacto
-- Cada slider tem label, range (1-5), labels min/max
-- Resposta é JSON object: `{"dimension1": 3, "dimension2": 5, ...}`
-- A IA decide dinamicamente quais sliders gerar com base no contexto do pacote
-- Usado primariamente pelo pacote de Marketing, mas disponível para qualquer pacote
+Para perguntas de perfil com múltiplas dimensões simultâneas:
+- Renderiza até 5 mini-sliders em grid compacto
+- Escala obrigatória: min=1, max=5 (NUNCA 1-10)
+- Resposta JSON: `{"dimension1": 3, "dimension2": 5}`
+- Usado por: Marketing, Content, Social Media
 
-### Deduplicação Meta-Prompt
-O system prompt principal inclui instruções explícitas:
-1. Se uma pergunta do Pacote A já é coberta por outro pacote ou pelos campos basais, NÃO perguntar
-2. A IA pode MESCLAR tópicos sobrepostos em perguntas mais ricas e combinadas
-3. As perguntas de cada pacote são distribuídas pelas seções relevantes do briefing
+---
 
-### Regras Especiais
-- **Primal Branding**: Ativado por padrão. Personaliza cada um dos 7 pilares com base nas respostas anteriores
-- **AI Management System**: Sem limite de perguntas. Adapta conforme complexidade da empresa (3 apps vs 15 apps)
-- **Marketing**: Inicia com pergunta `multi_slider` para mapear o DNA de marketing em uma única interação
+## ANEXO T — PERSONA DE CONSULTOR ESTRATÉGICO ✅ IMPLEMENTADO
+
+### Conceito
+O motor de briefing não é um entrevistador — é um **Consultor Estratégico** especializado. Cada pergunta é enquadrada como exploração colaborativa, nunca interrogatório.
+
+### Framework de Descoberta (4 Fases)
+```
+FASE 1 — IMERSÃO (steps 1-3): Mundo do cliente
+→ Foco: Identidade, contexto de mercado, relação do fundador
+→ Tom: Curioso, caloroso, sem julgamento
+
+FASE 2 — DEFINIÇÃO (steps 4-7): Quem são e para quem servem
+→ Foco: Audiência, posicionamento, concorrência, personalidade de marca
+→ Tom: Analítico, investigando hipóteses
+
+FASE 3 — VALIDAÇÃO (steps 8-10): Testar hipóteses
+→ Foco: Contradições, lacunas estratégicas, alinhamento de ambição
+→ Tom: Desafiador (gentili), validando, buscando clareza
+
+FASE 4 — CONSTRUÇÃO (steps 11+): Visão estratégica
+→ Foco: Direção visual, tom de voz, próximos passos
+→ Tom: Criativo, colaborativo, prospectivo
+```
+
+### Regras de Persona
+- NUNCA perguntar sem contexto — antes da pergunta, validar hipótese ou compartilhar micro-observação
+- NUNCA usar elogios genéricos ("Ótima resposta!") — sempre micro_feedback específico
+- Power Questions: 1 por fase, projetadas para provocar reflexão genuína
+- Adaptação de tom por tipo de package ativo (branding→criativo, strategy→analítico)
+
+### Anti-Atrito
+- Engajamento monitorado a cada resposta
+- `engagement_level`: "high" | "medium" | "low"
+- Quando "low": trocar para interações táteis (card_selector, boolean_toggle), comprimir perguntas
+- Quando "low" + basalCoverage ≥ 0.6: considerar finalização antecipada
+
+---
+
+## ANEXO U — MOTOR DE ORQUESTRAÇÃO DE PACOTES ✅ IMPLEMENTADO
+
+### Problema Resolvido
+Com múltiplos pacotes ativos, o risco é gerar perguntas desconexas — o cliente sente que está respondendo vários formulários diferentes. O PACKAGE_ORCHESTRATION module resolve isso.
+
+### Sequenciamento Obrigatório
+```
+1. CAMPOS BASAIS (sempre primeiro — contexto universal)
+2. BRANDING: founder_vision → primal_branding → visual_identity → rebranding
+3. STRATEGY: business_model_canvas → marketing → sales
+4. EXECUTION: campaign_launch → social_media → content_media → web_app_briefing → ecommerce
+5. CONSULTING: ai_automation → cx_mapping → ai_management_system
+```
+
+### Transições Naturais Entre Áreas
+Ao mudar de tier, o motor insere uma **PIVOT PHRASE** que sinaliza naturalmente a mudança de tema:
+- Basal → Branding: *"Com o contexto da empresa estabelecido, quero entrar em território mais estratégico..."*
+- Branding → Strategy: *"Entendendo quem vocês são, vamos olhar como o mercado te enxerga..."*
+- Strategy → Execution: *"Estratégia definida. Agora quero entender os projetos e execução..."*
+- Execution → Consulting: *"Uma última camada importante — como a operação suporta tudo isso..."*
+
+### Deduplicação Cross-Package
+Quando pacotes se sobrepõem (ex: Marketing e Campaign Launch ambos perguntam sobre canais):
+- Pergunta feita APENAS no contexto mais relevante (primeiro encontrado no sequenciamento)
+- No segundo pacote, a IA referencia o que já sabe: *"Você mencionou Instagram principalmente — no contexto desta campanha específica..."*
+
+### Compressão por Fadiga
+Quando `engagement_level = "low"` ou `basalCoverage ≥ 0.85`:
+- Mesclar perguntas de pacotes diferentes em uma única questão combinada
+- Preferir `multi_slider` ou `card_selector` para consolidar múltiplas dimensões
+- Finalizar mais cedo se a cobertura já for suficiente
+
+### Princípios da Experiência do Cliente
+1. O cliente deve se sentir **visto e compreendido** durante toda a conversa
+2. Cada pergunta deve parecer que **constrói sobre a anterior**
+3. **Nunca** fazer o cliente sentir que está preenchendo um formulário
+4. **Variedade obrigatória**: máximo 2 perguntas consecutivas do mesmo tipo
+5. Ao fechar cada área: breve **ACKNOWLEDGMENT** antes de avançar ao próximo tier
+
+### UI — Header Humanizado
+- O cliente vê os tiers ativos no header (não os nomes técnicos dos pacotes)
+- Exemplo: `✦ Marca · Estratégia · Execução` (em vez de "Primal Branding, Marketing, Social Media")
+- No mobile: apenas o ícone de sparkles
+
+---
+
+## ANEXO V — ACTIVE LISTENING ENGINE ✅ IMPLEMENTADO
+
+### Conceito
+Em paralelo ao fluxo de perguntas, a IA realiza uma **varredura silenciosa** em cada resposta para detectar sinais estratégicos nas entrelinhas. Esses sinais alimentam:
+1. O **relatório final** da agência (o usuário que criou o briefing)
+2. **Perguntas de profundidade** inseridas naturalmente no fluxo
+3. A **micro_feedback** exibida ao cliente entre perguntas
+
+### Protocolo de Varredura (5 Categorias)
+```
+1. CONTRADIÇÃO: Esta resposta contradiz algo dito antes?
+2. DOR IMPLÍCITA: Há uma frustração escondida?
+3. EVASÃO: O cliente desviou do tópico?
+4. AMBIÇÃO OCULTA: Uma aspiração grande escapou?
+5. LACUNA ESTRATÉGICA: Há um gap crítico de conhecimento de negócio?
+```
+
+### Relevância e Sinalização
+- Cada sinal recebe score de relevância (0.0 → 1.0) baseado no `briefing_purpose` da sessão
+- Apenas sinais com score ≥ 0.60 são reportados
+- Máximo 2 sinais por turno para evitar ruído
+- `depth_signals` dos pacotes ativos guiam prioridades da varredura
+
+### Trigger de Profundidade
+Quando sinal tem relevância ≥ 0.80 E ainda não foi explorado:
+- Gera `depth_question` inserida naturalmente na próxima pergunta
+- Fraseada como se o consultor "acabou de perceber algo interessante"
+- Máximo de 1 follow-up por tópico, então avança
+
+### Integração com Relatório da Agência
+Os sinais detectados são agregados e aparecem no relatório final como:
+- **Risk & Opportunity Matrix**: contradições e lacunas detectadas
+- **Executive Summary**: síntese das ambições ocultas e dores implícitas
+- **Brand Health Score**: calculado parcialmente com base nos sinais
+
+### Schema Técnico (JSON)
+```json
+{
+  "active_listening": {
+    "signals": [
+      {
+        "category": "hidden_ambition",
+        "summary": "Mencionou escalar para mercado internacional casualmente",
+        "relevance_score": 0.85
+      }
+    ],
+    "depth_question": {
+      "text": "Essa visão de expansão internacional — é algo para 2 anos ou já está no radar de curto prazo?",
+      "questionType": "card_selector",
+      "options": [...],
+      "signal_category": "hidden_ambition"
+    }
+  }
+}
+```
+
+---
+
+## ANEXO W — RELATÓRIO PREMIUM (AGÊNCIA)
+
+### Conceito
+O documento gerado para a agência (quem criou o briefing) é de nível **board-ready** — não apenas um resumo de respostas, mas um deliverable estratégico com seções adaptativas.
+
+### Seções do Relatório (Adaptativas por Packages Ativos)
+1. **Executive Summary** — Síntese executiva (sempre presente)
+2. **Dados Coletados** — Respostas organizadas por seção
+3. **Active Listening Insights** — Sinais detectados nas entrelinhas
+4. **Risk & Opportunity Matrix** — Riscos e oportunidades estratégicas (quando pacote strategy/consulting ativo)
+5. **Competitor Positioning Map** — Análise de posicionamento vs concorrentes (quando marketing/sales ativo)
+6. **Brand DNA Extract** — Extração dos pilares de marca (quando branding ativo)
+7. **Brand Health Score** — Score 0-10 com dimensões (quando dados basais ≥ 80%)
+
+### Lógica de Seções Adaptativas
+```
+IF packages incluem branding → incluir Brand DNA + Brand Health Score
+IF packages incluem strategy/consulting → incluir Risk Matrix + Competitor Map
+IF basalCoverage < 0.6 → Executive Summary mais cauteloso (menções de lacunas)
+```
+
+### Geração
+- API: `/api/briefing/document`
+- LLM: `max_tokens: 6000` (relatório premium)
+- Formato: Markdown estruturado com seções claras
+- Editável via `DocumentEditor` pelo cliente e acessível via link/senha
 

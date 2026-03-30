@@ -156,8 +156,9 @@ export async function getPackagesBySlugs(slugs: string[]) {
   
   const { data, error } = await supabase
     .from('briefing_category_packages')
-    .select('slug, name, icon, department')
-    .in('slug', slugs);
+    .select('slug, name, icon, department, tier, briefing_purpose')
+    .in('slug', slugs)
+    .or('is_archived.is.null,is_archived.eq.false');
     
   if (error) {
     console.error('Error fetching packages by slugs:', error);

@@ -11,23 +11,30 @@ const supabaseServer = createClient(supabaseUrl, supabaseKey);
 // ================================================================
 // BUILD PACKAGE PROMPTS — Fetch & Concatenate Active Skill Fragments
 // ================================================================
-async function buildPackagePrompts(selectedSlugs?: string[]): Promise<string> {
-  if (!selectedSlugs || selectedSlugs.length === 0) return '';
+async function buildPackagePrompts(selectedSlugs?: string[]): Promise<{ prompt: string; purposes: string[]; depthSignals: string[] }> {
+  const empty = { prompt: '', purposes: [], depthSignals: [] };
+  if (!selectedSlugs || selectedSlugs.length === 0) return empty;
 
   try {
     const { data: packages, error } = await supabaseServer
       .from('briefing_category_packages')
-      .select('slug, name, system_prompt_fragment, max_questions')
-      .in('slug', selectedSlugs);
+      .select('slug, name, system_prompt_fragment, max_questions, briefing_purpose, depth_signals')
+      .in('slug', selectedSlugs)
+      .or('is_archived.is.null,is_archived.eq.false');
 
-    if (error || !packages || packages.length === 0) return '';
+    if (error || !packages || packages.length === 0) return empty;
 
-    const fragments = packages.map((pkg: { name: string; max_questions: number | null; system_prompt_fragment: string }) => {
+    const purposes: string[] = [];
+    const depthSignals: string[] = [];
+
+    const fragments = packages.map((pkg: { name: string; max_questions: number | null; system_prompt_fragment: string; briefing_purpose?: string; depth_signals?: string[] }) => {
+      if (pkg.briefing_purpose) purposes.push(pkg.briefing_purpose);
+      if (pkg.depth_signals) depthSignals.push(...pkg.depth_signals);
       const limit = pkg.max_questions ? `(up to ${pkg.max_questions} unique questions)` : '(UNLIMITED questions — adapt to complexity)';
       return `[ACTIVE PACKAGE: ${pkg.name}] ${limit}\n${pkg.system_prompt_fragment}`;
     }).join('\n\n');
 
-    return `
+    const prompt = `
 ═══ CATEGORY PACKAGES — Active AI Specializations ═══
 The following specialized skill packages are ACTIVE for this briefing session.
 Each package adds unique questions for its area. CRITICAL DEDUPLICATION RULES:
@@ -35,12 +42,14 @@ Each package adds unique questions for its area. CRITICAL DEDUPLICATION RULES:
 2. Use your judgment to MERGE overlapping topics into richer, combined questions.
 3. When the multi_slider type is specified in a package, you MUST generate the question using questionType "multi_slider" with the specified options format.
 4. Each package's questions should be distributed across the relevant sections, not clustered together.
+5. Before asking any question, explain BRIEFLY why it matters for the project: "Understanding X helps us Y."
 
 ${fragments}
 ═══ END CATEGORY PACKAGES ═══`;
+    return { prompt, purposes, depthSignals };
   } catch (err) {
     console.error('Error building package prompts:', err);
-    return '';
+    return empty;
   }
 }
 
@@ -142,6 +151,13 @@ export async function POST(req: Request) {
     const depthSignals = activeTemplate?.depth_signals || [];
     const previousSignalsList = Array.isArray(previousSignals) ? previousSignals : [];
 
+    // Build package prompts and merge their purposes/signals
+    const packageData = await buildPackagePrompts(selectedPackages);
+    const allPurposes = [briefingPurpose, ...packageData.purposes].filter(Boolean);
+    const allDepthSignals = [...depthSignals, ...packageData.depthSignals];
+    const mergedPurpose = allPurposes.length > 0 ? allPurposes.join(' | ') : '';
+    const mergedDepthSignals = [...new Set(allDepthSignals)]; // deduplicate
+
     const extraContextStrings = [];
     if (body.initialContext) {
       extraContextStrings.push(`KNOWN CLIENT CONTEXT: ${body.initialContext}`);
@@ -189,7 +205,7 @@ ${extraContext ? `  <AgencyProfile>\n    ${extraContext}\n  </AgencyProfile>` : 
 </Context>
 
 ${selectedPackages && selectedPackages.length > 0 ? `<ActiveSkillPackages>
-${await buildPackagePrompts(selectedPackages)}
+${packageData.prompt}
 </ActiveSkillPackages>` : ''}
 
 <EngineBehaviors>
@@ -344,8 +360,8 @@ ${await buildPackagePrompts(selectedPackages)}
   </Module>
 
   <Module name="ACTIVE_LISTENING_ENGINE">
-${briefingPurpose ? `    BRIEFING PURPOSE (your north star for what matters): "${briefingPurpose}"` : '    BRIEFING PURPOSE: General — extract comprehensive business identity and positioning.'}
-${depthSignals.length > 0 ? `    PRIORITY DEPTH SIGNALS to watch for: ${depthSignals.join(', ')}` : ''}
+${mergedPurpose ? `    BRIEFING PURPOSE (your north star for what matters): "${mergedPurpose}"` : '    BRIEFING PURPOSE: General — extract comprehensive business identity and positioning.'}
+${mergedDepthSignals.length > 0 ? `    PRIORITY DEPTH SIGNALS to watch for: ${mergedDepthSignals.join(', ')}` : ''}
 ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${previousSignalsList.join(' | ')}` : ''}
 
     ACTIVE LISTENING PROTOCOL — On EVERY answer, run a silent scan:
@@ -368,6 +384,49 @@ ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${p
     - depth_question.signal_category: one of [contradiction, implicit_pain, evasion, hidden_ambition, strategic_gap]
     - NEVER generate a depth_question if generateMore=true or isFinished=true
     - NEVER generate a depth_question on step 0 (language selection)
+  </Module>
+
+  <Module name="PACKAGE_ORCHESTRATION">
+    GOAL: The client responding this briefing should experience ONE unified, intelligent conversation — NOT a series of disjointed questionnaires. Packages are invisible skill injections; they must NOT be perceptible as separate modules.
+
+    STRICT SEQUENCING — Execute in this order when multiple packages are active:
+    1. BASAL FIELDS (always first, universal business context)
+    2. BRANDING tier: [founder_vision → primal_branding → visual_identity → rebranding]
+    3. STRATEGY tier: [business_model_canvas → marketing → sales]
+    4. EXECUTION tier: [campaign_launch → social_media → content_media → web_app_briefing → ecommerce]
+    5. CONSULTING tier: [ai_automation → cx_mapping → ai_management_system]
+
+    Do NOT start a new package tier UNTIL the current tier's MINIMUM coverage is reached (≥60% of that tier's key fields).
+
+    TRANSITION RULES — When moving from one package area to another:
+    - Use a PIVOT PHRASE to signal the topic shift naturally:
+      * Basal → Branding: "Com o contexto da empresa bem estabelecido, quero entrar em território mais estratégico..."
+      * Branding → Strategy: "Entendendo quem vocês são, vamos olhar como o mundo enxerga vocês no mercado..."
+      * Strategy → Execution: "Estratégia definida. Agora quero entender os projetos e execução..."
+      * Execution → Consulting: "Uma última camada importante — como a operação suporta tudo isso..."
+    - Translate pivot phrases to the session language.
+    - Do NOT use the package name in the pivot phrase. Keep it natural.
+    
+    DEDUPLICATION — when packages overlap (e.g., marketing AND campaign_launch both ask about channels):
+    - Ask ONCE in the most relevant context
+    - In the later package, reference what was already captured: "Você mencionou que usa principalmente Instagram — no contexto desta campanha específica..."
+
+    COMPRESSION — when engagement_level = "low" OR basalCoverage ≥ 0.85:
+    - MERGE questions across packages: combine a strategy question with an execution question into one
+    - Example: "Focando na campanha de lançamento — qual o canal principal e qual o objetivo central? Me dê os dois em uma frase."
+    - Prefer multi_slider or card_selector to consolidate multiple dimensions in one tactile interaction
+
+    WELCOME CONTEXT — On the VERY FIRST question (step 0), after language detection, include:
+    - A brief, human-readable description of what this briefing will explore
+    - Never list package names — describe the themes: "Vamos explorar sua marca, estratégia de mercado e planos de execução..."
+    - Make it sound like a CONVERSATION, not a form
+
+    CLIENT EXPERIENCE PRINCIPLES:
+    - The client should feel SEEN and UNDERSTOOD throughout
+    - Each question should feel like it builds on the last
+    - Never make the client feel like they're filling a form
+    - Variety is mandatory: no 3 consecutive questions of the same type
+    - End of each major area → a brief ACKNOWLEDGMENT: "Excelente. Tenho uma visão clara da sua marca agora. Vamos falar sobre como o mercado te vê..."
   </Module>
 </EngineBehaviors>
 

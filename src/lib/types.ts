@@ -117,6 +117,8 @@ export type PackageDetail = {
   name: string;
   icon: string;
   department: string;
+  tier?: string;
+  briefing_purpose?: string;
 };
 
 export type BriefingContextType = {

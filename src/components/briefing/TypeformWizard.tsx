@@ -472,22 +472,27 @@ export function TypeformWizard() {
 
         {/* Right side: Packages and Progress */}
         <div className="flex items-center gap-4">
-          {/* Active AI Packages */}
-          {selectedPackageDetails && selectedPackageDetails.length > 0 && (
-            <div className="hidden md:flex items-center gap-2 mr-2">
-              {selectedPackageDetails.slice(0, 3).map(pkg => (
-                <div key={pkg.slug} className="text-[10px] uppercase tracking-wider font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" title={pkg.name}>
-                   <Sparkles className="w-3 h-3" />
-                   {pkg.name}
+          {/* Active AI Packages — grouped by tier, humanized for client */}
+          {selectedPackageDetails && selectedPackageDetails.length > 0 && (() => {
+            const TIER_LABELS: Record<string, string> = {
+              branding: 'Marca',
+              strategy: 'Estratégia',
+              execution: 'Execução',
+              consulting: 'Consultoria',
+            };
+            const activeTiers = [...new Set(
+              selectedPackageDetails.map(p => p.tier).filter(Boolean)
+            )] as string[];
+            const tierLabels = activeTiers.map(t => TIER_LABELS[t] || t);
+            return (
+              <div className="hidden md:flex items-center gap-2 mr-2">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  <Sparkles className="w-3 h-3" />
+                  {tierLabels.length > 0 ? tierLabels.join(' · ') : `${selectedPackageDetails.length} especialidades`}
                 </div>
-              ))}
-              {selectedPackageDetails.length > 3 && (
-                <div className="text-[10px] uppercase tracking-wider font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800">
-                   +{selectedPackageDetails.length - 3} skills
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* Progresso Simplificado */}
           <div className="text-sm font-medium text-neutral-500 flex items-center gap-2 bg-neutral-900 px-4 py-1.5 rounded-full border border-neutral-800">

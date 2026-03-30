@@ -6,13 +6,21 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // GET - List all packages (ordered by sort_order)
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const { data, error } = await supabase
+    const url = new URL(req.url);
+    const includeArchived = url.searchParams.get('include_archived') === 'true';
+
+    let query = supabase
       .from("briefing_category_packages")
       .select("*")
       .order("sort_order", { ascending: true });
 
+    if (!includeArchived) {
+      query = query.or('is_archived.is.null,is_archived.eq.false');
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
 
     return NextResponse.json(data);
