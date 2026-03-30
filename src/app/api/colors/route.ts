@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 10 requests per minute for color generation
+    const ip = getRequestIP(req);
+    const rl = checkRateLimit(`colors:${ip}`, { maxRequests: 10, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please wait before trying again." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const { mainColors, context, type = "initial", hint, keptColors = [] } = await req.json();
 
     // Validate type parameter

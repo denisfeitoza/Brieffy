@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getLLMConfig, getDBSettings, getPerformanceConfig } from "@/lib/aiConfig";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -75,6 +76,16 @@ const SECTION_PIPELINE = [
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 20 requests per minute for briefing
+    const ip = getRequestIP(req);
+    const rl = checkRateLimit(`briefing:${ip}`, { maxRequests: 20, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please wait before trying again." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const body = await req.json();
     const { answer, currentState, history, generateMore, activeTemplate, chosenLanguage, selectedPackages } = body;
 

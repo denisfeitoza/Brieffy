@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { timingSafeEqual } from "crypto";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+/**
+ * Constant-time string comparison to prevent timing attacks on passphrase validation.
+ */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -24,7 +37,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Link inválido ou não encontrado." }, { status: 404 });
     }
 
-    if (session.edit_passphrase !== passphrase) {
+    if (!session.edit_passphrase || !safeCompare(session.edit_passphrase, passphrase)) {
       return NextResponse.json({ error: "Palavra-chave incorreta." }, { status: 401 });
     }
 

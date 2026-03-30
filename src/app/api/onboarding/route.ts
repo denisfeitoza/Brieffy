@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getLLMConfig, getDBSettings, estimateCost } from "@/lib/aiConfig";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -9,6 +10,16 @@ const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROL
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 15 requests per minute for onboarding
+    const ip = getRequestIP(req);
+    const rl = checkRateLimit(`onboarding:${ip}`, { maxRequests: 15, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please wait before trying again." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const supabaseSession = await createServerSupabaseClient();
     const { data: { user } } = await supabaseSession.auth.getUser();
     
@@ -216,8 +227,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(parsed);
 
-  } catch (error: any) {
-    console.error("Onboarding API Error:", error?.message || error, error);
-    return NextResponse.json({ error: error?.message || String(error) }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Onboarding API Error:", message, error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

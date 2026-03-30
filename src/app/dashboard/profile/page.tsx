@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Loader2, User, Building2, Lock, BarChart3, Sparkles, Palette, Upload, ImageIcon, Globe, Type, CheckCircle2, X, FileText } from 'lucide-react';
+import { Save, Loader2, User, Building2, Lock, BarChart3, Sparkles, Palette, Upload, ImageIcon, Globe, Type, CheckCircle2, X, FileText, CloudOff } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
 
@@ -39,6 +39,40 @@ export default function ProfilePage() {
   const [brandingSaved, setBrandingSaved] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-save state
+  const [autoSaved, setAutoSaved] = useState(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoadRef = useRef(true);
+
+  // Auto-save effect — triggers 2s after last text change
+  useEffect(() => {
+    if (isInitialLoadRef.current) return; // Skip on initial data load
+    if (!displayName && !companyName) return; // Skip if no data yet
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        await supabase.from('briefing_profiles').update({
+          display_name: displayName,
+          company_name: companyName,
+          company_summary: companySummary,
+          updated_at: new Date().toISOString(),
+        }).eq('id', user.id);
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 3000);
+      } catch {
+        // Silent fail — user can always use the manual save button
+      }
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [displayName, companyName, companySummary]);
 
   useEffect(() => {
     async function loadProfile() {
@@ -78,6 +112,8 @@ export default function ProfilePage() {
       }
 
       setLoading(false);
+      // Mark initial load as complete (after a tick, to avoid auto-save on load)
+      setTimeout(() => { isInitialLoadRef.current = false; }, 100);
     }
     loadProfile();
   }, []);
@@ -287,10 +323,17 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          <Button  onClick={handleSaveProfile} disabled={saving} className="bg-cyan-600 hover:bg-cyan-500">
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Save Profile
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Auto-save indicator */}
+            <span className={`text-xs text-emerald-400 flex items-center gap-1.5 transition-opacity duration-500 ${autoSaved ? 'opacity-100' : 'opacity-0'}`}>
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Auto-saved
+            </span>
+            <Button onClick={handleSaveProfile} disabled={saving} className="bg-cyan-600 hover:bg-cyan-500">
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Save Profile
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

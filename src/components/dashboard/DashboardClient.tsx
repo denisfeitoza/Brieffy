@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { format } from 'date-fns';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { format, subDays, isAfter } from 'date-fns';
 import {
   Search, ExternalLink, Trash2, Copy, CheckCircle2, Clock,
-  AlertCircle, FileText,
+  AlertCircle, FileText, Eye, CalendarDays, X,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -35,21 +36,42 @@ const FILTER_TABS = [
   { key: 'pending', label: 'Pending' },
 ];
 
+const DATE_FILTERS = [
+  { key: 'all', label: 'All time' },
+  { key: '7', label: 'Last 7 days' },
+  { key: '30', label: 'Last 30 days' },
+  { key: '90', label: 'Last 3 months' },
+];
+
 export function DashboardClient({ sessions }: { sessions: Session[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [previewSession, setPreviewSession] = useState<Session | null>(null);
 
-  const filtered = sessions.filter(s => {
-    if (filter !== 'all' && s.status !== filter) return false;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      return (s.session_name || '').toLowerCase().includes(q) || s.id.toLowerCase().includes(q);
-    }
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return sessions.filter(s => {
+      // Status filter
+      if (filter !== 'all' && s.status !== filter) return false;
+
+      // Date filter
+      if (dateFilter !== 'all') {
+        const days = parseInt(dateFilter);
+        const cutoff = subDays(new Date(), days);
+        if (!isAfter(new Date(s.created_at), cutoff)) return false;
+      }
+
+      // Search filter
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        return (s.session_name || '').toLowerCase().includes(q) || s.id.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [sessions, filter, dateFilter, search]);
 
   const handleCopyLink = (sessionId: string) => {
     const link = `${window.location.origin}/b/${sessionId}`;
@@ -73,8 +95,17 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
     }
   };
 
+  // Extract document content from final_assets for preview
+  const getPreviewContent = (session: Session): string => {
+    const assets = session.final_assets as Record<string, unknown> | null;
+    if (!assets) return '';
+    if (typeof assets.document === 'string') return assets.document;
+    return JSON.stringify(assets, null, 2);
+  };
+
   return (
     <div className="space-y-4">
+      {/* Header + Search */}
       <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         <h3 className="text-xl font-semibold text-zinc-100">Briefing Sessions</h3>
         <div className="relative flex-1 max-w-sm">
@@ -85,32 +116,70 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
             placeholder="Search by name or ID..."
             className="pl-9 bg-zinc-900/50 border-white/10 focus-visible:ring-cyan-500 rounded-xl h-10"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-        {FILTER_TABS.map(tab => (
-          <Button
-            key={tab.key}
-            variant="ghost"
-            size="sm"
-            onClick={() => setFilter(tab.key)}
-            className={`rounded-full px-4 shrink-0 transition-all ${
-              filter === tab.key
-                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
-            }`}
-          >
-            {tab.label}
-            {tab.key !== 'all' && (
-              <span className="ml-1.5 text-xs opacity-70">
-                {sessions.filter(s => tab.key === 'all' ? true : s.status === tab.key).length}
-              </span>
-            )}
-          </Button>
-        ))}
+      {/* Filter Tabs + Date Filter */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
+        {/* Status Tabs */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {FILTER_TABS.map(tab => (
+            <Button
+              key={tab.key}
+              variant="ghost"
+              size="sm"
+              onClick={() => setFilter(tab.key)}
+              className={`rounded-full px-4 shrink-0 transition-all ${
+                filter === tab.key
+                  ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              {tab.label}
+              {tab.key !== 'all' && (
+                <span className="ml-1.5 text-xs opacity-70">
+                  {sessions.filter(s => s.status === tab.key).length}
+                </span>
+              )}
+            </Button>
+          ))}
+        </div>
+
+        {/* Date Filter */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <CalendarDays className="w-3.5 h-3.5 text-zinc-500" />
+          <div className="flex gap-1 overflow-x-auto no-scrollbar">
+            {DATE_FILTERS.map(d => (
+              <button
+                key={d.key}
+                onClick={() => setDateFilter(d.key)}
+                className={`text-xs px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                  dateFilter === d.key
+                    ? 'bg-zinc-700 text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Count */}
+      {filtered.length !== sessions.length && (
+        <p className="text-xs text-zinc-500">
+          Showing <span className="text-zinc-300 font-medium">{filtered.length}</span> of {sessions.length} sessions
+        </p>
+      )}
 
       {/* Session Cards */}
       {filtered.length === 0 ? (
@@ -118,7 +187,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
           <CardContent className="text-center py-12 text-zinc-500">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p className="text-lg">No briefings found</p>
-            <p className="text-sm mt-1">Create your first briefing to get started!</p>
+            <p className="text-sm mt-1">Try adjusting your filters or create a new briefing!</p>
           </CardContent>
         </Card>
       ) : (
@@ -126,6 +195,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
           {filtered.map(session => {
             const statusInfo = STATUS_CONFIG[session.status] || STATUS_CONFIG.pending;
             const StatusIcon = statusInfo.icon;
+            const hasDocument = !!(session.final_assets as Record<string, unknown> | null)?.document;
 
             return (
               <Card
@@ -153,11 +223,23 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Quick Preview */}
+                      {hasDocument && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPreviewSession(session)}
+                          className="text-zinc-400 hover:text-indigo-300 hover:bg-indigo-950/20 rounded-lg text-xs"
+                          title="Quick preview"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                       <Link href={`/dashboard/${session.id}`}>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 rounded-lg text-xs"
                         >
                           <ExternalLink className="w-3.5 h-3.5 mr-1" />
@@ -194,6 +276,55 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
           })}
         </div>
       )}
+
+      {/* Quick Preview Sheet */}
+      <Sheet open={!!previewSession} onOpenChange={(open) => !open && setPreviewSession(null)}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-2xl bg-zinc-950 border-white/10 overflow-y-auto p-0"
+        >
+          {previewSession && (
+            <>
+              <SheetHeader className="p-6 pb-4 border-b border-white/8 sticky top-0 bg-zinc-950 z-10">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <SheetTitle className="text-zinc-100 font-semibold text-base truncate">
+                      {previewSession.session_name || 'Untitled Briefing'}
+                    </SheetTitle>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {format(new Date(previewSession.created_at), 'MMM dd, yyyy • HH:mm')}
+                    </p>
+                  </div>
+                  <Link href={`/dashboard/${previewSession.id}`}>
+                    <Button
+                      size="sm"
+                      className="shrink-0 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                      Open Full
+                    </Button>
+                  </Link>
+                </div>
+              </SheetHeader>
+
+              <div className="p-6">
+                {getPreviewContent(previewSession) ? (
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-sm text-zinc-300 leading-relaxed font-sans bg-transparent p-0 border-0">
+                      {getPreviewContent(previewSession)}
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="text-center text-zinc-500 py-12">
+                    <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                    <p>No document content available.</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

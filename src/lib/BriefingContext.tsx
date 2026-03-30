@@ -4,15 +4,17 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail } from "./types";
 
 const DEFAULT_BRANDING: BrandingInfo = {
-  display_name: 'Smart Briefing',
-  company_name: 'Smart Briefing',
+  display_name: 'Sua Empresa',
+  company_name: 'Sua Empresa',
   logo_url: '',
   brand_color: '#06b6d4',
   brand_accent: '#8b5cf6',
   tagline: '',
   website: '',
 };
-import { supabase } from "./supabaseClient";
+import { createClient } from "./supabase/client";
+
+const supabase = createClient();
 
 const BriefingContext = createContext<BriefingContextType | undefined>(undefined);
 

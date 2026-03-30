@@ -9,7 +9,9 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mic, ArrowRight, RefreshCw, CheckCircle2, UploadCloud, Loader2, Plus, X, Pipette } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useBriefing } from "@/lib/BriefingContext";
 
@@ -735,12 +737,13 @@ export function DynamicInput({
           return (
             <label 
               key={optKey}
-              className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+              className={`flex items-center gap-3 p-4 min-h-[48px] rounded-xl border cursor-pointer transition-all active:scale-[0.98] ${
                 isSelected ? 'border-indigo-500 bg-indigo-500/10' : 'border-neutral-800 bg-neutral-900/40 hover:border-neutral-700'
               }`}
             >
               <Checkbox 
                 checked={isSelected}
+                className="w-5 h-5 shrink-0"
                 onCheckedChange={(checked) => {
                   if (checked) {
                     setSelectedMultiples([...selectedMultiples, optText]);

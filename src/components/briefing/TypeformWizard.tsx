@@ -1,11 +1,11 @@
 "use client";
 
 import { useBriefing } from "@/lib/BriefingContext";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, ArrowRight, ArrowLeft, RefreshCw, Paperclip, CheckCircle2, CloudUpload, Lock, Copy, Sparkles } from "lucide-react";
+import { Mic, ArrowRight, ArrowLeft, RefreshCw, Paperclip, CheckCircle2, Lock, Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
@@ -18,14 +18,20 @@ const I18N: Record<string, Record<string, string>> = {
     analyzingResponses: "Analisando todas as {count} respostas para criar um briefing completo.",
     downloadDoc: "Baixar Documento (.md)",
     goToDashboard: "Ir para Dashboard",
-    allSet: "Tudo Certo! Tem mais alguma coisa?",
-    uploadRef: "Para melhorar nossa análise, anexe referências da marca (cores, logotipos, apresentações, etc). Se não tiver, tudo bem.",
-    dragFiles: "Selecione ou arraste arquivos aqui",
-    imagesOrPdf: "Imagens ou PDFs (max 10MB)",
-    skipAndGenerate: "Pular e Gerar Documento",
+    allSet: "Tudo Certo! Vamos gerar seu diagnóstico.",
+    uploadRef: "Analisamos todas as suas respostas para gerar um briefing completo e personalizado.",
     generateDiag: "Gerar Diagnóstico",
     loadingStep: "Carregando etapa...",
-    goBackAdjust: "Voltar e ajustar resposta anterior"
+    goBackAdjust: "Voltar e ajustar resposta anterior",
+    docReadyTitle: "Seu Diagnóstico Está Pronto",
+    docReadyDesc: "Você pode editar este documento, baixá-lo ou acessar mais tarde pelo link seguro.",
+    secureLink: "Link Seguro de Acesso Contínuo",
+    secureLinkDesc: "Guarde este link e a palavra-chave para revisar o documento a qualquer momento.",
+    password: "Senha",
+    copyAccess: "Copiar Acesso",
+    clipboardMsg: "Aqui está o link para o seu diagnóstico interativo:",
+    clipboardPassword: "Senha de acesso:",
+    clipboardSuccess: "Link e senha copiados!"
   },
   en: {
     docGenerated: "Document Generated ✓",
@@ -34,14 +40,20 @@ const I18N: Record<string, Record<string, string>> = {
     analyzingResponses: "Analyzing all {count} responses to build a complete briefing.",
     downloadDoc: "Download Document (.md)",
     goToDashboard: "Go to Dashboard",
-    allSet: "All set! Anything else?",
-    uploadRef: "To improve our analysis, attach brand references (colors, logos, presentations, etc). If you don't have any, that's fine.",
-    dragFiles: "Select or drag files here",
-    imagesOrPdf: "Images or PDFs (max 10MB)",
-    skipAndGenerate: "Skip & Generate Document",
+    allSet: "All set! Let's generate your diagnosis.",
+    uploadRef: "We'll analyze all your responses to generate a complete, personalized briefing.",
     generateDiag: "Generate Diagnosis",
     loadingStep: "Loading step...",
-    goBackAdjust: "Go back and adjust previous answer"
+    goBackAdjust: "Go back and adjust previous answer",
+    docReadyTitle: "Your Diagnosis is Ready",
+    docReadyDesc: "You can edit this document, download it, or access it later via the secure link.",
+    secureLink: "Secure Continuous Access Link",
+    secureLinkDesc: "Save this link and passphrase to review the document at any time.",
+    password: "Password",
+    copyAccess: "Copy Access",
+    clipboardMsg: "Here is the link to your interactive diagnosis:",
+    clipboardPassword: "Access password:",
+    clipboardSuccess: "Link and password copied!"
   },
   es: {
     docGenerated: "Documento Generado ✓",
@@ -50,14 +62,20 @@ const I18N: Record<string, Record<string, string>> = {
     analyzingResponses: "Analizando las {count} respuestas para crear un briefing completo.",
     downloadDoc: "Descargar Documento (.md)",
     goToDashboard: "Ir al Dashboard",
-    allSet: "¡Todo listo! ¿Algo más?",
-    uploadRef: "Para mejorar nuestro análisis, adjunte referencias de marca (colores, logotipos, presentaciones, etc). Si no tiene, está bien.",
-    dragFiles: "Selecciona o arrastra archivos aquí",
-    imagesOrPdf: "Imágenes o PDFs (max 10MB)",
-    skipAndGenerate: "Omitir y Generar Documento",
+    allSet: "¡Todo listo! Generemos su diagnóstico.",
+    uploadRef: "Analizaremos todas sus respuestas para generar un briefing completo y personalizado.",
     generateDiag: "Generar Diagnóstico",
     loadingStep: "Cargando etapa...",
-    goBackAdjust: "Volver y ajustar respuesta anterior"
+    goBackAdjust: "Volver y ajustar respuesta anterior",
+    docReadyTitle: "Su Diagnóstico Está Listo",
+    docReadyDesc: "Puede editar este documento, descargarlo o acceder más tarde a través del enlace seguro.",
+    secureLink: "Enlace de Acceso Seguro Continuo",
+    secureLinkDesc: "Guarde este enlace y la contraseña para revisar el documento en cualquier momento.",
+    password: "Contraseña",
+    copyAccess: "Copiar Acceso",
+    clipboardMsg: "Aquí está el enlace a su diagnóstico interactivo:",
+    clipboardPassword: "Contraseña de acceso:",
+    clipboardSuccess: "¡Enlace y contraseña copiados!"
   }
 };
 
@@ -74,7 +92,7 @@ function getContrastColor(hexcolor: string) {
   return yiq >= 128 ? "#000000" : "#ffffff";
 }
 
-function BrandedLogo({ branding, size = 'md', isSolid = false }: { branding: { logo_url: string; company_name: string; brand_color: string }; size?: 'sm' | 'md', isSolid?: boolean }) {
+const BrandedLogo = memo(function BrandedLogo({ branding, size = 'md', isSolid = false }: { branding: { logo_url: string; company_name: string; brand_color: string }; size?: 'sm' | 'md', isSolid?: boolean }) {
   const sizeClasses = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
   const initials = branding.company_name
     ? branding.company_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -102,7 +120,7 @@ function BrandedLogo({ branding, size = 'md', isSolid = false }: { branding: { l
       {initials}
     </div>
   );
-}
+});
 
 export function TypeformWizard() {
   const {
@@ -124,11 +142,27 @@ export function TypeformWizard() {
     editPassphrase,
     selectedPackageDetails,
     briefingState,
+    basalInfo,
   } = useBriefing();
+
+  const t = I18N[chosenLanguage] || I18N.pt;
 
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+
+  // Track navigation direction for directional slide animations
+  const prevStepRef = useRef(currentStepIndex);
+  const [direction, setDirection] = useState<1 | -1>(1);
+
+  useEffect(() => {
+    if (currentStepIndex > prevStepRef.current) {
+      setDirection(1);
+    } else if (currentStepIndex < prevStepRef.current) {
+      setDirection(-1);
+    }
+    prevStepRef.current = currentStepIndex;
+  }, [currentStepIndex]);
 
   // AQUI calculamos previas dinâmicas
   const colorPickerMsg = messages.find(m => m.questionType === 'color_picker' && m.userAnswer && Array.isArray(m.userAnswer) && m.userAnswer.length > 0);
@@ -162,6 +196,14 @@ export function TypeformWizard() {
         document.head.appendChild(link);
       }
     }
+    // Fix #12: Cleanup injected font links on unmount
+    return () => {
+      if (activeFont && activeFont !== 'Outfit' && activeFont !== 'Inter' && activeFont !== 'Aa') {
+        const linkId = `google-font-${activeFont.replace(/\s+/g, '-')}`;
+        const el = document.getElementById(linkId);
+        if (el) el.remove();
+      }
+    };
   }, [activeFont]);
 
   const dynamicName = (briefingState.nome_empresa as string) || 
@@ -177,6 +219,18 @@ export function TypeformWizard() {
       mainRef.current.scrollTo({ top: 0, behavior: "auto" });
     }
   }, [currentStepIndex, isUploadStep]);
+
+  // Shift+Enter to skip current question
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === 'Enter' && !isLoading && currentStepIndex > 0) {
+        e.preventDefault();
+        submitAnswer('(skipped)');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLoading, currentStepIndex, submitAnswer]);
 
   // Se o usuário der "Avançar" ou "Enviar"
   const handleSend = () => {
@@ -266,8 +320,8 @@ export function TypeformWizard() {
                   className="w-full max-w-5xl flex flex-col space-y-6 shrink-0 py-8"
                 >
                   <div className="flex flex-col space-y-2 text-center mb-4">
-                    <h2 className="text-3xl font-outfit text-white">Seu Diagnóstico Está Pronto</h2>
-                    <p className="text-neutral-400">Você pode editar este documento, baixá-lo ou acessar mais tarde pelo link seguro.</p>
+                    <h2 className="text-3xl font-outfit text-white">{t.docReadyTitle}</h2>
+                    <p className="text-neutral-400">{t.docReadyDesc}</p>
                   </div>
 
                   {/* Public Link Card */}
@@ -275,15 +329,15 @@ export function TypeformWizard() {
                     <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-center gap-2 text-indigo-400 font-medium">
-                          <Lock className="w-4 h-4" /> Link Seguro de Acesso Contínuo
+                          <Lock className="w-4 h-4" /> {t.secureLink}
                         </div>
                         <p className="text-sm text-neutral-400">
-                          Guarde este link e a palavra-chave para revisar o documento a qualquer momento.
+                          {t.secureLinkDesc}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-zinc-300">
-                          Senha: <span className="text-white font-bold">{editPassphrase}</span>
+                          {t.password}: <span className="text-white font-bold">{editPassphrase}</span>
                         </div>
                         <Button 
                           variant="outline" 
@@ -291,11 +345,11 @@ export function TypeformWizard() {
                           className="bg-transparent border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
                           onClick={() => {
                             const url = `${window.location.origin}/doc/${editToken}`;
-                            navigator.clipboard.writeText(`Aqui está o link para o seu diagnóstico interativo:\n${url}\n\nSenha de acesso: ${editPassphrase}`);
-                            toast.success("Link e senha copiados!");
+                            navigator.clipboard.writeText(`${t.clipboardMsg}\n${url}\n\n${t.clipboardPassword} ${editPassphrase}`);
+                            toast.success(t.clipboardSuccess);
                           }}
                         >
-                          <Copy className="w-4 h-4 mr-2" /> Copiar Acesso
+                          <Copy className="w-4 h-4 mr-2" /> {t.copyAccess}
                         </Button>
                       </div>
                     </div>
@@ -324,7 +378,7 @@ export function TypeformWizard() {
                 </motion.div>
               )}
 
-              {/* STATE 3: Initial — upload + generate */}
+              {/* STATE 3: Ready to generate */}
               {!generatedDocument && !isGeneratingDocument && (
                 <motion.div
                   key="upload-step"
@@ -336,43 +390,26 @@ export function TypeformWizard() {
                 >
                   <div className="space-y-4">
                      <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
-                      {(I18N[chosenLanguage] || I18N.pt).allSet}
+                      {t.allSet}
                     </h1>
                     <p className="text-lg text-neutral-400 max-w-lg mx-auto leading-relaxed">
-                      {(I18N[chosenLanguage] || I18N.pt).uploadRef}
+                      {t.uploadRef}
                     </p>
                   </div>
 
-                  {/* Drag n Drop Box Mock */}
-                  <button className="w-full h-48 border-2 border-dashed border-neutral-800 hover:border-indigo-500/50 bg-neutral-900/50 rounded-2xl flex flex-col items-center justify-center gap-4 transition-colors group">
-                    <div className="w-12 h-12 rounded-full bg-neutral-800 group-hover:bg-indigo-500/20 flex items-center justify-center text-neutral-400 group-hover:text-indigo-400 transition-colors">
-                      <CloudUpload className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-medium text-neutral-300">{(I18N[chosenLanguage] || I18N.pt).dragFiles}</p>
-                      <p className="text-sm text-neutral-500">{(I18N[chosenLanguage] || I18N.pt).imagesOrPdf}</p>
-                    </div>
-                  </button>
+                  <div className="w-24 h-24 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                    <Sparkles className="w-10 h-10 text-indigo-400" />
+                  </div>
                   
-                  <div className="flex flex-col sm:flex-row gap-4 w-full pt-4">
-                    <Button 
-                        variant="outline" 
-                        size="lg"
-                        className="flex-1 h-14 bg-transparent border-neutral-800 text-neutral-400 hover:text-white"
-                        onClick={generateDocument}
-                        tabIndex={1}
-                      >
-                      {(I18N[chosenLanguage] || I18N.pt).skipAndGenerate}
-                    </Button>
+                  <div className="w-full pt-4">
                     <Button 
                         size="lg"
-                        className="flex-1 h-14 bg-white text-black hover:bg-neutral-200"
+                        className="w-full h-16 bg-white text-black hover:bg-neutral-200 text-lg font-medium rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all"
                         onClick={generateDocument}
-                        tabIndex={2}
                       >
-                        {(I18N[chosenLanguage] || I18N.pt).generateDiag}
+                        {t.generateDiag}
                         {" "}
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                        <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
                   </div>
                 </motion.div>
@@ -456,6 +493,21 @@ export function TypeformWizard() {
         </div>
       </header>
 
+      {/* Progress Bar */}
+      <div className="h-1 bg-neutral-900/50 w-full shrink-0 overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-indigo-500 rounded-r-full"
+          initial={false}
+          animate={{ 
+            width: `${Math.max(
+              basalInfo.basalCoverage * 100, 
+              ((currentStepIndex + 1) / Math.max(messages.length + 2, 8)) * 100
+            )}%` 
+          }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </div>
+
       {/* Main Content Area: Centered, Large Text */}
       <main ref={mainRef} className="flex-1 w-full overflow-y-auto overflow-x-hidden">
         <div className="min-h-full w-full flex flex-col relative px-6 lg:px-12">
@@ -466,11 +518,20 @@ export function TypeformWizard() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={`step-${currentStepIndex}`}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, x: direction > 0 ? 60 : -60 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction > 0 ? -60 : 60, scale: 0.98 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 className="w-full flex flex-col space-y-12 py-12"
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.15}
+                onDragEnd={(_e, info) => {
+                  // Swipe right to go back (threshold 100px)
+                  if (info.offset.x > 100 && currentStepIndex > 0 && !isLoading) {
+                    goBack();
+                  }
+                }}
               >
                 {/* The IA Formatted Question */}
                 <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
@@ -494,7 +555,7 @@ export function TypeformWizard() {
                 />
 
                 {currentStepIndex > 0 && (
-                  <div className="flex justify-center md:justify-start pt-4 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="flex flex-col sm:flex-row items-center justify-center md:justify-between gap-2 pt-4 opacity-70 hover:opacity-100 transition-opacity">
                     <Button 
                       variant="ghost" 
                       size="sm"
@@ -504,6 +565,16 @@ export function TypeformWizard() {
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       {(I18N[chosenLanguage] || I18N.pt).goBackAdjust}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => submitAnswer('(skipped)')}
+                      disabled={isLoading}
+                      className="text-neutral-500 hover:text-neutral-300 rounded-full px-4 h-10 text-xs gap-2"
+                    >
+                      {chosenLanguage === 'en' ? 'Skip' : chosenLanguage === 'es' ? 'Omitir' : 'Pular'}
+                      <span className="hidden sm:inline opacity-40 text-[10px] font-mono ml-1">Shift+Enter</span>
                     </Button>
                   </div>
                 )}

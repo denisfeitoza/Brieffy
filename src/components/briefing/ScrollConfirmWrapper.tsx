@@ -16,6 +16,24 @@ export function ScrollConfirmWrapper({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // Detect mobile virtual keyboard via visualViewport API
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const initialHeight = viewport.height;
+    
+    const handleResize = () => {
+      // If viewport shrinks by more than 150px, keyboard is likely open
+      const heightDiff = initialHeight - viewport.height;
+      setIsKeyboardOpen(heightDiff > 150);
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    return () => viewport.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -41,9 +59,9 @@ export function ScrollConfirmWrapper({
         {children || ActionComponent}
       </div>
       
-      {/* Portal ou fixed bottom */}
+      {/* Floating bottom action — hidden when keyboard is open on mobile */}
       <AnimatePresence>
-        {!isVisible && !isDisabled && (
+        {!isVisible && !isDisabled && !isKeyboardOpen && (
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.9, x: "-50%" }}
             animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}

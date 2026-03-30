@@ -26,8 +26,8 @@ export async function GET(request: Request) {
     if (error) {
       // Return default branding if profile not found
       return NextResponse.json({
-        display_name: 'Smart Briefing',
-        company_name: 'Smart Briefing',
+        display_name: 'Sua Empresa',
+        company_name: 'Sua Empresa',
         logo_url: '',
         brand_color: '#06b6d4',
         brand_accent: '#8b5cf6',
