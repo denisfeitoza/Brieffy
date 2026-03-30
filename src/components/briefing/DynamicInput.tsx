@@ -412,10 +412,11 @@ export function DynamicInput({
   };
 
   // Foca automaticamente no campo de texto para o usuário já poder digitar logo após a mudança da pergunta
+  // Usamos preventScroll para não empurrar a tela para baixo caso a pergunta seja longa (como cards)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (inputRef.current && !isLoading && !isTranscribing) {
-        inputRef.current.focus();
+        inputRef.current.focus({ preventScroll: true });
       }
     }, 150);
     return () => clearTimeout(timer);

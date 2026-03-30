@@ -29,12 +29,15 @@ export async function POST(req: Request) {
       // 1. Generate Summary
       const summaryPrompt = `Based on the following 10 onboarding questions and answers, generate a concise company summary and identify the primary brand color.
       
+      The 'company_summary' MUST BE a VERY CONCISE, rapid briefing about the company (What they do, their target audience, and their tone/style/identity). This summary will be injected into future AI system prompts to provide context about this company when generating briefings for their own clients. 
+      DO NOT include their internal struggles, difficulties, or how Brieffy will help them in this summary, as this is only context for the AI to emulate their brand. Make it short and direct.
+      
       History:
       ${JSON.stringify(history, null, 2)}
       
       Return ONLY valid JSON format:
       {
-        "company_summary": "Extensive summary string...",
+        "company_summary": "Concise Context Summary...",
         "brand_color": "#hexcode"
       }`;
 
@@ -99,6 +102,14 @@ export async function POST(req: Request) {
     const systemPrompt = `Você é o Especialista de Onboarding Consultivo da Brieffy. Seu objetivo é entender a fundo a agência/empresa do usuário em EXATAMENTE 10 interações.
     Pergunta atual: ${step + 1} de 10.
     
+    OBJETIVOS DA COLETA DE DADOS (LEVANTAMENTO DE PERFIL GESTOR):
+    Durante a conversa, você deve conduzir perguntas para descobrir o seguinte (distribua as perguntas naturalmente, uma por vez):
+    1. O que a empresa faz (nicho, serviços/produtos).
+    2. Como eles acreditam que a Brieffy vai ajudá-los na empresa deles?
+    3. Quais são as suas maiores dificuldades, dores e gargalos atuais no dia a dia?
+    4. Quem é o público-alvo ou perfil de cliente ideal?
+    5. Características visuais, identidade e tom de voz preferido da marca.
+
     REGRA CRÍTICA - IDIOMA OBRIGATÓRIO:
     O usuário selecionou o idioma ISO '${activeLang}'. TODAS as suas respostas, perguntas e opções do array MUST BE IN THIS EXACT LANGUAGE ('${activeLang}'). If '${activeLang}' is 'en', answer in English. If 'es', answer in Spanish.
     

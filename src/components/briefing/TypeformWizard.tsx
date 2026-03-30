@@ -127,14 +127,15 @@ export function TypeformWizard() {
 
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
-  // Focus input on step change if it's an open text question (no options)
+  // Focus input on step change se for open text question foi movido para o DynamicInput para ter controle melhor (com preventScroll)
+  // Aqui vamos rolar a view container para o topo quando a pergunta muda
   useEffect(() => {
-    if (!isUploadStep && messages[currentStepIndex] && !messages[currentStepIndex].options?.length) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+    if (mainRef.current) {
+      mainRef.current.scrollTo({ top: 0, behavior: "auto" });
     }
-  }, [currentStepIndex, isUploadStep, messages]);
+  }, [currentStepIndex, isUploadStep]);
 
   // Se o usuário der "Avançar" ou "Enviar"
   const handleSend = () => {
@@ -186,7 +187,7 @@ export function TypeformWizard() {
           </div>
         </header>
 
-        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden">
+        <main ref={mainRef} className="flex-1 w-full overflow-y-auto overflow-x-hidden">
           <div className="min-h-full w-full flex flex-col items-center p-6 lg:p-12">
             <div className="flex-1 shrink-0" />
             <AnimatePresence mode="wait">
@@ -413,7 +414,7 @@ export function TypeformWizard() {
       </header>
 
       {/* Main Content Area: Centered, Large Text */}
-      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden">
+      <main ref={mainRef} className="flex-1 w-full overflow-y-auto overflow-x-hidden">
         <div className="min-h-full w-full flex flex-col relative px-6 lg:px-12">
           
           <div className="flex-[1_0_auto]" />
