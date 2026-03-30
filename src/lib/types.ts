@@ -121,4 +121,5 @@ export type BriefingContextType = {
   branding: BrandingInfo;
   editToken: string | null;
   editPassphrase: string | null;
+  isOnboarding?: boolean;
 };

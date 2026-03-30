@@ -29,15 +29,15 @@ export async function POST(req: Request) {
       // 1. Generate Summary
       const summaryPrompt = `Based on the following 8 onboarding questions and answers, generate a concise company summary and identify the primary brand color.
       
-      The 'company_summary' MUST BE a VERY CONCISE, rapid briefing about the company (What they do, their target audience, and their tone/style/identity). This summary will be injected into future AI system prompts to provide context about this company when generating briefings for their own clients. 
-      DO NOT include their internal struggles, difficulties, or how Brieffy will help them in this summary, as this is only context for the AI to emulate their brand. Make it short and direct.
+      The 'company_summary' MUST BE an OPERATIONAL summary focused on HOW they work and WHAT they do (products, services, target audience, technical methods). It MUST be formatted in Markdown (.md), utilizing headings, bullet points, and bold text for easy readability.
+      DO NOT include elements of personalization, internal struggles, emotional tone, or how Brieffy will help them. This summary will be strictly used by the AI to understand the company's business model and operational capacity. Make it highly objective, direct, and focused exclusively on their business capabilities.
       
       History:
       ${JSON.stringify(history, null, 2)}
       
       Return ONLY valid JSON format:
       {
-        "company_summary": "Concise Context Summary...",
+        "company_summary": "# Company Name\\n\\n## Operational Overview\\n...",
         "brand_color": "#hexcode"
       }`;
 

@@ -58,7 +58,7 @@ export async function PUT(request: Request) {
     // Whitelist allowed fields
     const allowedFields = [
       'display_name', 'company_name', 'logo_url', 'avatar_url',
-      'brand_color', 'brand_accent', 'tagline', 'website'
+      'brand_color', 'brand_accent', 'tagline', 'website', 'company_summary'
     ];
 
     const updates: Record<string, string> = {};

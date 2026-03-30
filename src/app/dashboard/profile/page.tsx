@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Loader2, User, Building2, Lock, BarChart3, Sparkles, Palette, Upload, ImageIcon, Globe, Type, CheckCircle2, X } from 'lucide-react';
+import { Save, Loader2, User, Building2, Lock, BarChart3, Sparkles, Palette, Upload, ImageIcon, Globe, Type, CheckCircle2, X, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ProfilePage() {
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
+  const [companySummary, setCompanySummary] = useState('');
   const [plan, setPlan] = useState('free');
   const [usedBriefings, setUsedBriefings] = useState(0);
   const [maxBriefings, setMaxBriefings] = useState(10);
@@ -55,6 +57,7 @@ export default function ProfilePage() {
       if (profile) {
         setDisplayName(profile.display_name || '');
         setCompanyName(profile.company_name || '');
+        setCompanySummary(profile.company_summary || '');
         setPlan(profile.plan || 'free');
         setLogoUrl(profile.logo_url || '');
         setBrandColor(profile.brand_color || '#06b6d4');
@@ -91,6 +94,7 @@ export default function ProfilePage() {
         .update({
           display_name: displayName,
           company_name: companyName,
+          company_summary: companySummary,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -265,6 +269,22 @@ export default function ProfilePage() {
               placeholder="Your company (optional)"
               className="bg-black/50 border-white/10 focus-visible:ring-cyan-500"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-zinc-300 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" />
+              Operational Summary (.md)
+            </Label>
+            <Textarea
+              value={companySummary}
+              onChange={(e) => setCompanySummary(e.target.value)}
+              placeholder="## Operational Overview\nDescribe your operations..."
+              className="bg-black/50 border-white/10 focus-visible:ring-cyan-500 min-h-[150px] font-mono text-sm"
+            />
+            <p className="text-[11px] text-zinc-500 mt-1">
+              This summary provides context for the AI during the generation of briefings. Write in Markdown to structure ideas. Objective operational focus, no personalization.
+            </p>
           </div>
 
           <Button  onClick={handleSaveProfile} disabled={saving} className="bg-cyan-600 hover:bg-cyan-500">

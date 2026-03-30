@@ -524,6 +524,7 @@ export function BriefingProvider({
         branding,
         editToken,
         editPassphrase,
+        isOnboarding,
       }}
     >
       {children}

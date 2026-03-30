@@ -11,6 +11,7 @@ import { Mic, ArrowRight, RefreshCw, CheckCircle2, UploadCloud, Loader2, Plus, X
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { useBriefing } from "@/lib/BriefingContext";
 
 function DraggableToggle({ onSelect, disabled, t, initialAnswer }: { onSelect: (val: string) => void, disabled: boolean, t: Record<string, string>, initialAnswer?: string | null }) {
   const [answered, setAnswered] = useState<string | null>(initialAnswer || null);
@@ -243,6 +244,7 @@ export function DynamicInput({
 }: DynamicInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const t = I18N[voiceLanguage] || I18N['pt'];
+  const { isOnboarding } = useBriefing();
   
   // Para controlarmos o estado de multipla escolha antes do usuário dar Submit
   const [selectedMultiples, setSelectedMultiples] = useState<string[]>([]);
@@ -1000,7 +1002,7 @@ export function DynamicInput({
               {t.step1Title}
             </span>
             <p className="text-[12px] text-neutral-500 mb-6 text-center max-w-md">
-              A IA sugeriu cores com base nas suas respostas. Selecione 1 ou 2 cores principais para sua marca.
+              A IA sugeriu cores com base nas suas respostas. {isOnboarding ? "Selecione 1 cor principal para sua marca." : "Selecione 1 ou 2 cores principais para sua marca."}
             </p>
 
             {isFetchingColors && suggestedMainColors.length === 0 ? (
@@ -1019,6 +1021,8 @@ export function DynamicInput({
                         onClick={() => {
                           if (isSelected) {
                             setSelectedMainColors(selectedMainColors.filter(c => c !== hex));
+                          } else if (isOnboarding) {
+                            setSelectedMainColors([hex]);
                           } else if (selectedMainColors.length < 2) {
                             setSelectedMainColors([...selectedMainColors, hex]);
                           }
@@ -1147,7 +1151,7 @@ export function DynamicInput({
               Cores de Detalhe
             </span>
             <p className="text-[12px] text-neutral-500 mb-6 text-center max-w-md">
-              Escolha 1 ou 2 cores de detalhe que complementam suas cores principais. São usadas em bordas, badges e acentos sutis.
+              {isOnboarding ? "Escolha 1 cor de detalhe que complementa sua cor principal. É usada em bordas, badges e acentos sutis." : "Escolha 1 ou 2 cores de detalhe que complementam suas cores principais. São usadas em bordas, badges e acentos sutis."}
             </p>
 
             {isFetchingColors && suggestedColors.length === 0 ? (
@@ -1166,6 +1170,8 @@ export function DynamicInput({
                         onClick={() => {
                           if (isSelected) {
                             setSelectedSuggestions(selectedSuggestions.filter(c => c !== hex));
+                          } else if (isOnboarding) {
+                            setSelectedSuggestions([hex]);
                           } else if (selectedSuggestions.length < 2) {
                             setSelectedSuggestions([...selectedSuggestions, hex]);
                           }

@@ -10,6 +10,7 @@ export async function getSessions() {
   const { data, error } = await supabase
     .from('briefing_sessions')
     .select('*')
+    .not('template_id', 'is', null)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -26,6 +27,7 @@ export async function getSessionsByStatus(status?: string) {
   let query = supabase
     .from('briefing_sessions')
     .select('*')
+    .not('template_id', 'is', null)
     .order('created_at', { ascending: false });
 
   if (status && status !== 'all') {
@@ -47,7 +49,8 @@ export async function getSessionStats() {
 
   const { data: sessions, error } = await supabase
     .from('briefing_sessions')
-    .select('id, status, created_at');
+    .select('id, status, created_at')
+    .not('template_id', 'is', null);
 
   if (error) {
     console.error('Error fetching session stats:', error);
