@@ -1,22 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Share2, CheckCircle2, ChevronRight, Copy, Package, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronLeft, Wand2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu,
+  Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck,
+  Lightbulb, Shield, Server, ShoppingCart, Video,
+  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 
 // Icon mapping for dynamic rendering
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -25,19 +29,34 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 // Department color map
-const DEPT_COLORS: Record<string, string> = {
-  branding: 'from-violet-500/20 to-purple-600/20 border-violet-500/30',
-  technology: 'from-cyan-500/20 to-blue-600/20 border-cyan-500/30',
-  marketing: 'from-orange-500/20 to-red-500/20 border-orange-500/30',
-  operations: 'from-emerald-500/20 to-green-600/20 border-emerald-500/30',
-  finance: 'from-yellow-500/20 to-amber-600/20 border-yellow-500/30',
-  people: 'from-pink-500/20 to-rose-600/20 border-pink-500/30',
-  commercial: 'from-blue-500/20 to-indigo-600/20 border-blue-500/30',
-  product: 'from-teal-500/20 to-cyan-600/20 border-teal-500/30',
-  legal: 'from-slate-500/20 to-gray-600/20 border-slate-500/30',
-  digital: 'from-fuchsia-500/20 to-pink-600/20 border-fuchsia-500/30',
-  content: 'from-lime-500/20 to-green-500/20 border-lime-500/30',
-  general: 'from-neutral-500/20 to-zinc-600/20 border-neutral-500/30',
+const DEPT_COLORS: Record<string, { bg: string; border: string; text: string; glow: string }> = {
+  branding:   { bg: 'bg-violet-500/8',  border: 'border-violet-500/20', text: 'text-violet-400', glow: 'shadow-violet-500/10' },
+  technology: { bg: 'bg-cyan-500/8',    border: 'border-cyan-500/20',   text: 'text-cyan-400',   glow: 'shadow-cyan-500/10' },
+  marketing:  { bg: 'bg-orange-500/8',  border: 'border-orange-500/20', text: 'text-orange-400', glow: 'shadow-orange-500/10' },
+  operations: { bg: 'bg-emerald-500/8', border: 'border-emerald-500/20',text: 'text-emerald-400',glow: 'shadow-emerald-500/10' },
+  finance:    { bg: 'bg-yellow-500/8',  border: 'border-yellow-500/20', text: 'text-yellow-400', glow: 'shadow-yellow-500/10' },
+  people:     { bg: 'bg-pink-500/8',    border: 'border-pink-500/20',   text: 'text-pink-400',   glow: 'shadow-pink-500/10' },
+  commercial: { bg: 'bg-blue-500/8',    border: 'border-blue-500/20',   text: 'text-blue-400',   glow: 'shadow-blue-500/10' },
+  product:    { bg: 'bg-teal-500/8',    border: 'border-teal-500/20',   text: 'text-teal-400',   glow: 'shadow-teal-500/10' },
+  legal:      { bg: 'bg-slate-500/8',   border: 'border-slate-500/20',  text: 'text-slate-400',  glow: 'shadow-slate-500/10' },
+  digital:    { bg: 'bg-fuchsia-500/8', border: 'border-fuchsia-500/20',text: 'text-fuchsia-400',glow: 'shadow-fuchsia-500/10' },
+  content:    { bg: 'bg-lime-500/8',    border: 'border-lime-500/20',   text: 'text-lime-400',   glow: 'shadow-lime-500/10' },
+  general:    { bg: 'bg-zinc-500/8',    border: 'border-zinc-500/20',   text: 'text-zinc-400',   glow: 'shadow-zinc-500/10' },
+};
+
+const DEPT_LABELS: Record<string, string> = {
+  branding: '🎨 Branding',
+  technology: '⚙️ Tecnologia',
+  marketing: '📊 Marketing',
+  operations: '🔄 Operações',
+  finance: '💰 Finanças',
+  people: '👥 Pessoas',
+  commercial: '📈 Comercial',
+  product: '💡 Produto',
+  legal: '🛡️ Jurídico',
+  digital: '🛒 Digital',
+  content: '🎬 Conteúdo',
+  general: '📦 Geral',
 };
 
 interface CategoryPackage {
@@ -59,34 +78,45 @@ interface GenerateLinkModalProps {
 
 export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModalProps) {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<'info' | 'packages' | 'done'>('info');
-  
-  // Step 1: Info
+  const [step, setStep] = useState<'create' | 'done'>('create');
+
+  // Form state
   const [sessionName, setSessionName] = useState('');
   const [initialContext, setInitialContext] = useState('');
   const [editPassphrase, setEditPassphrase] = useState('');
-  
-  // Step 2: Package Selection
+  const [showContext, setShowContext] = useState(false);
+
+  // Package state
   const [packages, setPackages] = useState<CategoryPackage[]>([]);
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
-  
-  // Step 3: Result
+  const [aiSuggestedSlugs, setAiSuggestedSlugs] = useState<string[]>([]);
+  const [aiReasoning, setAiReasoning] = useState('');
+  const [isSuggesting, setIsSuggesting] = useState(false);
+
+  // Result state
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Fetch packages on mount
+  // Fetch packages on open
   useEffect(() => {
     if (open) {
       if (packages.length === 0) fetchPackages();
       if (!editPassphrase) generateCoolPassphrase();
     }
-  }, [open, packages.length, editPassphrase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const generateCoolPassphrase = () => {
-    const words = ["azul", "sol", "luz", "mar", "rio", "som", "flor", "dia", "mel", "ceu", "lua", "cor", "fim", "paz", "voo", "voz", "ar", "bom", "cais", "eco", "neon", "zen", "nova", "fox", "leo", "max", "pro", "one", "top", "vip", "astro", "cyber", "nexus", "prime", "alpha", "omega", "apex"];
-    const newPassphrase = Array.from({length: 4}, () => words[Math.floor(Math.random() * words.length)]).join("-");
+    const words = [
+      "azul", "sol", "luz", "mar", "rio", "som", "flor", "dia", "mel",
+      "ceu", "lua", "cor", "fim", "paz", "voo", "voz", "bom", "eco",
+      "neon", "zen", "nova", "fox", "leo", "max", "pro", "apex", "astro",
+    ];
+    const newPassphrase = Array.from({ length: 4 }, () =>
+      words[Math.floor(Math.random() * words.length)]
+    ).join("-");
     setEditPassphrase(newPassphrase);
   };
 
@@ -112,13 +142,15 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
     setOpen(isOpen);
     if (!isOpen) {
       setTimeout(() => {
-        setStep('info');
+        setStep('create');
         setSessionName('');
         setInitialContext('');
         setEditPassphrase('');
         setGeneratedLink('');
         setCopied(false);
-        // Re-select defaults
+        setShowContext(false);
+        setAiSuggestedSlugs([]);
+        setAiReasoning('');
         const defaults = packages
           .filter(p => p.is_default_enabled)
           .map(p => p.slug);
@@ -135,10 +167,35 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
     );
   };
 
+  const suggestPackages = useCallback(async () => {
+    if (!initialContext.trim() || isSuggesting) return;
+    setIsSuggesting(true);
+    try {
+      const res = await fetch('/api/briefing/suggest-packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initialContext: initialContext.trim() }),
+      });
+      const data = await res.json();
+      if (data.suggested_slugs && data.suggested_slugs.length > 0) {
+        setAiSuggestedSlugs(data.suggested_slugs);
+        setAiReasoning(data.reasoning || '');
+        // Merge AI suggestions with current selection (add, don't remove)
+        setSelectedSlugs(prev => {
+          const merged = new Set([...prev, ...data.suggested_slugs]);
+          return [...merged];
+        });
+      }
+    } catch (err) {
+      console.error('Error suggesting packages:', err);
+    } finally {
+      setIsSuggesting(false);
+    }
+  }, [initialContext, isSuggesting]);
+
   const totalQuestions = selectedSlugs.reduce((sum, slug) => {
     const pkg = packages.find(p => p.slug === slug);
-    if (!pkg) return sum;
-    if (pkg.max_questions === null) return sum; // unlimited doesn't count toward total
+    if (!pkg || pkg.max_questions === null) return sum;
     return sum + (pkg.max_questions || 0);
   }, 0);
 
@@ -149,19 +206,17 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
 
   const generateSession = async () => {
     if (!sessionName.trim()) return;
-
     setLoading(true);
     try {
       const supabase = createClient();
-      // Get authenticated user for RLS compliance
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const { data, error } = await supabase
         .from('briefing_sessions')
         .insert([{
           template_id: templateId,
-          session_name: sessionName,
-          initial_context: initialContext,
+          session_name: sessionName.trim(),
+          initial_context: initialContext.trim() || null,
           selected_packages: selectedSlugs,
           edit_passphrase: editPassphrase.trim() || undefined,
           status: 'pending',
@@ -169,7 +224,7 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
         }])
         .select('id')
         .single();
-      
+
       if (error) throw error;
 
       const host = window.location.origin;
@@ -184,9 +239,10 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedLink);
+    const text = `🔗 Link do Briefing:\n${generatedLink}\n\n🔑 Palavra-chave: ${editPassphrase}`;
+    navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   // Group packages by department
@@ -197,275 +253,352 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
     return acc;
   }, {} as Record<string, CategoryPackage[]>);
 
-  const deptLabels: Record<string, string> = {
-    branding: '🎨 Branding',
-    technology: '⚙️ Technology',
-    marketing: '📊 Marketing',
-    operations: '🔄 Operations',
-    finance: '💰 Finance',
-    people: '👥 People',
-    commercial: '📈 Commercial',
-    product: '💡 Product',
-    legal: '🛡️ Legal',
-    digital: '🛒 Digital',
-    content: '🎬 Content',
-    general: '📦 General',
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={
-        <Button variant="ghost" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 px-3">
-          <Share2 className="w-4 h-4 mr-2" />
-          Gerar Link do Cliente
-        </Button>
-      } />
+      <DialogTrigger
+        render={
+          <Button variant="ghost" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 px-3">
+            <Share2 className="w-4 h-4 mr-2" />
+            Gerar Link
+          </Button>
+        }
+      />
 
-      <DialogContent className={`bg-zinc-950 border-white/10 text-white transition-all duration-300 ${
-        step === 'packages' ? 'sm:max-w-[720px]' : 'sm:max-w-[425px]'
+      <DialogContent className={`bg-zinc-950/95 backdrop-blur-xl border-white/10 text-white transition-all duration-500 overflow-hidden ${
+        step === 'create' ? 'sm:max-w-[780px]' : 'sm:max-w-[460px]'
       }`}>
-        <DialogHeader>
-          <DialogTitle className="text-xl">
-            {step === 'info' && 'Parametrizar Sessão'}
-            {step === 'packages' && '🧩 Selecionar Pacotes de IA'}
-            {step === 'done' && 'Link Gerado'}
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            {step === 'info' && (
-              <>Criando link baseado no motor inteligente <strong className="text-cyan-400">{templateName}</strong>.</>
-            )}
-            {step === 'packages' && (
-              <>Cada pacote é uma <strong className="text-cyan-400">skill de IA</strong> especializada que aprofunda em perguntas únicas do setor.</>
-            )}
-            {step === 'done' && 'Envie este link seguro para o seu cliente iniciar o briefing adaptativo.'}
-          </DialogDescription>
-        </DialogHeader>
 
-        {/* ========== STEP 1: INFO ========== */}
-        {step === 'info' && (
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="sessionName" className="text-zinc-300">
-                Nome da Sessão (Ex: Nome do Cliente/Projeto) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="sessionName"
-                placeholder="Ex: Empresa Acme Corp"
-                value={sessionName}
-                onChange={(e) => setSessionName(e.target.value)}
-                className="bg-zinc-900 border-zinc-800 focus-visible:ring-cyan-500"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="initialContext" className="text-zinc-300">
-                O que você já sabe sobre essa empresa? (Contexto Oculto)
-              </Label>
-              <Textarea
-                id="initialContext"
-                placeholder="Ex: A empresa é focada em B2B e já vendeu 100 mil no ano passado..."
-                value={initialContext}
-                onChange={(e) => setInitialContext(e.target.value)}
-                className="bg-zinc-900 border-zinc-800 min-h-[100px] focus-visible:ring-cyan-500"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="editPassphrase" className="text-zinc-300 flex items-center justify-between">
-                <span>Palavra-Chave de Acesso <span className="text-zinc-500 font-normal ml-1">(Senha do documento)</span></span>
-                <button type="button" onClick={generateCoolPassphrase} className="text-cyan-400 hover:text-cyan-300 text-xs flex items-center transition-colors">
-                  <Wand2 className="w-3 h-3 mr-1" />
-                  Sugerir outra
-                </button>
-              </Label>
-              <Input
-                id="editPassphrase"
-                placeholder="Ex: sol-mar-luz-paz"
-                value={editPassphrase}
-                onChange={(e) => setEditPassphrase(e.target.value)}
-                className="bg-zinc-900 border-zinc-800 focus-visible:ring-cyan-500 font-mono text-sm"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ========== STEP 2: PACKAGE SELECTION ========== */}
-        {step === 'packages' && (
-          <div className="py-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar space-y-5">
-            {loadingPackages ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              Object.entries(groupedPackages).map(([dept, pkgs]) => (
-                <div key={dept}>
-                  <h3 className="text-xs font-bold tracking-widest uppercase text-zinc-500 mb-2 px-1">
-                    {deptLabels[dept] || dept}
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {pkgs.map((pkg) => {
-                      const isSelected = selectedSlugs.includes(pkg.slug);
-                      const IconComp = ICON_MAP[pkg.icon] || Package;
-                      const colorClass = DEPT_COLORS[dept] || DEPT_COLORS.general;
-
-                      return (
-                        <button
-                          key={pkg.id}
-                          onClick={() => togglePackage(pkg.slug)}
-                          className={`
-                            relative flex items-start gap-3 p-3 rounded-xl text-left transition-all duration-200
-                            border bg-gradient-to-br
-                            ${isSelected
-                              ? `${colorClass} shadow-lg`
-                              : 'border-zinc-800/50 from-zinc-900/50 to-zinc-950/50 hover:border-zinc-700'
-                            }
-                          `}
-                        >
-                          {/* Selection Indicator */}
-                          <div className={`
-                            mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all
-                            ${isSelected 
-                              ? 'border-cyan-400 bg-cyan-500/20' 
-                              : 'border-zinc-600 bg-zinc-800/50'
-                            }
-                          `}>
-                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />}
-                          </div>
-
-                          {/* Icon */}
-                          <div className={`
-                            w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors
-                            ${isSelected ? 'bg-white/10' : 'bg-zinc-800/80'}
-                          `}>
-                            <IconComp className={`w-4.5 h-4.5 ${isSelected ? 'text-cyan-400' : 'text-zinc-500'}`} />
-                          </div>
-
-                          {/* Text */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
-                                {pkg.name}
-                              </span>
-                              {pkg.is_default_enabled && (
-                                <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                                  DEFAULT
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2 leading-relaxed">
-                              {pkg.description}
-                            </p>
-                            <span className="text-[10px] font-mono text-zinc-600 mt-1 block">
-                              {pkg.max_questions === null ? '∞ perguntas' : `≤${pkg.max_questions} perguntas`}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+        {/* ========== STEP 1: CREATE (Unified) ========== */}
+        {step === 'create' && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
                 </div>
-              ))
-            )}
+                Nova Sessão de Briefing
+              </DialogTitle>
+              <DialogDescription className="text-zinc-400">
+                Motor inteligente: <strong className="text-cyan-400">{templateName}</strong>
+              </DialogDescription>
+            </DialogHeader>
 
-            {/* Summary Bar */}
-            {selectedSlugs.length > 0 && (
-              <div className="sticky bottom-0 bg-zinc-950/95 backdrop-blur-sm border-t border-zinc-800/50 pt-3 mt-4 -mb-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-400">
-                    <strong className="text-cyan-400">{selectedSlugs.length}</strong> pacotes selecionados
-                  </span>
-                  <span className="text-zinc-500">
-                    ~<strong className="text-zinc-300">{totalQuestions}</strong> perguntas
-                    {hasUnlimited && ' + ∞'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+            <div className="overflow-y-auto max-h-[65vh] pr-1 -mr-1 space-y-5 py-2 custom-scrollbar">
 
-        {/* ========== STEP 3: DONE ========== */}
-        {step === 'done' && (
-          <div className="py-6 flex flex-col items-center justify-center space-y-4 animate-in zoom-in duration-300">
-             <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-2">
-               <CheckCircle2 className="w-8 h-8 text-cyan-400" />
-             </div>
-             <h3 className="font-bold text-lg text-white">Sessão Criada!</h3>
-             <p className="text-sm text-center text-zinc-400 pb-2">
-               Envie este link e a palavra-chave para o seu cliente iniciar o briefing.
-             </p>
-
-             <div className="w-full flex items-center gap-2 p-2 bg-zinc-900 border border-zinc-800 rounded-lg">
-                <Input 
-                  value={generatedLink} 
-                  readOnly 
-                  className="bg-transparent border-none focus-visible:ring-0 text-zinc-300 h-8"
+              {/* ── Session Name ─────────────────────────────────── */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">1</span>
+                  Nome da Sessão <span className="text-red-400 text-xs">*</span>
+                </label>
+                <Input
+                  placeholder="Ex: Acme Corp — Rebrand 2026"
+                  value={sessionName}
+                  onChange={(e) => setSessionName(e.target.value)}
+                  className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/40 h-12 text-base rounded-xl placeholder:text-zinc-600"
                 />
-                <Button 
-                  onClick={copyToClipboard} 
-                  variant="secondary" 
-                  size="sm"
-                  className={copied ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" : "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30"}
+              </div>
+
+              {/* ── Context (Collapsible) ────────────────────────── */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowContext(!showContext)}
+                  className="flex items-center gap-2 text-sm font-semibold text-zinc-300 hover:text-white transition-colors w-full"
                 >
-                  {copied ? <CheckCircle2 className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                  {copied ? "Copiado!" : "Copiar"}
-                </Button>
-             </div>
-             
-             <div className="w-full flex flex-col items-center mt-4 p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
-                <span className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Palavra-Chave</span>
-                <span className="text-xl font-mono text-cyan-400">{editPassphrase}</span>
-                <p className="text-xs text-zinc-500 text-center mt-2 max-w-[280px]">
-                  O cliente precisará desta palavra-chave para acessar e editar o documento final gerado após o briefing.
-                </p>
-             </div>
-          </div>
-        )}
+                  <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">2</span>
+                  Contexto Prévio
+                  <span className="text-zinc-600 text-xs font-normal">(opcional)</span>
+                  <ChevronDown className={`w-4 h-4 text-zinc-500 ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
+                </button>
 
-        <DialogFooter>
-          {step === 'info' && (
-            <Button 
-              type="submit" 
-              onClick={() => setStep('packages')}
-              disabled={!sessionName.trim()}
-              className="w-full bg-cyan-600 hover:bg-cyan-500 text-white"
-            >
-              Próximo: Selecionar Pacotes
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          )}
+                <AnimatePresence>
+                  {showContext && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-2">
+                        <Textarea
+                          placeholder="O que você já sabe sobre essa empresa? A IA vai usar isso para adaptar as perguntas…"
+                          value={initialContext}
+                          onChange={(e) => setInitialContext(e.target.value)}
+                          className="bg-black/40 border-white/10 min-h-[90px] focus-visible:ring-cyan-500/40 rounded-xl resize-y placeholder:text-zinc-600 text-sm"
+                        />
+                        {initialContext.trim() && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                          >
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={suggestPackages}
+                              disabled={isSuggesting}
+                              className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 text-xs gap-1.5 h-8 rounded-lg"
+                            >
+                              {isSuggesting ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Wand2 className="w-3 h-3" />
+                              )}
+                              {isSuggesting ? 'Analisando...' : '✨ Deixar IA sugerir pacotes'}
+                            </Button>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-          {step === 'packages' && (
-            <div className="flex gap-2 w-full">
-              <Button 
-                variant="outline" 
-                className="border-zinc-800 text-zinc-300 hover:bg-zinc-800"
-                onClick={() => setStep('info')}
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Voltar
-              </Button>
-              <Button 
+              {/* ── AI Reasoning Feedback ─────────────────────────── */}
+              <AnimatePresence>
+                {aiReasoning && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20"
+                  >
+                    <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-indigo-200/90 italic leading-relaxed">{aiReasoning}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* ── Package Selection ─────────────────────────────── */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">3</span>
+                    Pacotes de IA
+                  </label>
+                  {selectedSlugs.length > 0 && (
+                    <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-2">
+                      <span className="text-cyan-400 font-semibold">{selectedSlugs.length}</span> selecionados
+                      <span className="text-zinc-600">·</span>
+                      ~<span className="text-zinc-300 font-semibold">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} perguntas
+                    </span>
+                  )}
+                </div>
+
+                {loadingPackages ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(groupedPackages).map(([dept, pkgs]) => (
+                      <div key={dept}>
+                        <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-600 mb-2 px-0.5">
+                          {DEPT_LABELS[dept] || dept}
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {pkgs.map((pkg) => {
+                            const isSelected = selectedSlugs.includes(pkg.slug);
+                            const isAiSuggested = aiSuggestedSlugs.includes(pkg.slug);
+                            const IconComp = ICON_MAP[pkg.icon] || Package;
+                            const colors = DEPT_COLORS[dept] || DEPT_COLORS.general;
+
+                            return (
+                              <motion.button
+                                key={pkg.slug}
+                                onClick={() => togglePackage(pkg.slug)}
+                                type="button"
+                                whileTap={{ scale: 0.98 }}
+                                className={`
+                                  relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-200
+                                  border group cursor-pointer outline-none
+                                  ${isSelected
+                                    ? `${colors.bg} ${colors.border} shadow-md ${colors.glow}`
+                                    : 'border-zinc-800/40 bg-zinc-900/30 hover:border-zinc-700/60 hover:bg-zinc-900/50'
+                                  }
+                                `}
+                              >
+                                {/* Checkbox */}
+                                <div className={`
+                                  w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200
+                                  ${isSelected
+                                    ? 'border-cyan-400/80 bg-cyan-500/20'
+                                    : 'border-zinc-700 bg-zinc-800/50 group-hover:border-zinc-600'
+                                  }
+                                `}>
+                                  {isSelected && <CheckCircle2 className="w-3 h-3 text-cyan-400" />}
+                                </div>
+
+                                {/* Icon */}
+                                <div className={`
+                                  w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors
+                                  ${isSelected ? 'bg-white/8' : 'bg-zinc-800/60'}
+                                `}>
+                                  <IconComp className={`w-3.5 h-3.5 ${isSelected ? colors.text : 'text-zinc-500'}`} />
+                                </div>
+
+                                {/* Content */}
+                                <div className="flex-1 min-w-0 overflow-hidden">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-xs font-semibold truncate ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
+                                      {pkg.name}
+                                    </span>
+                                    {isAiSuggested && (
+                                      <span className="shrink-0 text-[8px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
+                                        IA
+                                      </span>
+                                    )}
+                                    {pkg.is_default_enabled && !isAiSuggested && (
+                                      <span className="shrink-0 text-[8px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                                        ON
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 truncate mt-0.5 leading-snug">
+                                    {pkg.description}
+                                  </p>
+                                </div>
+
+                                {/* Question count */}
+                                <span className="text-[9px] font-mono text-zinc-600 shrink-0">
+                                  {pkg.max_questions === null ? '∞' : `≤${pkg.max_questions}`}
+                                </span>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Passphrase ────────────────────────────────────── */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">4</span>
+                    Senha do Documento
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generateCoolPassphrase}
+                    className="text-cyan-400 hover:text-cyan-300 text-xs flex items-center gap-1 transition-colors"
+                  >
+                    <Wand2 className="w-3 h-3" />
+                    Gerar outra
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" />
+                  <Input
+                    value={editPassphrase}
+                    onChange={(e) => setEditPassphrase(e.target.value)}
+                    className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/40 h-11 font-mono text-sm rounded-xl pl-10 placeholder:text-zinc-600"
+                    placeholder="sol-mar-luz-paz"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ── CTA ─────────────────────────────────────────────── */}
+            <div className="pt-3 border-t border-white/5">
+              <Button
                 onClick={generateSession}
-                disabled={loading || selectedSlugs.length === 0}
-                className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white"
+                disabled={loading || !sessionName.trim() || selectedSlugs.length === 0}
+                className="w-full h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-[0_4px_20px_rgba(6,182,212,0.25)] hover:shadow-[0_4px_30px_rgba(6,182,212,0.4)] transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2"
               >
-                {loading ? "Preparando IA..." : `Gerar Link (${selectedSlugs.length} pacotes)`}
-                <ChevronRight className="w-4 h-4 ml-2" />
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Preparando IA...
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="w-5 h-5" />
+                    Gerar Link ({selectedSlugs.length} pacotes)
+                  </>
+                )}
               </Button>
             </div>
-          )}
+          </>
+        )}
 
-          {step === 'done' && (
-            <Button 
-              variant="outline" 
-              className="w-full border-zinc-800 text-zinc-300 hover:bg-zinc-800"
-              onClick={() => setOpen(false)}
-            >
-              Fechar
-            </Button>
-          )}
-        </DialogFooter>
+        {/* ========== STEP 2: DONE ========== */}
+        {step === 'done' && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="flex flex-col items-center justify-center py-4 space-y-5">
+              {/* Success Icon */}
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-cyan-400" />
+                </div>
+                <div className="absolute inset-0 w-16 h-16 rounded-full bg-cyan-400/20 blur-xl animate-pulse" />
+              </div>
+
+              <div className="text-center space-y-1">
+                <h3 className="font-bold text-lg text-white">Sessão Criada! ✨</h3>
+                <p className="text-sm text-zinc-400 max-w-[280px]">
+                  Envie o link e a senha para o cliente iniciar.
+                </p>
+              </div>
+
+              {/* Link Field */}
+              <div className="w-full flex items-center gap-2 p-2 bg-black/40 border border-white/10 rounded-xl">
+                <Input
+                  value={generatedLink}
+                  readOnly
+                  className="bg-transparent border-none focus-visible:ring-0 text-zinc-300 text-xs h-8 font-mono"
+                />
+                <Button
+                  onClick={copyToClipboard}
+                  variant="secondary"
+                  size="sm"
+                  className={`rounded-lg shrink-0 gap-1.5 text-xs transition-all ${
+                    copied
+                      ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                      : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30'
+                  }`}
+                >
+                  {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </Button>
+              </div>
+
+              {/* Passphrase Display */}
+              <div className="w-full flex flex-col items-center p-4 bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-white/5 rounded-xl">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Lock className="w-3 h-3 text-zinc-500" />
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-bold">
+                    Palavra-Chave
+                  </span>
+                </div>
+                <span className="text-xl font-mono font-bold text-cyan-400 tracking-wider">
+                  {editPassphrase}
+                </span>
+                <p className="text-[10px] text-zinc-600 text-center mt-2 max-w-[250px] leading-relaxed">
+                  O cliente usará esta senha para acessar e editar o documento final.
+                </p>
+              </div>
+
+              {/* Close */}
+              <Button
+                variant="outline"
+                className="w-full border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl h-10"
+                onClick={() => setOpen(false)}
+              >
+                Fechar
+              </Button>
+            </div>
+          </motion.div>
+        )}
       </DialogContent>
     </Dialog>
   );

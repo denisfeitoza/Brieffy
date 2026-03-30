@@ -3,6 +3,7 @@
 import { useBriefing } from "@/lib/BriefingContext";
 import { useState, useRef, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AILoadingSplash } from "./AILoadingSplash";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, ArrowRight, ArrowLeft, RefreshCw, Paperclip, CheckCircle2, Lock, Copy, Sparkles } from "lucide-react";
@@ -155,6 +156,20 @@ export function TypeformWizard() {
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+
+  // ─── AI Splash Screen on First Load ───
+  const [showSplash, setShowSplash] = useState(true);
+  const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    // Auto-dismiss splash after ~4 seconds
+    splashTimerRef.current = setTimeout(() => {
+      setShowSplash(false);
+    }, 4000);
+    return () => {
+      if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
+    };
+  }, []);
 
   // Track navigation direction for directional slide animations
   const prevStepRef = useRef(currentStepIndex);
@@ -463,6 +478,26 @@ export function TypeformWizard() {
         </main>
       </div>
     )
+  }
+
+  // ==========================
+  //  AI SPLASH SCREEN (first load)
+  // ==========================
+  if (showSplash) {
+    return (
+      <AnimatePresence mode="wait">
+        <AILoadingSplash
+          branding={{
+            logo_url: branding.logo_url,
+            company_name: activeCompanyName,
+            brand_color: branding.brand_color,
+            brand_accent: branding.brand_accent,
+            tagline: branding.tagline,
+          }}
+          language={chosenLanguage}
+        />
+      </AnimatePresence>
+    );
   }
 
   // ==========================
