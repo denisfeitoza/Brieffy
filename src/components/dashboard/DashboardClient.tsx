@@ -7,20 +7,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format, subDays, isAfter } from 'date-fns';
 import {
   Search, ExternalLink, Trash2, Copy, CheckCircle2, Clock,
-  AlertCircle, FileText, Eye, CalendarDays, X,
+  AlertCircle, FileText, Eye, CalendarDays, X, Download, Package,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { exportSessionsAsZip } from '@/lib/exportZip';
 
 interface Session {
   id: string;
   session_name?: string;
   template_id?: string;
+  template_name?: string;
   status: string;
   created_at: string;
   final_assets?: Record<string, unknown>;
+  final_document?: string;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -51,20 +55,17 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [previewSession, setPreviewSession] = useState<Session | null>(null);
+  const [selectedForExport, setSelectedForExport] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   const filtered = useMemo(() => {
     return sessions.filter(s => {
-      // Status filter
       if (filter !== 'all' && s.status !== filter) return false;
-
-      // Date filter
       if (dateFilter !== 'all') {
         const days = parseInt(dateFilter);
         const cutoff = subDays(new Date(), days);
         if (!isAfter(new Date(s.created_at), cutoff)) return false;
       }
-
-      // Search filter
       if (search.trim()) {
         const q = search.toLowerCase();
         return (s.session_name || '').toLowerCase().includes(q) || s.id.toLowerCase().includes(q);
@@ -95,12 +96,47 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
     }
   };
 
-  // Extract document content from final_assets for preview
   const getPreviewContent = (session: Session): string => {
+    if (session.final_document) return session.final_document;
     const assets = session.final_assets as Record<string, unknown> | null;
     if (!assets) return '';
     if (typeof assets.document === 'string') return assets.document;
     return JSON.stringify(assets, null, 2);
+  };
+
+  // ── Export Handlers ─────────────────────────────────────────────────────────
+  const toggleExportSelect = (id: string) => {
+    setSelectedForExport(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExportSelected = async () => {
+    const toExport = sessions.filter(s => selectedForExport.has(s.id));
+    if (toExport.length === 0) return;
+    setIsExporting(true);
+    try {
+      await exportSessionsAsZip(toExport as Parameters<typeof exportSessionsAsZip>[0]);
+      setSelectedForExport(new Set());
+    } catch (e) {
+      console.error('Export error:', e);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+      await exportSessionsAsZip(sessions as Parameters<typeof exportSessionsAsZip>[0]);
+    } catch (e) {
+      console.error('Export error:', e);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -108,28 +144,71 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
       {/* Header + Search */}
       <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         <h3 className="text-xl font-semibold text-zinc-100">Briefing Sessions</h3>
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or ID..."
-            className="pl-9 bg-zinc-900/50 border-white/10 focus-visible:ring-cyan-500 rounded-xl h-10"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+        <div className="flex items-center gap-2 flex-1 md:justify-end">
+          {/* Search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or ID..."
+              className="pl-9 bg-zinc-900/50 border-white/10 focus-visible:ring-cyan-500 rounded-xl h-10"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Export All */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportAll}
+            disabled={isExporting || sessions.length === 0}
+            className="shrink-0 border-white/10 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-xl h-10 px-3 gap-1.5"
+            title="Export all sessions as ZIP"
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-xs">Export All</span>
+          </Button>
         </div>
       </div>
 
+      {/* Export Selection Bar (appears when items selected) */}
+      {selectedForExport.size > 0 && (
+        <div className="flex items-center justify-between bg-cyan-950/40 border border-cyan-900/50 rounded-2xl px-4 py-3">
+          <span className="text-sm text-cyan-300 font-medium">
+            {selectedForExport.size} session{selectedForExport.size > 1 ? 's' : ''} selected
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedForExport(new Set())}
+              className="text-zinc-400 hover:text-zinc-200 text-xs rounded-lg"
+            >
+              Clear
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleExportSelected}
+              disabled={isExporting}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {isExporting ? 'Exporting...' : 'Export ZIP'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Filter Tabs + Date Filter */}
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
-        {/* Status Tabs */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {FILTER_TABS.map(tab => (
             <Button
@@ -153,7 +232,6 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
           ))}
         </div>
 
-        {/* Date Filter */}
         <div className="flex items-center gap-1.5 shrink-0">
           <CalendarDays className="w-3.5 h-3.5 text-zinc-500" />
           <div className="flex gap-1 overflow-x-auto no-scrollbar">
@@ -174,7 +252,6 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
         </div>
       </div>
 
-      {/* Count */}
       {filtered.length !== sessions.length && (
         <p className="text-xs text-zinc-500">
           Showing <span className="text-zinc-300 font-medium">{filtered.length}</span> of {sessions.length} sessions
@@ -195,18 +272,28 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
           {filtered.map(session => {
             const statusInfo = STATUS_CONFIG[session.status] || STATUS_CONFIG.pending;
             const StatusIcon = statusInfo.icon;
-            const hasDocument = !!(session.final_assets as Record<string, unknown> | null)?.document;
+            const hasDocument = !!(session.final_assets as Record<string, unknown> | null)?.document || !!session.final_document;
+            const isChecked = selectedForExport.has(session.id);
 
             return (
               <Card
                 key={session.id}
-                className="bg-zinc-900/40 backdrop-blur-sm border-white/8 hover:border-white/15 transition-all duration-300 group"
+                className={`bg-zinc-900/40 backdrop-blur-sm border-white/8 hover:border-white/15 transition-all duration-300 group ${
+                  isChecked ? 'border-cyan-800/50 bg-cyan-950/10' : ''
+                }`}
               >
                 <CardContent className="py-4 px-4 md:px-6">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                  <div className="flex items-center gap-3 md:gap-6">
+                    {/* Export Checkbox */}
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={() => toggleExportSelect(session.id)}
+                      className="shrink-0 opacity-40 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100"
+                    />
+
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h4 className="font-semibold text-zinc-100 truncate text-sm md:text-base">
                           {session.session_name || 'Untitled Briefing'}
                         </h4>
@@ -223,8 +310,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Quick Preview */}
+                    <div className="flex items-center gap-1 shrink-0">
                       {hasDocument && (
                         <Button
                           variant="ghost"
@@ -243,14 +329,14 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                           className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 rounded-lg text-xs"
                         >
                           <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                          View
+                          <span className="hidden sm:inline">View</span>
                         </Button>
                       </Link>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleCopyLink(session.id)}
-                        className={`rounded-lg text-xs ${
+                        className={`rounded-lg text-xs hidden sm:flex ${
                           copiedId === session.id
                             ? 'text-emerald-400 bg-emerald-950/20'
                             : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
@@ -295,15 +381,34 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                       {format(new Date(previewSession.created_at), 'MMM dd, yyyy • HH:mm')}
                     </p>
                   </div>
-                  <Link href={`/dashboard/${previewSession.id}`}>
+                  <div className="flex gap-2 shrink-0">
                     <Button
                       size="sm"
-                      className="shrink-0 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs"
+                      variant="outline"
+                      onClick={async () => {
+                        setIsExporting(true);
+                        try {
+                          await exportSessionsAsZip([previewSession] as Parameters<typeof exportSessionsAsZip>[0]);
+                        } finally {
+                          setIsExporting(false);
+                        }
+                      }}
+                      disabled={isExporting}
+                      className="border-white/10 text-zinc-400 hover:text-zinc-200 rounded-xl text-xs gap-1"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                      Open Full
+                      <Download className="w-3.5 h-3.5" />
+                      Export
                     </Button>
-                  </Link>
+                    <Link href={`/dashboard/${previewSession.id}`}>
+                      <Button
+                        size="sm"
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                        Open Full
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </SheetHeader>
 

@@ -522,7 +522,7 @@ export function TypeformWizard() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: direction > 0 ? -60 : 60, scale: 0.98 }}
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full flex flex-col space-y-12 py-12"
+                className="w-full flex flex-col space-y-8 md:space-y-12 py-6 md:py-12"
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.15}
@@ -534,7 +534,7 @@ export function TypeformWizard() {
                 }}
               >
                 {/* The IA Formatted Question */}
-                <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
+                <h1 className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
                   {activeMessage.content}
                 </h1>
 

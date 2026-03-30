@@ -23,6 +23,26 @@ export type MultiSliderOption = {
   defaultValue?: number;
 };
 
+// ================================================================
+// ACTIVE LISTENING — Signal types for intelligent depth probing
+// ================================================================
+export type SignalCategory = 
+  | 'contradiction'    // Says one thing, implies another
+  | 'implicit_pain'    // Frustration hidden between the lines
+  | 'evasion'          // Deflects or avoids a topic
+  | 'hidden_ambition'  // Accidentally reveals a big dream
+  | 'strategic_gap';   // Missing knowledge they should have
+
+export type BriefingSignal = {
+  id: string;
+  category: SignalCategory;
+  summary: string;          // Short description of what was detected
+  source_answer: string;    // The answer that triggered this signal
+  relevance_score: number;  // 0.0–1.0 relevance to briefing purpose
+  step_index: number;       // Which step triggered this
+  timestamp: number;        // Date.now()
+};
+
 export type Message = {
   id: string;
   role: 'system' | 'assistant' | 'user';
@@ -36,7 +56,11 @@ export type Message = {
   minOption?: number; // Para slider
   maxOption?: number; // Para slider
   
-  userAnswer?: string | string[] | number; // O que o usuario respondeu 
+  userAnswer?: string | string[] | number; // O que o usuario respondeu
+
+  // Active Listening: marks intercalated depth probe questions
+  isDepthQuestion?: boolean;
+  depthSignalCategory?: SignalCategory;
 };
 
 export type BasalCoverageInfo = {
@@ -122,4 +146,6 @@ export type BriefingContextType = {
   editToken: string | null;
   editPassphrase: string | null;
   isOnboarding?: boolean;
+  // Active Listening
+  detectedSignals: BriefingSignal[];
 };

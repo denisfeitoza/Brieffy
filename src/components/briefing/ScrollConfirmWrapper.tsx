@@ -67,7 +67,7 @@ export function ScrollConfirmWrapper({
             animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
             exit={{ opacity: 0, y: 40, scale: 0.9, x: "-50%" }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed bottom-8 left-1/2 z-[100] drop-shadow-2xl w-[90vw] sm:w-auto flex justify-center"
+            className="fixed left-1/2 z-[100] drop-shadow-2xl w-[90vw] sm:w-auto flex justify-center" style={{ bottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
           >
             {ActionComponent}
           </motion.div>
