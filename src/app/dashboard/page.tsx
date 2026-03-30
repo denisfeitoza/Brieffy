@@ -67,13 +67,15 @@ export default async function DashboardPage() {
 
       {/* Blocked Warning */}
       {isBlocked && (
-        <div className="flex items-start gap-3 bg-red-950/40 border border-red-900/50 text-red-300 px-5 py-4 rounded-2xl">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-semibold">You&apos;ve used all your free briefings</p>
-            <p className="text-sm text-red-400 mt-0.5">Purchase additional briefing credits to continue creating.</p>
+        <div className="flex flex-col sm:flex-row items-start gap-3 bg-red-950/40 border border-red-900/50 text-red-300 px-4 sm:px-5 py-4 rounded-2xl">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm sm:text-base">You&apos;ve used all your free briefings</p>
+              <p className="text-xs sm:text-sm text-red-400 mt-0.5">Purchase additional briefing credits to continue creating.</p>
+            </div>
           </div>
-          <Button size="sm" className="bg-red-500 hover:bg-red-400 text-white rounded-xl shrink-0 text-xs gap-1">
+          <Button size="sm" className="bg-red-500 hover:bg-red-400 text-white rounded-xl shrink-0 text-xs gap-1 w-full sm:w-auto">
             <Zap className="w-3.5 h-3.5" />
             Buy More
           </Button>
@@ -82,19 +84,21 @@ export default async function DashboardPage() {
 
       {/* Upgrade Banner — Near Limit (2 of 3 used) */}
       {isNearLimit && (
-        <div className="flex items-center gap-3 bg-amber-950/30 border border-amber-800/40 text-amber-300 px-5 py-3.5 rounded-2xl">
-          <Zap className="w-4 h-4 flex-shrink-0 text-amber-400" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">
-              {remainingBriefings === 0
-                ? 'Last free briefing used'
-                : `Only ${remainingBriefings} free briefing${remainingBriefings > 1 ? 's' : ''} left`}
-            </p>
-            <p className="text-xs text-amber-500 mt-0.5 hidden md:block">
-              Each briefing costs a single credit — buy in bulk for the best value.
-            </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-amber-950/30 border border-amber-800/40 text-amber-300 px-4 sm:px-5 py-3.5 rounded-2xl">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Zap className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <div>
+              <p className="text-sm font-medium">
+                {remainingBriefings === 0
+                  ? 'Last free briefing used'
+                  : `Only ${remainingBriefings} free briefing${remainingBriefings > 1 ? 's' : ''} left`}
+              </p>
+              <p className="text-xs text-amber-500 mt-0.5 hidden md:block">
+                Each briefing costs a single credit — buy in bulk for the best value.
+              </p>
+            </div>
           </div>
-          <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-xl shrink-0 text-xs gap-1">
+          <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-xl shrink-0 text-xs gap-1 w-full sm:w-auto">
             <Zap className="w-3.5 h-3.5" />
             Buy Credits
           </Button>
@@ -161,56 +165,58 @@ export default async function DashboardPage() {
           {/* Last Briefing */}
           {lastSession && (
             <Card className="md:col-span-2 bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-white/10 backdrop-blur-md">
-              <CardContent className="pt-5 pb-5 px-5">
-                <div className="flex items-start gap-4">
-                  {lastSession.session_quality_score != null && (
-                    <ScoreRing score={lastSession.session_quality_score} size={56} />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <p className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Last Briefing</p>
-                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                        lastSession.status === 'finished' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' :
-                        lastSession.status === 'in_progress' ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' :
-                        'text-zinc-400 bg-zinc-400/10 border-zinc-400/20'
-                      }`}>
-                        {lastSession.status === 'finished' ? '✓ Completed' :
-                         lastSession.status === 'in_progress' ? '● In Progress' : '○ Pending'}
-                      </span>
-                    </div>
-                    <p className="text-base font-semibold text-zinc-100 truncate">
-                      {(lastSession.company_info as { company_name?: string } | null)?.company_name || 'Untitled Briefing'}
-                    </p>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      {format(new Date(lastSession.created_at), 'MMM dd, yyyy')}
-                    </p>
-
-                    {/* Coverage Bar */}
-                    {lastSession.basal_coverage != null && lastSession.status !== 'finished' && (
-                      <div className="mt-3">
-                        <div className="flex justify-between text-[10px] text-zinc-500 mb-1">
-                          <span>Coverage</span>
-                          <span>{Math.round(Number(lastSession.basal_coverage))}%</span>
-                        </div>
-                        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
-                            style={{ width: `${Math.min(100, Number(lastSession.basal_coverage))}%` }}
-                          />
-                        </div>
-                      </div>
+              <CardContent className="pt-4 pb-4 px-4 sm:px-5">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                  <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                    {lastSession.session_quality_score != null && (
+                      <ScoreRing score={lastSession.session_quality_score} size={48} />
                     )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Last Briefing</p>
+                        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+                          lastSession.status === 'finished' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' :
+                          lastSession.status === 'in_progress' ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' :
+                          'text-zinc-400 bg-zinc-400/10 border-zinc-400/20'
+                        }`}>
+                          {lastSession.status === 'finished' ? '✓ Completed' :
+                           lastSession.status === 'in_progress' ? '● In Progress' : '○ Pending'}
+                        </span>
+                      </div>
+                      <p className="text-sm sm:text-base font-semibold text-zinc-100 truncate">
+                        {(lastSession.company_info as { company_name?: string } | null)?.company_name || 'Untitled Briefing'}
+                      </p>
+                      <p className="text-xs text-zinc-500 mt-0.5">
+                        {format(new Date(lastSession.created_at), 'MMM dd, yyyy')}
+                      </p>
+
+                      {/* Coverage Bar */}
+                      {lastSession.basal_coverage != null && lastSession.status !== 'finished' && (
+                        <div className="mt-3">
+                          <div className="flex justify-between text-[10px] text-zinc-500 mb-1">
+                            <span>Coverage</span>
+                            <span>{Math.round(Number(lastSession.basal_coverage))}%</span>
+                          </div>
+                          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
+                              style={{ width: `${Math.min(100, Number(lastSession.basal_coverage))}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <Link href={`/dashboard/${lastSession.id}`}>
+                  <div className="flex sm:flex-col gap-2 shrink-0">
+                    <Link href={`/dashboard/${lastSession.id}`} className="flex-1 sm:flex-none">
                       <Button size="sm" className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs gap-1 w-full">
                         <ExternalLink className="w-3 h-3" />
                         {lastSession.status === 'in_progress' ? 'Continue' : 'View'}
                       </Button>
                     </Link>
                     {lastSession.edit_token && lastSession.status === 'finished' && (
-                      <Link href={`/doc/${lastSession.edit_token}`} target="_blank">
+                      <Link href={`/doc/${lastSession.edit_token}`} target="_blank" className="flex-1 sm:flex-none">
                         <Button size="sm" variant="outline" className="border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl text-xs gap-1 w-full">
                           <FileText className="w-3 h-3" />
                           Doc
@@ -260,20 +266,20 @@ export default async function DashboardPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="flex flex-wrap gap-3">
-        <Link href={isBlocked ? '#' : '/dashboard/templates/new'}>
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
+        <Link href={isBlocked ? '#' : '/dashboard/templates/new'} className="col-span-1">
           <Button
             disabled={isBlocked}
-            className="bg-cyan-600 hover:bg-cyan-500 rounded-xl shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)] disabled:opacity-50"
+            className="bg-cyan-600 hover:bg-cyan-500 rounded-xl shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)] disabled:opacity-50 w-full sm:w-auto text-xs sm:text-sm"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Criar Novo Briefing
+            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+            Novo Briefing
           </Button>
         </Link>
-        <Link href="/dashboard/templates">
-          <Button variant="outline" className="border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl">
-            <FileText className="w-4 h-4 mr-2" />
-            Ver Meus Briefings
+        <Link href="/dashboard/templates" className="col-span-1">
+          <Button variant="outline" className="border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl w-full sm:w-auto text-xs sm:text-sm">
+            <FileText className="w-4 h-4 mr-1 sm:mr-2" />
+            Meus Briefings
           </Button>
         </Link>
       </div>

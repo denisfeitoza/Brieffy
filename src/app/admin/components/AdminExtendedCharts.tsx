@@ -154,9 +154,9 @@ export function AdminExtendedCharts({
         {/* New Users / Week Chart */}
         <Card className="lg:col-span-2 bg-zinc-900/50 border-purple-500/10">
           <CardHeader>
-            <CardTitle className="text-sm text-zinc-300 flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm text-zinc-300 flex items-center gap-2">
               <Users className="w-4 h-4 text-purple-400" />
-              New Users per Week (last 8 weeks)
+              <span className="truncate">New Users / Week</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -304,50 +304,57 @@ export function AdminExtendedCharts({
           <div className="space-y-3">
             {pagedUsers.map(user => (
               <Card key={user.id} className="bg-zinc-900/40 border-white/8 hover:border-purple-500/20 transition-all">
-                <CardContent className="py-4 px-4 md:px-6">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-sm font-bold shrink-0">
+                <CardContent className="py-3 px-3 sm:px-4 md:px-6">
+                  <div className="flex flex-col gap-3">
+                    {/* Identity Row */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-xs sm:text-sm font-bold shrink-0">
                         {(user.display_name || 'U').charAt(0).toUpperCase()}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-zinc-100 truncate">{user.display_name || 'Unnamed'}</p>
-                        <p className="text-xs text-zinc-500 truncate">{user.company_name || 'No company'}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-zinc-100 truncate">{user.display_name || 'Unnamed'}</p>
+                        <p className="text-[11px] sm:text-xs text-zinc-500 truncate">{user.company_name || 'No company'}</p>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-zinc-400">
-                      <div className="flex flex-col items-center">
-                        <span className="text-base font-bold text-white">{user.sessionCount}</span>
-                        <span>Briefings</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-base font-bold text-emerald-400">{user.finishedCount}</span>
-                        <span>Completed</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-base font-bold text-cyan-400">{user.quota.used_briefings}/{user.quota.max_briefings}</span>
-                        <span>Quota</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-                        user.plan === 'enterprise' ? 'text-amber-300 bg-amber-400/10 border-amber-400/20' :
-                        user.plan === 'pro' ? 'text-purple-300 bg-purple-400/10 border-purple-400/20' :
-                        'text-zinc-400 bg-zinc-400/10 border-zinc-400/20'
-                      }`}>
-                        {user.plan || 'free'}
-                      </span>
-                      {user.quota.is_blocked && (
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-medium text-red-400 bg-red-400/10 border border-red-400/20">
-                          Blocked
+                      {/* Plan + Blocked */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium border ${
+                          user.plan === 'enterprise' ? 'text-amber-300 bg-amber-400/10 border-amber-400/20' :
+                          user.plan === 'pro' ? 'text-purple-300 bg-purple-400/10 border-purple-400/20' :
+                          'text-zinc-400 bg-zinc-400/10 border-zinc-400/20'
+                        }`}>
+                          {user.plan || 'free'}
                         </span>
-                      )}
+                        {user.quota.is_blocked && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium text-red-400 bg-red-400/10 border border-red-400/20">
+                            Blocked
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Stats + Manage Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs text-zinc-400">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-bold text-white">{user.sessionCount}</span>
+                          <span className="hidden sm:inline">Briefings</span>
+                          <span className="sm:hidden">Total</span>
+                        </div>
+                        <div className="w-px h-3 bg-white/10" />
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-bold text-emerald-400">{user.finishedCount}</span>
+                          <span className="hidden sm:inline">Completed</span>
+                          <span className="sm:hidden">Done</span>
+                        </div>
+                        <div className="w-px h-3 bg-white/10" />
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-bold text-cyan-400">{user.quota.used_briefings}/{user.quota.max_briefings}</span>
+                          <span>Quota</span>
+                        </div>
+                      </div>
                       <Link href={`/admin/users/${user.id}`}>
-                        <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 rounded-lg text-xs">
-                          <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                          Manage
+                        <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 rounded-lg text-xs px-2 sm:px-3">
+                          <ExternalLink className="w-3.5 h-3.5 sm:mr-1" />
+                          <span className="hidden sm:inline">Manage</span>
                         </Button>
                       </Link>
                     </div>

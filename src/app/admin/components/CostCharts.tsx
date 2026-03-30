@@ -48,7 +48,7 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4">
-            <p className="text-3xl font-bold text-emerald-400">${totalCostUSD.toFixed(4)}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-emerald-400">${totalCostUSD.toFixed(4)}</p>
           </CardContent>
         </Card>
 
@@ -60,7 +60,7 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4">
-            <p className="text-3xl font-bold text-emerald-400">R$ {totalCostBRL.toFixed(4)}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-emerald-400">R$ {totalCostBRL.toFixed(4)}</p>
             <p className="text-xs text-emerald-400/60 mt-1">Estimativa Conversão R$ 6.00</p>
           </CardContent>
         </Card>
@@ -72,7 +72,7 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
           <CardTitle className="text-sm text-zinc-300">Custo Diário (USD)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] w-full mt-4">
+          <div className="h-[200px] sm:h-[250px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={formattedTimeline} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
@@ -95,7 +95,7 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
           <CardTitle className="text-sm text-zinc-300">Top 5 Custos por Empresa (USD)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] w-full mt-4">
+          <div className="h-[200px] sm:h-[250px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topCompanies} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
@@ -120,21 +120,21 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-zinc-400 uppercase bg-zinc-900/50 border-b border-zinc-800">
+              <thead className="text-[10px] sm:text-xs text-zinc-400 uppercase bg-zinc-900/50 border-b border-zinc-800">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Empresa</th>
-                  <th className="px-4 py-3 font-medium text-right">Tokens Consumidos</th>
-                  <th className="px-4 py-3 font-medium text-right">Custo USD</th>
-                  <th className="px-4 py-3 font-medium text-right">Custo BRL (Estimado)</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 font-medium">Empresa</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-right hidden sm:table-cell">Tokens</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-right">USD</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-right hidden md:table-cell">BRL (Est.)</th>
                 </tr>
               </thead>
               <tbody>
                 {costByCompany.map((company, index) => (
                   <tr key={index} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
-                    <td className="px-4 py-3 font-medium text-zinc-200">{company.companyName}</td>
-                    <td className="px-4 py-3 text-right text-zinc-400">{company.tokens.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">${company.costUsd.toFixed(4)}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">R$ {(company.costUsd * 6.0).toFixed(4)}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-zinc-200 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{company.companyName}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-zinc-400 text-xs hidden sm:table-cell">{company.tokens.toLocaleString()}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-emerald-400 text-xs sm:text-sm">${company.costUsd.toFixed(4)}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-emerald-400 text-xs hidden md:table-cell">R$ {(company.costUsd * 6.0).toFixed(4)}</td>
                   </tr>
                 ))}
                 {costByCompany.length === 0 && (
