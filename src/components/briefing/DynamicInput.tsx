@@ -44,31 +44,21 @@ async function fetchColorsFromAI(
     .map((m) => `${m.content}: ${Array.isArray(m.userAnswer) ? m.userAnswer.join(", ") : m.userAnswer}`)
     .join("\n");
 
-  const prompt =
-    type === "main"
-      ? `Based on this brand context, suggest exactly 6 attractive hex color codes for the main brand palette.
-Context:
-${contextSummary}
-${hint ? `Style hint: ${hint}` : ""}
-Respond with ONLY a JSON array of exactly 6 hex codes. Example: ["#FF5733","#C70039","#900C3F","#581845","#FFC300","#DAF7A6"]`
-      : `Suggest exactly 4 complementary/detail hex color codes that work well with these main brand colors: ${mainColors.join(", ")}.
-${hint ? `Style: ${hint}` : "They should be neutral or accent colors."}
-Respond with ONLY a JSON array of exactly 4 hex codes.`;
-
-  const res = await fetch("/api/briefing", {
+  const res = await fetch("/api/colors", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      messages: [{ role: "user", content: prompt }],
-      sessionId: "color-helper",
+      type: type === "main" ? "initial" : "detail",
+      context: contextSummary,
+      hint: hint || undefined,
+      mainColors: type === "detail" ? mainColors : undefined,
+      keptColors: [],
     }),
   });
 
   if (!res.ok) throw new Error("Color API failed");
-  const text = await res.text();
-  const match = text.match(/\[[\s\S]*?\]/);
-  if (!match) throw new Error("No color array found");
-  const colors: string[] = JSON.parse(match[0]);
+  const data = await res.json();
+  const colors: string[] = data.colors || [];
   return colors.filter((c: string) => /^#[0-9A-Fa-f]{6}$/.test(c));
 }
 
