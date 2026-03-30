@@ -82,6 +82,7 @@ export type BrandingInfo = {
   brand_accent: string;
   tagline: string;
   website: string;
+  brand_font?: string;
 };
 
 export type PackageDetail = {

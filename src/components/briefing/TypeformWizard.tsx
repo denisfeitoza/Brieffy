@@ -123,11 +123,52 @@ export function TypeformWizard() {
     editToken,
     editPassphrase,
     selectedPackageDetails,
+    briefingState,
   } = useBriefing();
 
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+
+  // AQUI calculamos previas dinâmicas
+  const colorPickerMsg = messages.find(m => m.questionType === 'color_picker' && m.userAnswer && Array.isArray(m.userAnswer) && m.userAnswer.length > 0);
+  const activeColor = colorPickerMsg 
+    ? (colorPickerMsg.userAnswer as string[])[0] 
+    : (briefingState.brand_color as string) || branding.brand_color || '#171717';
+
+  const fontMsg = messages.find(m => {
+    const txt = m.content?.toLowerCase() || '';
+    const isFontQ = txt.includes('tipografi') || (txt.includes('fonte') && !txt.includes('inspiraç'));
+    return isFontQ && typeof m.userAnswer === 'string';
+  });
+  
+  const fontChoiceResult = fontMsg ? (fontMsg.userAnswer as string).split(' - ')[0].trim() : null;
+  const fontChoice = fontChoiceResult && !fontChoiceResult.toLowerCase().includes('nenhuma') && !fontChoiceResult.toLowerCase().includes('none') && !fontChoiceResult.toLowerCase().includes('padrão')
+    ? fontChoiceResult.replace(/[^a-zA-Z0-9 ]/g, '') 
+    : null;
+    
+  // Default to Outfit se nada for escolhido, e também respeita se veio do DB settings
+  const activeFont = fontChoice || branding.brand_font || 'Outfit';
+
+  useEffect(() => {
+    // Injeta a fonte escolhida dinamicamente no head para conseguirmos usar no preview
+    if (activeFont && activeFont !== 'Outfit' && activeFont !== 'Inter' && activeFont !== 'Aa') {
+      const linkId = `google-font-${activeFont.replace(/\s+/g, '-')}`;
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${activeFont.replace(/ /g, '+')}&display=swap`;
+        document.head.appendChild(link);
+      }
+    }
+  }, [activeFont]);
+
+  const dynamicName = (briefingState.nome_empresa as string) || 
+                      (briefingState.company_name as string) || 
+                      (briefingState.empresa as string) || 
+                      (branding.company_name && branding.company_name !== 'Smart Briefing' ? branding.company_name : '');
+  const activeCompanyName = dynamicName || 'Sua Empresa';
 
   // Focus input on step change se for open text question foi movido para o DynamicInput para ter controle melhor (com preventScroll)
   // Aqui vamos rolar a view container para o topo quando a pergunta muda
@@ -166,14 +207,15 @@ export function TypeformWizard() {
           <div 
             className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-lg border border-white/5 transition-transform hover:scale-[1.02]"
             style={{ 
-              backgroundColor: branding.brand_color || '#171717',
-              color: getContrastColor(branding.brand_color || '#171717')
+              backgroundColor: activeColor,
+              color: getContrastColor(activeColor),
+              fontFamily: `"${activeFont}", sans-serif`
             }}
           >
-            <BrandedLogo branding={branding} size="sm" isSolid />
+            <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
             <div className="hidden sm:flex flex-col justify-center">
-              <span className="font-outfit font-bold text-sm tracking-tight leading-tight">
-                {branding.company_name || 'Smart Briefing'}
+              <span className="font-outfit font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
+                {activeCompanyName}
               </span>
               {branding.tagline && (
                 <span className="text-[10px] uppercase font-semibold tracking-wider opacity-80 truncate max-w-[180px]">
@@ -369,14 +411,15 @@ export function TypeformWizard() {
           <div 
             className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-lg border border-white/5 transition-transform hover:scale-[1.02]"
             style={{ 
-              backgroundColor: branding.brand_color || '#171717',
-              color: getContrastColor(branding.brand_color || '#171717')
+              backgroundColor: activeColor,
+              color: getContrastColor(activeColor),
+              fontFamily: `"${activeFont}", sans-serif`
             }}
           >
-            <BrandedLogo branding={branding} size="sm" isSolid />
+            <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
             <div className="hidden sm:flex flex-col justify-center">
-              <span className="font-outfit font-bold text-sm tracking-tight leading-tight">
-                {branding.company_name || 'Smart Briefing'}
+              <span className="font-outfit font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
+                {activeCompanyName}
               </span>
               {branding.tagline && (
                 <span className="text-[10px] uppercase font-semibold tracking-wider opacity-80 truncate max-w-[180px]">
