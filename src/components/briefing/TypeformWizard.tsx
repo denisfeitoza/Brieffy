@@ -501,16 +501,13 @@ export function TypeformWizard() {
         </div>
       </header>
 
-      {/* Progress Bar */}
+      {/* Progress Bar — based on basalCoverage (monotonically increasing, not dependent on question count) */}
       <div className="h-1 bg-neutral-900/50 w-full shrink-0 overflow-hidden">
         <motion.div
           className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-indigo-500 rounded-r-full"
           initial={false}
           animate={{ 
-            width: `${Math.max(
-              basalInfo.basalCoverage * 100, 
-              ((currentStepIndex + 1) / Math.max(messages.length + 2, 8)) * 100
-            )}%` 
+            width: `${Math.max(basalInfo.basalCoverage * 100, 5)}%` 
           }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         />
