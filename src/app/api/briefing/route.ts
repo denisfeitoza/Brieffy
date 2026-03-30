@@ -356,7 +356,59 @@ ${packageData.prompt}
     - Skip fields already known from context/history/inferences.
     - nextQuestion.text: MAX 20 words. Frame as collaborative exploration, not interrogation.
     - ${generateMore ? 'generateMore=true: ONLY change options, no new question.' : 'Formulate the NEXT question to advance the briefing.'}
-    - If basalCoverage>=${perfConfig.basalThreshold} AND objectives met: isFinished=true, fill assets.
+    - If basalCoverage>=${perfConfig.basalThreshold} AND objectives met AND pre-finalization review passed: isFinished=true, fill assets.
+    - ABSOLUTE RULE: NEVER ask a question that has NO CLEAR CONNECTION to the briefing purpose, the active packages, or the basal fields. Every question MUST have a strategic reason.
+    - You have access to the FULL conversation history. Use it to avoid redundancy. Reference past answers naturally.
+  </Module>
+
+  <Module name="ADAPTIVE_LENGTH">
+    The briefing length is NOT fixed — it adapts to the client and context:
+    
+    SHORTER BRIEFING (finish earlier) when:
+    - engagement_level has been "low" for 3+ consecutive responses
+    - Responses are consistently <10 words
+    - basalCoverage >= 0.6 AND engagement is low → wrap up
+    - Client skips 2+ questions → accelerate significantly
+
+    LONGER BRIEFING (explore deeper) when:
+    - Client gives rich, detailed responses (>50 words average)
+    - engagement_level stays "high" consistently
+    - Multiple packages are active AND client is engaged → explore each thoroughly
+    - Client spontaneously offers extra information → follow those threads
+
+    SMART DEDUCTION for multiple packages:
+    - When a question in Package B would get a similar answer to something from Package A → INFER the answer
+    - Add inferred answers to "inferences.extracted" with confidence >= 0.70 and source "cross_package_deduction"
+    - NEVER ask the same question rephrased across different packages
+
+    TYPICAL RANGES:
+    - Minimal (low engagement, few packages): 8-12 questions
+    - Standard (good engagement, 1-2 packages): 12-18 questions
+    - Deep (high engagement, 3+ packages): 18-25 questions
+    - NEVER exceed 30 questions total regardless of packages
+  </Module>
+
+  <Module name="PRE_FINALIZATION_REVIEW">
+    Before setting isFinished=true, perform a MANDATORY gap check:
+
+    1. Scan ALL basalFieldsMissing — are there critical fields still empty?
+    2. For EACH active package — was the core purpose addressed?
+    3. If gaps exist and engagement is NOT "low":
+       - Generate 1-3 RAPID-FIRE closing questions to fill the most important gaps
+       - Use ONLY tactile question types for these (single_choice, boolean_toggle, card_selector)
+       - Frame them as: "Antes de fecharmos, só preciso confirmar rapidamente..."
+       - Set "pre_finalization_review": true in the response
+    4. If gaps exist but engagement IS "low":
+       - Infer the missing fields from available context with lower confidence (0.5-0.7)
+       - Note in assets that some fields were AI-inferred due to incomplete responses
+       - Proceed to finish
+
+    NEVER set isFinished=true if basalCoverage < 0.5 (unless ALL remaining fields are truly optional).
+    
+    When isFinished=true, also include in the response:
+    - "session_quality_score": 0-100 (overall quality of collected data)
+    - "engagement_summary": { "overall": "high|medium|low", "by_area": { "identity": "high", "market": "medium", ... } }
+    - "data_completeness": { "strong_fields": [...], "weak_fields": [...], "inferred_fields": [...] }
   </Module>
 
   <Module name="ACTIVE_LISTENING_ENGINE">
@@ -449,11 +501,15 @@ ${JSON.stringify(currentState)}
 
 <OutputFormat>
 Return ONLY valid JSON (no markdown):
-{"updates":{},"inferences":{"extracted":[{"field":"","value":"","confidence":0,"source":""}],"skipped_topics":[],"depth_decision":"move_on"},"basalCoverage":0,"currentSection":"","basalFieldsCollected":[],"basalFieldsMissing":[],"plannedNextQuestions":[],"nextQuestion":{"text":"","questionType":"","options":[],"allowMoreOptions":false},"isFinished":false,"assets":null,"micro_feedback":null,"engagement_level":"high","active_listening":{"signals":[{"category":"implicit_pain","summary":"","relevance_score":0}],"depth_question":null}}
+{"updates":{},"inferences":{"extracted":[{"field":"","value":"","confidence":0,"source":""}],"skipped_topics":[],"depth_decision":"move_on"},"basalCoverage":0,"currentSection":"","basalFieldsCollected":[],"basalFieldsMissing":[],"plannedNextQuestions":[],"nextQuestion":{"text":"","questionType":"","options":[],"allowMoreOptions":false},"isFinished":false,"assets":null,"micro_feedback":null,"engagement_level":"high","active_listening":{"signals":[{"category":"implicit_pain","summary":"","relevance_score":0}],"depth_question":null},"pre_finalization_review":false,"session_quality_score":null,"engagement_summary":null,"data_completeness":null}
 
-NEW FIELDS:
+FIELD RULES:
 - micro_feedback: string or null — A brief strategic observation (max 25 words) about the user last answer. null if nothing insightful.
 - engagement_level: "high" or "medium" or "low" — Your assessment of user engagement based on response patterns.
+- pre_finalization_review: boolean — true when you're in rapid-fire gap-filling mode before finishing.
+- session_quality_score: number 0-100 or null — ONLY filled when isFinished=true. Overall quality of data collected.
+- engagement_summary: object or null — ONLY filled when isFinished=true: { "overall": "high|medium|low", "by_area": { "discovery": "high", "identity": "medium", "audience": "high", "strategy": "low" } }
+- data_completeness: object or null — ONLY filled when isFinished=true: { "strong_fields": ["nome","segmento"], "weak_fields": ["diferencial"], "inferred_fields": ["porte"] }
 
 active_listening rules:
 - signals[]: array of detected signals. Empty array [] if none. Max 2 per turn.

@@ -159,7 +159,9 @@ export async function getDBSettings(): Promise<SettingsOverride> {
 // ================================================================
 export function getPerformanceConfig(overrides?: SettingsOverride) {
   return {
-    maxHistory: parseInt(overrides?.briefing_max_history || "6"),
+    // Context window is UNLIMITED — the AI needs full conversation to make intelligent decisions.
+    // maxHistory is kept for legacy admin UI but no longer limits the actual context sent.
+    maxHistory: parseInt(overrides?.briefing_max_history || "999"),
     timeoutMs: parseInt(overrides?.briefing_timeout_ms || "30000"),
     basalThreshold: parseFloat(overrides?.briefing_basal_threshold || "0.85"),
   };

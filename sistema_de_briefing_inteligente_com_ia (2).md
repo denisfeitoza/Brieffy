@@ -949,3 +949,100 @@ IF basalCoverage < 0.6 → Executive Summary mais cauteloso (menções de lacuna
 - Formato: Markdown estruturado com seções claras
 - Editável via `DocumentEditor` pelo cliente e acessível via link/senha
 
+---
+
+## ANEXO X — CONTEXTO ILIMITADO & COMPRIMENTO ADAPTATIVO
+
+### Contexto Completo (Full Context Window)
+O motor de briefing envia **100% do histórico** da conversa para a IA em cada chamada. Isso permite:
+- Deduções cross-package (inferir respostas de um pacote com base em outro)
+- Referências naturais a respostas anteriores
+- Detecção de contradições entre respostas distantes
+- Eliminação total de perguntas redundantes
+
+**Configuração Admin**: O slider de "History Messages" foi substituído por um indicador "FULL" fixo. A janela de contexto acompanha o tamanho do briefing automaticamente.
+
+### Comprimento Adaptativo (ADAPTIVE_LENGTH Module)
+O briefing NÃO tem tamanho fixo — adapta-se ao engagement e contexto:
+
+| Cenário | Range | Gatilho |
+|---------|-------|---------|
+| Minimal | 8-12 perguntas | Engagement baixo, poucos pacotes |
+| Standard | 12-18 perguntas | Engagement bom, 1-2 pacotes |
+| Deep | 18-25 perguntas | Engagement alto, 3+ pacotes |
+| Máximo absoluto | 30 perguntas | Nunca ultrapassar |
+
+**Smart Deduction**: Quando Package B faria uma pergunta similar a algo já respondido em Package A, a IA infere a resposta automaticamente com `confidence >= 0.70` e `source: "cross_package_deduction"`.
+
+---
+
+## ANEXO Y — REVISÃO PRÉ-FINALIZAÇÃO
+
+### Conceito
+Antes de `isFinished=true`, a IA realiza uma checagem obrigatória:
+
+1. **Scan de gaps**: Verifica `basalFieldsMissing` e propósitos dos pacotes ativos
+2. **Se engagement != low**: Gera 1-3 perguntas rápidas tácteis para fechar gaps
+3. **Se engagement == low**: Infere campos restantes com confiança reduzida (0.5-0.7)
+4. **Regra absoluta**: Nunca finalizar com `basalCoverage < 0.5`
+
+### Formato das Perguntas de Fechamento
+- Enquadramento: *"Antes de fecharmos, só preciso confirmar rapidamente..."*
+- Tipos permitidos: `single_choice`, `boolean_toggle`, `card_selector` (nunca `text`)
+- Máximo 3 perguntas de fechamento
+
+### Métricas de Finalização
+Quando `isFinished=true`, o AI retorna:
+```json
+{
+  "session_quality_score": 78,
+  "engagement_summary": {
+    "overall": "high",
+    "by_area": {
+      "discovery": "high",
+      "identity": "high",
+      "audience": "medium",
+      "visual": "low"
+    }
+  },
+  "data_completeness": {
+    "strong_fields": ["nome", "segmento", "publico", "diferencial"],
+    "weak_fields": ["tom_comunicacao"],
+    "inferred_fields": ["porte", "maturidade_digital"]
+  }
+}
+```
+
+---
+
+## ANEXO Z — PAINEL DE INSIGHTS PÓS-BRIEFING
+
+### Conceito
+A página `/dashboard/[id]` exibe um painel premium de insights acima do timeline da conversa. Os dados vêm das métricas de finalização persistidas na sessão.
+
+### Componentes do Painel
+1. **Score de Qualidade** — Gauge 0-100 com gradiente de cores e label interpretativo
+2. **Engajamento Geral** — Badge com cor (emerald/amber/red) e pulso animado
+3. **Cobertura Basal** — Barra de progresso com porcentagem
+4. **Pacotes Ativos** — Contador e chips dos slugs
+5. **Engajamento por Área** — Grid de cards coloridos por seção do briefing
+6. **Completude dos Dados** — Breakdown visual em 3 categorias:
+   - 🟢 Campos Sólidos (coleta direta e explícita)
+   - 🟡 Campos Fracos (respostas rasas)
+   - 🟣 Campos Inferidos (deduzidos pela IA)
+7. **Sinais Detectados** — Cards do Active Listening com categoria, resumo e relevância
+
+### Impacto na Decisão da Agência
+O painel permite à agência avaliar:
+- Se o briefing coletou dados suficientes para começar o projeto
+- Quais áreas precisam de follow-up presencial
+- Se o cliente estava engajado ou respondeu como "obrigação"
+- Quais insights das entrelinhas podem ser explorados estrategicamente
+
+### Schema (DB)
+```sql
+briefing_sessions.session_quality_score (integer)
+briefing_sessions.engagement_summary (jsonb)
+briefing_sessions.data_completeness (jsonb)
+```
+

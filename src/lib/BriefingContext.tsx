@@ -372,13 +372,17 @@ export function BriefingProvider({
         }
         if (data.assets) setAssets(data.assets);
 
-        // Atualiza a sessão no banco com os dados computados
+        // Atualiza a sessão no banco com os dados computados + quality metrics
         if (activeSessionId) {
           supabase.from('briefing_sessions').update({ 
             status: 'finished', 
             company_info: data.updates || briefingState,
             final_assets: data.assets,
             detected_signals: detectedSignals,
+            // Quality metrics from AI finalization
+            session_quality_score: data.session_quality_score || null,
+            engagement_summary: data.engagement_summary || { overall: engagementLevel, by_area: {} },
+            data_completeness: data.data_completeness || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', activeSessionId)

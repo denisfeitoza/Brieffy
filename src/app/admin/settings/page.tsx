@@ -444,26 +444,22 @@ export default function AdminSettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-zinc-300 text-sm font-medium">History Messages</Label>
+                    <Label className="text-zinc-300 text-sm font-medium">Context Window</Label>
                     <p className="text-[11px] text-zinc-500 mt-1">
-                      How many previous messages to send to the AI per request.
+                      Full conversation context is sent to the AI for maximum intelligence.
                     </p>
                   </div>
-                  <span className="text-amber-400 font-mono text-sm font-bold bg-amber-500/10 px-3 py-1 rounded-lg">
-                    {settings.briefing_max_history || "6"}
+                  <span className="text-emerald-400 font-mono text-sm font-bold bg-emerald-500/10 px-3 py-1 rounded-lg">
+                    FULL
                   </span>
                 </div>
-                <Slider
-                  value={[parseInt(settings.briefing_max_history || "6")]}
-                  onValueChange={(v) => updateSetting("briefing_max_history", String((v as number[])[0]))}
-                  max={20}
-                  min={2}
-                  step={1}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-[11px] text-zinc-500">
-                  <span>Minimum (2) — Faster</span>
-                  <span>Maximum (20) — More context</span>
+                <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-3 flex gap-3">
+                  <Brain className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-zinc-400">
+                    O motor de briefing envia o histórico completo da conversa para que a IA possa 
+                    fazer deduções cross-package, evitar redundâncias e manter contexto total. O 
+                    comprimento do briefing é auto-regulado pelo módulo ADAPTIVE_LENGTH.
+                  </p>
                 </div>
               </div>
 
@@ -503,7 +499,7 @@ export default function AdminSettingsPage() {
                   <ul className="text-zinc-400 space-y-1 text-xs">
                     <li>• Use <strong className="text-zinc-300">Groq</strong> as provider for ultra-fast inference</li>
                     <li>• <strong className="text-zinc-300">Temperature 0</strong> eliminates random sampling</li>
-                    <li>• Fewer history messages = fewer tokens = faster</li>
+                    <li>• Full context window is required for intelligent deduction across packages</li>
                     <li>• Aggressive timeout (10-15s) prevents hangs</li>
                   </ul>
                 </div>
