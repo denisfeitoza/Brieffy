@@ -30,7 +30,7 @@ function DraggableToggle({ onSelect, disabled, t, initialAnswer }: { onSelect: (
   }, [initialAnswer, t.yes, t.no, x, maxDrag]);
 
   const handleSelect = (val: string) => {
-    if (disabled || answered !== null) return;
+    if (disabled) return;
     setAnswered(val);
     if (val === t.yes) {
       animate(x, -maxDrag, { type: "spring", stiffness: 300, damping: 20 });
@@ -336,7 +336,13 @@ export function DynamicInput({
 
 
   // Se o usuário JÁ RESPONDEU nesta etapa
-  const hasAnswered = Boolean(activeMessage.userAnswer && !inputText);
+  const hasAnswered = Boolean(
+    activeMessage.userAnswer && !inputText
+    && activeMessage.questionType !== 'color_picker'
+    && activeMessage.questionType !== 'boolean_toggle'
+    && activeMessage.questionType !== 'slider'
+    && activeMessage.questionType !== 'multi_slider'
+  );
 
   // Fallback se não vier questionType na resposta da IA
   let questionTypeStr: string = activeMessage.questionType || (activeMessage.options?.length ? 'single_choice' : 'text');
@@ -580,33 +586,82 @@ export function DynamicInput({
         <strong className="text-indigo-400 font-semibold text-[15px]">{t.onlyOneLabel}</strong>{" "}
         {t.optionLabel}
       </p>
-      {isFontSelection ? (
+      {isFontSelection ? (() => {
+        // Extract company name from the question text for preview (e.g. "Qual tipografia melhor representa a Vindia?")
+        const questionText = activeMessage.content || '';
+        const companyMatch = questionText.match(/(?:represent[ae]|para|da|d[eo])\s+(?:a\s+|o\s+)?([A-ZÀ-Ú][a-zA-ZÀ-ú0-9]+(?:\s+[A-ZÀ-Ú][a-zA-ZÀ-ú0-9]+)*)/i);
+        const companyPreview = companyMatch?.[1] || 'Sua Marca';
+        
+        // Dynamically load Google Fonts for preview
+        const fontNames = (activeMessage.options || [])
+          .map((opt: unknown) => {
+            const optObj = typeof opt === 'object' && opt !== null ? (opt as Record<string, unknown>) : null;
+            const optText = optObj ? String(optObj.label || optObj.title || optObj.name || '') : String(opt);
+            const name = optText.split(' - ')[0].trim().replace(/[^a-zA-Z0-9 ]/g, '');
+            return name;
+          })
+          .filter((n: string) => n && !n.toLowerCase().includes('nenhuma') && !n.toLowerCase().includes('none'));
+        
+        if (fontNames.length > 0) {
+          const families = fontNames.map((n: string) => n.replace(/ /g, '+')).join('&family=');
+          const linkId = 'google-fonts-preview';
+          if (!document.getElementById(linkId)) {
+            const link = document.createElement('link');
+            link.id = linkId;
+            link.rel = 'stylesheet';
+            link.href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+            document.head.appendChild(link);
+          }
+        }
+
+        return (
         <div className="flex flex-col gap-4 w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full cursor-pointer">
             {activeMessage.options?.map((opt: unknown, idx: number) => {
               const optObj = typeof opt === 'object' && opt !== null ? (opt as Record<string, unknown>) : null;
               const optText = optObj ? String(optObj.label || optObj.title || optObj.name || JSON.stringify(opt)) : String(opt);
               const optKey = optObj ? String(optObj.id || optText || idx) : String(opt);
-              const parts = optText.split('-');
+              const parts = optText.split(' - ');
               const fontName = parts[0].trim();
-              const fontDesc = parts.slice(1).join('-').trim() || '';
+              const fontDesc = parts.slice(1).join(' - ').trim() || '';
               const fontNameClean = fontName.replace(/[^a-zA-Z0-9 ]/g, '');
+              const isNoneOption = fontName.toLowerCase().includes('nenhuma') || fontName.toLowerCase().includes('none') || fontName.toLowerCase().includes('default');
 
               return (
                 <button
                   key={optKey}
                   onClick={() => doSubmit(optText)}
                   disabled={isLoading || isSubmittingLocal}
-                  className="flex flex-col items-center justify-start gap-4 pt-10 px-6 pb-6 rounded-2xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-800 hover:border-neutral-600 hover:-translate-y-1 transition-all text-center aspect-square min-h-[220px] group cursor-pointer"
-                  style={{ fontFamily: `"${fontNameClean}", sans-serif` }}
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border transition-all text-center min-h-[200px] group cursor-pointer ${
+                    isNoneOption 
+                      ? 'border-dashed border-neutral-700 bg-neutral-900/20 hover:bg-neutral-800/40 hover:border-neutral-500' 
+                      : 'border-neutral-800 bg-neutral-900/40 hover:bg-neutral-800 hover:border-neutral-600 hover:-translate-y-1'
+                  }`}
+                  style={isNoneOption ? undefined : { fontFamily: `"${fontNameClean}", sans-serif` }}
                 >
-                  <span className="text-[36px] font-medium text-neutral-100 group-hover:text-white transition-colors leading-tight">
-                    {fontName}
-                  </span>
-                  {fontDesc && (
-                    <span className="text-[14px] text-neutral-400 group-hover:text-neutral-300 mt-auto leading-relaxed tracking-wide">
-                      {fontDesc}
-                    </span>
+                  {isNoneOption ? (
+                    <>
+                      <span className="text-[28px] font-medium text-neutral-500 group-hover:text-neutral-300 transition-colors leading-tight">
+                        Aa
+                      </span>
+                      <span className="text-sm text-neutral-500 group-hover:text-neutral-400 font-inter">
+                        {fontDesc || 'Padrão do Sistema'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[32px] font-semibold text-neutral-100 group-hover:text-white transition-colors leading-tight">
+                        {companyPreview}
+                      </span>
+                      <span className="text-xs uppercase tracking-[0.15em] text-neutral-500 font-inter font-semibold mt-1">
+                        {fontName}
+                      </span>
+                      {fontDesc && (
+                        <span className="text-[13px] text-neutral-400 group-hover:text-neutral-300 leading-relaxed tracking-wide font-inter">
+                          {fontDesc}
+                        </span>
+                      )}
+                    </>
                   )}
                 </button>
               );
@@ -627,7 +682,8 @@ export function DynamicInput({
             </div>
           )}
         </div>
-      ) : (
+        );
+      })() : (
         <div className="flex flex-wrap gap-2 md:gap-3 items-center w-full">
           {activeMessage.options?.map((opt: unknown, idx: number) => {
             const optObj = typeof opt === 'object' && opt !== null ? (opt as Record<string, unknown>) : null;
@@ -764,7 +820,7 @@ export function DynamicInput({
           
           <div className="flex justify-between w-full mt-6 px-4 md:px-8 text-neutral-400 font-medium text-sm md:text-base relative z-10">
             <span className="bg-neutral-900/50 px-4 py-1.5 rounded-xl border border-white/5 shadow-inner">{min}</span>
-            <span className="bg-neutral-900/50 px-4 py-1.5 rounded-xl border border-white/5 shadow-inner">+{max}</span>
+            <span className="bg-neutral-900/50 px-4 py-1.5 rounded-xl border border-white/5 shadow-inner">{max}</span>
           </div>
 
         </div>
@@ -776,7 +832,7 @@ export function DynamicInput({
              <Button 
                size="lg" 
                className="w-full sm:w-auto h-14 bg-white text-black hover:bg-neutral-200 px-10 rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-105"
-               onClick={() => doSubmit(currentVal >= max ? `+${currentVal}` : currentVal)}
+               onClick={() => doSubmit(currentVal)}
                disabled={isLoading || isSubmittingLocal}
              >
                {(isLoading || isSubmittingLocal) ? <RefreshCw className="w-5 h-5 mr-2 animate-spin text-neutral-500" /> : null}
@@ -1452,6 +1508,8 @@ export function DynamicInput({
           })}
           onConfirm={(values) => doSubmit(JSON.stringify(values))}
           disabled={isLoading || isSubmittingLocal}
+          confirmLabel={t.confirmSelection}
+          initialValues={activeMessage.userAnswer ? (() => { try { return JSON.parse(String(activeMessage.userAnswer)); } catch { return undefined; } })() : undefined}
         />
       )}
       

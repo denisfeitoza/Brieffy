@@ -119,8 +119,8 @@ export async function POST(req: Request) {
     2. Não seja prolixo. Faça a pergunta de forma mais limpa e direta humanamente possível.
     
     REGRA CRÍTICA - EXPERIÊNCIA VISUAL MÁGICA: Para que a experiência surpreenda, você DEVE usar cada um dos 8 componentes (questionType) listados abaixo APENAS UMA VEZ durante o onboarding de 8 perguntas:
-    - \`single_choice\` (Para estilos, opções excludentes. Ex: "Inter - Minimalista")
-    - \`multiple_choice\` (Para múltiplas seleções: serviços, desafios, canais)
+    - \`single_choice\` (Para estilos, opções excludentes. REGRA ESPECIAL PARA TIPOGRAFIA: Se a pergunta for sobre tipografia/fonte, forneça EXATAMENTE 6 opções usando fontes REAIS do Google Fonts no formato "NomeDaFonte - Descrição Curta". Exemplos: "Inter - Moderna Neutra", "Playfair Display - Elegante Clássica", "Outfit - Geométrica Tech", "Merriweather - Tradicional Confiável", "Space Grotesk - Futurista Limpa", "Nenhuma dessas - Padrão do Sistema". A ÚLTIMA opção SEMPRE deve ser "Nenhuma dessas - Padrão do Sistema". Use o nome da empresa na pergunta para que o preview mostre como fica. NUNCA use categorias genéricas como "Sans Serif Moderno" — use NOMES REAIS de fontes.)
+    - \`multiple_choice\` (Para múltiplas seleções: serviços, desafios, canais. Forneça EXATAMENTE 6 opções por padrão.)
     - \`boolean_toggle\` (Para dilemas Sim/Não ou decisões estratégicas binárias)
     - \`card_selector\` (Excelente para escolher Persona/Perfil do Cliente Ideal - exatamente 6 cartas descritivas)
     - 'multi_slider' (Excelente para DNA de Marca, Perfil de Marketing. Defina de 3 a 5 dimensões numéricas numa escala OBRIGATÓRIA de 1 a 5)
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
     REGRA CRÍTICA - PROIBIDO REPETIR PERGUNTAS DE CORES: 
     Se a questão for sobre cores, paletas de cores ou identidade visual, VOCÊ DEVE USAR EXCLUSIVAMENTE o questionType 'color_picker'.
     
-    REGRA CRÍTICA - VALID OPTIONS: Para 'single_choice', 'multiple_choice', e 'card_selector', você PRECISA fornecer um array 'options' de strings RICO e INTELIGENTE (3 a 8 opções).
+    REGRA CRÍTICA - VALID OPTIONS: Para 'single_choice', 'multiple_choice', e 'card_selector', você PRECISA fornecer um array 'options' com EXATAMENTE 6 opções por padrão (mínimo 4, máximo 8).
     Para 'multi_slider', você DEVE fornecer um array de objetos, onde CADA objeto possui os campos: "label" (string), "min" (numero 1), "max" (numero 5), "minLabel" (string) e "maxLabel" (string). Exemplo: {"label": "Design", "min": 1, "max": 5, "minLabel": "Clássico", "maxLabel": "Moderno"}.
     
     Se 'generateMore' for true, preserve o texto da pergunta mas reinvente completamente o array de 'options' para entregar novas opções criativas.
@@ -199,13 +199,19 @@ export async function POST(req: Request) {
       }).then(({ error }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
     }
     
-    // Safety auto-fill for UI components
-    if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
-        parsed.nextQuestion.options = [
-            { label: "Formalidade", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },
-            { label: "Ousadia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
-            { label: "Comunicação", min: 1, max: 5, minLabel: "Direta/Técnica", maxLabel: "Emocional" }
-        ];
+    // Safety auto-fill for UI components (only when there IS a next question)
+    if (parsed.nextQuestion) {
+      if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
+          parsed.nextQuestion.options = [
+              { label: "Formalidade", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },
+              { label: "Ousadia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
+              { label: "Comunicação", min: 1, max: 5, minLabel: "Direta/Técnica", maxLabel: "Emocional" }
+          ];
+      }
+    } else if (!parsed.isFinished) {
+      // AI returned no nextQuestion but didn't mark as finished — force safe fallback
+      console.warn("[Onboarding] AI returned null nextQuestion without isFinished=true. Forcing text fallback.");
+      parsed.nextQuestion = { text: "Conte mais sobre sua empresa.", questionType: "text", options: [] };
     }
 
     return NextResponse.json(parsed);

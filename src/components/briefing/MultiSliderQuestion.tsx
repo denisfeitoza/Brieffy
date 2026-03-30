@@ -8,13 +8,15 @@ interface MultiSliderQuestionProps {
   sliders: MultiSliderOption[];
   onConfirm: (values: Record<string, number>) => void;
   disabled?: boolean;
+  initialValues?: Record<string, number>;
+  confirmLabel?: string;
 }
 
-export function MultiSliderQuestion({ sliders, onConfirm, disabled }: MultiSliderQuestionProps) {
+export function MultiSliderQuestion({ sliders, onConfirm, disabled, initialValues, confirmLabel }: MultiSliderQuestionProps) {
   const [values, setValues] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     sliders.forEach(s => {
-      initial[s.label] = s.defaultValue ?? Math.ceil((s.max - s.min) / 2) + s.min;
+      initial[s.label] = initialValues?.[s.label] ?? s.defaultValue ?? Math.ceil((s.max - s.min) / 2) + s.min;
     });
     return initial;
   });
@@ -59,7 +61,7 @@ export function MultiSliderQuestion({ sliders, onConfirm, disabled }: MultiSlide
               disabled:opacity-40 disabled:cursor-not-allowed
             "
           >
-            Confirm Profile ✓
+            {confirmLabel || 'Confirmar Perfil'} ✓
           </button>
         }
       />

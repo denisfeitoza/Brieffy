@@ -228,8 +228,8 @@ ${await buildPackagePrompts(selectedPackages)}
 <UI_Components_Rules>
   You MUST aggressively vary the \`questionType\` throughout the ENTIRE briefing. Your goal is an interactive, tactile experience. DO NOT default to "text".
   - \`text\`: Use sparingly, only for open-ended names/descriptions (e.g. core differences, meanings).
-  - \`multiple_choice\`: Multi-select categories (e.g. communication_channels). Send \`options\` array of strings.
-  - \`single_choice\`: Exclusive choices. CRITICAL FOR TYPOGRAPHY: If asking about typography/fonts for the visual identity, you MUST use \`single_choice\` and format options as "FontName - Description" (e.g., "Inter - Moderna e Neutra", "Playfair Display - Clássica"). The UI will render these as specialized font-cards.
+  - \`multiple_choice\`: Multi-select categories (e.g. communication_channels). Send \`options\` array of strings. ALWAYS default to EXACTLY 6 options (minimum 4, maximum 8).
+  - \`single_choice\`: Exclusive choices. CRITICAL RULE FOR TYPOGRAPHY/FONTS: When asking about brand typography, you MUST provide EXACTLY 6 options using REAL Google Font names in format "FontName - TwoWordDescription". Examples: "Inter - Moderna Neutra", "Playfair Display - Elegante Clássica", "Outfit - Geométrica Tech", "Merriweather - Tradicional Confiável", "Space Grotesk - Futurista Limpa". The 6th option MUST ALWAYS be "Nenhuma dessas - Padrão do Sistema". NEVER use generic categories (e.g. "Sans Serif Moderno") — use REAL font names. Include the company/brand name in the question text so the card preview showcases it. The UI renders these as specialized font preview cards.
   - \`boolean_toggle\`: Use for Yes/No questions or simple binary exclusive questions. Extremely tactile UI.
   - \`card_selector\`: Use for strategic routes or descriptive personas. Send \`options\` as array of objects: \`{ title: string, description: string }\`. ALWAYS default to generating exactly 6 cards.
   - \`slider\`: Use for measurable things on a single 1-10 scale (e.g. company_age, maturity). Send \`minOption\` and \`maxOption\`.
@@ -336,6 +336,21 @@ Return ONLY valid JSON (no markdown):
             (parsed.inferences.skipped_topics?.length ? ` | Skipped: ${parsed.inferences.skipped_topics.join(', ')}` : '')
           );
         }
+      }
+
+      // Safety auto-fill for UI components (only when there IS a next question)
+      if (parsed.nextQuestion) {
+        if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
+            parsed.nextQuestion.options = [
+                { label: "Formalidade", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },
+                { label: "Ousadia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
+                { label: "Comunicação", min: 1, max: 5, minLabel: "Direta/Técnica", maxLabel: "Emocional" }
+            ];
+        }
+      } else if (!parsed.isFinished) {
+        // AI returned no nextQuestion but didn't mark as finished — force safe fallback
+        console.warn("[Briefing] AI returned null nextQuestion without isFinished=true. Forcing text fallback.");
+        parsed.nextQuestion = { text: "Conte mais detalhes...", questionType: "text", options: [] };
       }
 
       return NextResponse.json(parsed);
