@@ -152,6 +152,7 @@ export type BriefingContextType = {
   editToken: string | null;
   editPassphrase: string | null;
   isOnboarding?: boolean;
+  isOwner: boolean; // true = agency owner can see InsightsPanel; false = client respondent
   // Active Listening
   detectedSignals: BriefingSignal[];
   // Consultant Persona

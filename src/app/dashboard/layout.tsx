@@ -44,8 +44,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             tagline: profile.tagline || '',
           });
 
-          // Redirect to onboarding if not onboarded
-          if (profile.is_onboarded === false && !pathname.startsWith('/dashboard/onboarding')) {
+          // Redirect to onboarding if not onboarded (null OR false — covers legacy profiles)
+          if (!profile.is_onboarded && !pathname.startsWith('/dashboard/onboarding')) {
             router.push('/dashboard/onboarding');
           }
         }

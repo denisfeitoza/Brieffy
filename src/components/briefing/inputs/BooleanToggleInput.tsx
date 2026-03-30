@@ -12,31 +12,39 @@ interface DraggableToggleProps {
 }
 
 function DraggableToggle({ onSelect, disabled, t, initialAnswer }: DraggableToggleProps) {
-  const [answered, setAnswered] = useState<string | null>(initialAnswer || null);
-  const x = useMotionValue(0);
   const knobWidth = 140;
   const maxDrag = (320 - knobWidth) / 2 - 8;
 
+  const normalize = (val?: string | null) => val?.trim().toLowerCase();
+
+  const resolveInitial = (val?: string | null): string | null => {
+    const n = normalize(val);
+    if (n === normalize(t.yes)) return t.yes;
+    if (n === normalize(t.no)) return t.no;
+    return null;
+  };
+
+  const resolvedInitial = resolveInitial(initialAnswer);
+  const initialX = resolvedInitial === t.yes ? -maxDrag : resolvedInitial === t.no ? maxDrag : 0;
+
+  const [answered, setAnswered] = useState<string | null>(resolvedInitial);
+  const x = useMotionValue(initialX);
+
+  // Sync when navigating to a different question (initialAnswer changes)
   useEffect(() => {
-    if (initialAnswer === t.yes || initialAnswer === t.yes?.toLowerCase()) {
-      x.set(-maxDrag);
-    } else if (initialAnswer === t.no || initialAnswer === t.no?.toLowerCase()) {
-      x.set(maxDrag);
-    } else {
-      x.set(0);
-    }
-  }, [initialAnswer, t.yes, t.no, x, maxDrag]);
+    const resolved = resolveInitial(initialAnswer);
+    setAnswered(resolved);
+    const target = resolved === t.yes ? -maxDrag : resolved === t.no ? maxDrag : 0;
+    x.set(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAnswer]);
 
   const handleSelect = (val: string) => {
     if (disabled) return;
     setAnswered(val);
-    if (val === t.yes) {
-      animate(x, -maxDrag, { type: "spring", stiffness: 300, damping: 20 });
-      setTimeout(() => onSelect(t.yes), 350);
-    } else if (val === t.no) {
-      animate(x, maxDrag, { type: "spring", stiffness: 300, damping: 20 });
-      setTimeout(() => onSelect(t.no), 350);
-    }
+    const target = val === t.yes ? -maxDrag : maxDrag;
+    animate(x, target, { type: "spring", stiffness: 300, damping: 20 });
+    setTimeout(() => onSelect(val), 350);
   };
 
   const background = useTransform(x, [-maxDrag, 0, maxDrag], [
@@ -69,11 +77,11 @@ function DraggableToggle({ onSelect, disabled, t, initialAnswer }: DraggableTogg
             </span>
           </div>
         </div>
+        {/* Knob — driven solely by the MotionValue `x` via style to avoid animate/style conflict */}
         <motion.div
-          className="absolute h-16 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15),inset_0_-2px_5px_rgba(0,0,0,0.1)] flex items-center justify-center font-bold text-black uppercase tracking-wider z-10 pointer-events-none transition-opacity duration-300"
+          className="absolute h-16 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15),inset_0_-2px_5px_rgba(0,0,0,0.1)] flex items-center justify-center font-bold text-black uppercase tracking-wider z-10 pointer-events-none"
           style={{ width: knobWidth, x, opacity: answered ? 1 : 0 }}
           initial={false}
-          animate={{ x: x.get() }}
         >
           {answered === t.yes ? t.yes : answered === t.no ? t.no : ""}
         </motion.div>

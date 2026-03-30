@@ -41,7 +41,8 @@ export function BriefingProvider({
   branding: initialBranding,
   initialPassphrase,
   apiEndpoint,
-  isOnboarding
+  isOnboarding,
+  isOwner = false,
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;
@@ -53,6 +54,7 @@ export function BriefingProvider({
   initialPassphrase?: string;
   apiEndpoint?: string;
   isOnboarding?: boolean;
+  isOwner?: boolean;
 }) {
   const endpoint = apiEndpoint || "/api/briefing";
   const branding = initialBranding || DEFAULT_BRANDING;
@@ -144,20 +146,18 @@ export function BriefingProvider({
     basalFieldsMissing: [],
   });
 
-  // Performance settings from DB
+  // Performance settings from DB — uses public endpoint (no auth required)
   const [perfSettings, setPerfSettings] = useState({ timeoutMs: 30000 });
   useEffect(() => {
-    fetch('/api/settings')
-      .then(r => r.json())
-      .then((rows: { key: string; value: string }[]) => {
-        if (!Array.isArray(rows)) return;
-        const map: Record<string, string> = {};
-        rows.forEach(r => map[r.key] = r.value);
+    fetch('/api/settings/public')
+      .then(r => r.ok ? r.json() : {})
+      .then((map: Record<string, string>) => {
+        if (typeof map !== 'object' || Array.isArray(map)) return;
         setPerfSettings({
           timeoutMs: parseInt(map.briefing_timeout_ms || '30000'),
         });
       })
-      .catch(() => {}); // Fallback to defaults
+      .catch(() => {}); // Fallback to defaults silently
   }, []);
 
   const updateBriefingState = (updates: Partial<BriefingState>) => {
@@ -370,6 +370,15 @@ export function BriefingProvider({
             if (error) console.error('Erro ao salvar basalCoverage:', error);
           });
         }
+      } else if (isOnboarding) {
+        // Progress bar fallback for onboarding: /api/onboarding never returns basalCoverage
+        // Synthesize based on how many steps the user has completed (max 8 steps)
+        const onboardingSteps = 8;
+        const syntheticCoverage = Math.min((currentStepIndex + 1) / onboardingSteps, 1);
+        setBasalInfo(prev => ({
+          ...prev,
+          basalCoverage: syntheticCoverage,
+        }));
       }
 
       if (data.isFinished) {
@@ -644,6 +653,7 @@ export function BriefingProvider({
         editToken,
         editPassphrase,
         isOnboarding,
+        isOwner,
         detectedSignals,
         engagementLevel,
       }}

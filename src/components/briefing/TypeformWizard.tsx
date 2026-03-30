@@ -147,6 +147,7 @@ export function TypeformWizard() {
     basalInfo,
     detectedSignals,
     engagementLevel,
+    isOwner,
   } = useBriefing();
 
   const t = I18N[chosenLanguage] || I18N.pt;
@@ -671,7 +672,7 @@ export function TypeformWizard() {
       </main>
 
       {/* Active Listening Insights Panel — visible only to agency owner */}
-      <InsightsPanel signals={detectedSignals} isOwner={true} />
+      <InsightsPanel signals={detectedSignals} isOwner={isOwner} />
     </div>
   );
 }
