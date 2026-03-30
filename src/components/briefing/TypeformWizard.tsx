@@ -5,8 +5,8 @@ import { useState, useRef, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AILoadingSplash } from "./AILoadingSplash";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Mic, ArrowRight, ArrowLeft, RefreshCw, Paperclip, CheckCircle2, Lock, Copy, Sparkles } from "lucide-react";
+
+import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
@@ -158,11 +158,14 @@ export function TypeformWizard() {
   const mainRef = useRef<HTMLElement>(null);
 
   // ─── AI Splash Screen on First Load ───
-  const [showSplash, setShowSplash] = useState(true);
+  // Skip splash for resumed sessions (there are already saved interactions)
+  const isResumedSession = messages.length > 1 && currentStepIndex > 0;
+  const [showSplash, setShowSplash] = useState(!isResumedSession);
   const [justExitedSplash, setJustExitedSplash] = useState(false);
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!showSplash) return;
     // Auto-dismiss splash after ~4 seconds
     splashTimerRef.current = setTimeout(() => {
       setShowSplash(false);
@@ -173,6 +176,7 @@ export function TypeformWizard() {
     return () => {
       if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Track navigation direction for directional slide animations
@@ -347,14 +351,44 @@ export function TypeformWizard() {
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="flex flex-col items-center justify-center space-y-6 text-center shrink-0 py-8"
                 >
-                  <div className="relative flex items-center justify-center w-24 h-24 mb-4">
-                    <div className="absolute w-full h-full rounded-full border-4 border-indigo-500/20"></div>
-                    <div className="absolute w-full h-full rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
-                    <CheckCircle2 className="w-10 h-10 text-indigo-400" />
+                  <div className="relative flex items-center justify-center w-28 h-28 mb-6">
+                    {/* Outer ring */}
+                    <div className="absolute w-full h-full rounded-full border-2 border-white/5"></div>
+                    {/* Spinning gradient ring */}
+                    <motion.div
+                      className="absolute w-full h-full rounded-full"
+                      style={{
+                        border: '3px solid transparent',
+                        borderTopColor: activeColor,
+                        borderRightColor: `${branding.brand_accent || '#06b6d4'}80`,
+                      }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                    />
+                    {/* Pulsing glow */}
+                    <motion.div
+                      className="absolute w-full h-full rounded-full"
+                      style={{ boxShadow: `0 0 30px ${activeColor}30, 0 0 60px ${activeColor}15` }}
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <Sparkles className="w-10 h-10" style={{ color: activeColor }} />
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-outfit font-medium text-white mb-3">{(I18N[chosenLanguage] || I18N.pt).generatingDoc}</h2>
+                  <div className="space-y-3">
+                    <h2 className="text-3xl font-outfit font-medium text-white">{(I18N[chosenLanguage] || I18N.pt).generatingDoc}</h2>
                     <p className="text-lg text-neutral-400">{(I18N[chosenLanguage] || I18N.pt).analyzingResponses.replace('{count}', String(messages.length))}</p>
+                    {/* Animated dots indicator */}
+                    <div className="flex gap-1.5 justify-center pt-2">
+                      {[0, 1, 2, 3, 4].map(i => (
+                        <motion.div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ background: i % 2 === 0 ? activeColor : (branding.brand_accent || '#06b6d4') }}
+                          animate={{ scale: [1, 2, 1], opacity: [0.3, 1, 0.3] }}
+                          transition={{ duration: 1.4, delay: i * 0.12, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -578,15 +612,18 @@ export function TypeformWizard() {
 
           {/* Progresso Simplificado */}
           <div className="text-sm font-medium text-neutral-500 flex items-center gap-2 bg-neutral-900 px-4 py-1.5 rounded-full border border-neutral-800">
-             {currentStepIndex + 1}
+             {Math.max(Math.round(basalInfo.basalCoverage * 100), currentStepIndex > 0 ? 5 : 0)}%
           </div>
         </div>
       </header>
 
-      {/* Progress Bar — based on basalCoverage (monotonically increasing, not dependent on question count) */}
+      {/* Progress Bar — based on basalCoverage, using brand colors for consistency */}
       <div className="h-1 bg-neutral-900/50 w-full shrink-0 overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-indigo-500 rounded-r-full"
+          className="h-full rounded-r-full"
+          style={{
+            background: `linear-gradient(90deg, ${activeColor}, ${branding.brand_accent || '#06b6d4'}, ${activeColor})`,
+          }}
           initial={false}
           animate={{ 
             width: `${Math.max(basalInfo.basalCoverage * 100, 5)}%` 
@@ -645,10 +682,15 @@ export function TypeformWizard() {
                   </motion.div>
                 )}
 
-                {/* The IA Formatted Question */}
-                <h1 className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
+                {/* The IA Formatted Question — stagger entrance for premium feel */}
+                <motion.h1
+                  className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight"
+                  initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+                >
                   {activeMessage.content}
-                </h1>
+                </motion.h1>
 
                 {/* Engagement encouragement when fatigue detected */}
                 {engagementLevel === 'low' && currentStepIndex > 3 && (
@@ -703,6 +745,17 @@ export function TypeformWizard() {
                       <span className="hidden sm:inline opacity-40 text-[10px] font-mono ml-1">Shift+Enter</span>
                     </Button>
                   </div>
+                )}
+                {/* Mobile swipe hint — only on first few steps */}
+                {currentStepIndex > 0 && currentStepIndex <= 3 && (
+                  <motion.p
+                    className="text-[10px] text-neutral-600 text-center sm:hidden mt-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 2, duration: 0.5 }}
+                  >
+                    {chosenLanguage === 'en' ? '← swipe right to go back' : chosenLanguage === 'es' ? '← desliza a la derecha para volver' : '← deslize para a direita para voltar'}
+                  </motion.p>
                 )}
               </motion.div>
             </AnimatePresence>

@@ -102,6 +102,9 @@ export function TextAudioInput({
                 : "text-neutral-400 hover:text-white hover:bg-neutral-800"
             }`}
             onClick={() => (isRecording ? stopRecording() : startRecording())}
+            style={!isRecording ? {
+              animation: 'mic-glow 3s ease-in-out 1.5s 2',
+            } : undefined}
           >
             <Mic className="w-5 h-5" />
           </Button>
