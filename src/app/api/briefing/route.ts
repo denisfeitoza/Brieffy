@@ -102,7 +102,14 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { answer, currentState, history, generateMore, activeTemplate, chosenLanguage, selectedPackages, detectedSignals: previousSignals } = body;
+    const { currentState, history, generateMore, activeTemplate, chosenLanguage, selectedPackages, detectedSignals: previousSignals, isResume } = body;
+
+    // RESUME SUPPORT: when resuming, use the last real answer from history (not the __RESUME__ token)
+    let answer = body.answer;
+    if (isResume && answer === '__RESUME__') {
+      const lastUserMsg = [...(history || [])].reverse().find((m: { role: string; content: string }) => m.role === 'user');
+      answer = lastUserMsg?.content || 'Continuando de onde parei.';
+    }
 
     // Fetch user context from the Onboarding process
     const supabaseSession = await createServerSupabaseClient();
@@ -167,6 +174,9 @@ export async function POST(req: Request) {
     const extraContextStrings = [];
     if (body.initialContext) {
       extraContextStrings.push(`KNOWN CLIENT CONTEXT: ${body.initialContext}`);
+    }
+    if (isResume) {
+      extraContextStrings.push(`SESSION RESUME: This client LEFT and came back to finish the briefing. All previous answers are in the history above. DO NOT repeat or rephrase any question already answered. Start from where the conversation left off and ask ONLY the next unanswered question. Acknowledge the resume naturally (e.g. \"Welcome back! Let's continue where we left off...\") before asking the next question.`);
     }
     if (agencySummary) {
       extraContextStrings.push(`AGENCY/USER PROFILE: You are conducting this briefing on behalf of an agency described as: "${agencySummary}". Use this knowledge to contextualize choices and acknowledge their agency type. Frame questions naturally referencing their agency context if it fits.`);

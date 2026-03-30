@@ -1,6 +1,6 @@
 import { BriefingProvider } from "@/lib/BriefingContext";
 import { TypeformWizard } from "@/components/briefing/TypeformWizard";
-import { getSessionById, getTemplateById, getBrandingByUserId, getPackagesBySlugs } from "@/lib/services/briefingService";
+import { getSessionById, getTemplateById, getBrandingByUserId, getPackagesBySlugs, getInteractionsBySession } from "@/lib/services/briefingService";
 import { notFound } from "next/navigation";
 import type { BrandingInfo } from "@/lib/types";
 
@@ -36,6 +36,41 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
 
   const selectedPackageDetails = await getPackagesBySlugs(selectedPackages);
 
+  // ================================================================
+  // RESUME SUPPORT — load previous interactions if session is in_progress
+  // ================================================================
+  const isInProgress = session.status === 'in_progress';
+  const savedInteractions = isInProgress ? await getInteractionsBySession(sessionId) : [];
+
+  // Restore company state, signals, basal coverage and language from the session
+  const savedState = (isInProgress && session.company_info && typeof session.company_info === 'object')
+    ? (session.company_info as Record<string, unknown>)
+    : undefined;
+
+  const savedSignals = isInProgress && Array.isArray(session.detected_signals)
+    ? session.detected_signals
+    : undefined;
+
+  const savedBasalCoverage = isInProgress && typeof session.basal_coverage === 'number'
+    ? session.basal_coverage
+    : undefined;
+
+  // Detect language from the first interaction (if any)
+  const savedLanguage = isInProgress && savedInteractions.length > 0
+    ? (() => {
+        const firstAnswer = savedInteractions[0]?.user_answer;
+        if (typeof firstAnswer === 'string') {
+          const langMap: Record<string, string> = {
+            '🇧🇷 Português': 'pt',
+            '🇺🇸 English': 'en',
+            '🇪🇸 Español': 'es',
+          };
+          return langMap[firstAnswer.trim()] || 'pt';
+        }
+        return 'pt';
+      })()
+    : 'pt';
+
   return (
     <BriefingProvider 
        activeTemplate={template} 
@@ -45,6 +80,11 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        selectedPackageDetails={selectedPackageDetails}
        branding={branding}
        initialPassphrase={session.edit_passphrase}
+       savedInteractions={savedInteractions.length > 0 ? savedInteractions : undefined}
+       savedState={savedState}
+       savedSignals={savedSignals}
+       savedBasalCoverage={savedBasalCoverage}
+       savedLanguage={savedLanguage}
     >
       <main className="h-screen w-full bg-neutral-950 font-inter">
         <TypeformWizard />

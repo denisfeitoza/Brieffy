@@ -568,7 +568,7 @@ export function TypeformWizard() {
                 exit={{ opacity: 0, x: direction > 0 ? -60 : 60, scale: 0.98 }}
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 className="w-full flex flex-col space-y-8 md:space-y-12 py-6 md:py-12"
-                drag="x"
+                drag={activeMessage.questionType === 'boolean_toggle' || activeMessage.questionType === 'slider' || activeMessage.questionType === 'color_picker' ? false : "x"}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.15}
                 onDragEnd={(_e, info) => {

@@ -56,10 +56,13 @@ export default function RegisterPage() {
     try {
       const supabase = createClient();
       
+      const redirectTo = `${window.location.origin}/auth/callback`;
+
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectTo,
           data: {
             display_name: displayName,
             company_name: companyName,

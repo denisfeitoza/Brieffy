@@ -64,6 +64,7 @@ function DraggableToggle({ onSelect, disabled, t, initialAnswer }: DraggableTogg
       <motion.div
         className="relative flex items-center justify-center h-20 rounded-[2.5rem] overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] backdrop-blur-md w-full"
         style={{ maxWidth: 320, backgroundColor: background, borderColor, borderWidth: 1 }}
+        onPointerDownCapture={(e) => e.stopPropagation()}
       >
         <div className="absolute inset-0 flex z-20">
           <div className="flex-1 flex items-center justify-center cursor-pointer" onClick={() => handleSelect(t.yes)}>

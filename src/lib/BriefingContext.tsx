@@ -31,6 +31,20 @@ export interface SerializedTemplate {
   depth_signals?: string[];
 }
 
+// ================================================================
+// TYPES
+// ================================================================
+interface SavedInteraction {
+  id: string;
+  step_order: number;
+  question_text: string;
+  question_type: string;
+  options_offered: string[] | null;
+  user_answer: string | string[] | number;
+  is_depth_question: boolean;
+  detected_signal?: string | null;
+}
+
 export function BriefingProvider({ 
   children, 
   activeTemplate,
@@ -43,6 +57,11 @@ export function BriefingProvider({
   apiEndpoint,
   isOnboarding,
   isOwner = false,
+  savedInteractions,
+  savedState,
+  savedSignals,
+  savedBasalCoverage,
+  savedLanguage,
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;
@@ -55,11 +74,55 @@ export function BriefingProvider({
   apiEndpoint?: string;
   isOnboarding?: boolean;
   isOwner?: boolean;
+  /** Pre-loaded interactions for session resume */
+  savedInteractions?: SavedInteraction[];
+  /** Pre-loaded company_info state for session resume */
+  savedState?: Record<string, unknown>;
+  /** Pre-loaded detected signals for session resume */
+  savedSignals?: BriefingSignal[];
+  /** Pre-loaded basal coverage for session resume */
+  savedBasalCoverage?: number;
+  /** Pre-loaded language for session resume */
+  savedLanguage?: string;
 }) {
   const endpoint = apiEndpoint || "/api/briefing";
   const branding = initialBranding || DEFAULT_BRANDING;
   const selectedPackages = initialSelectedPackages || [];
   const selectedPackageDetails = initialSelectedPackageDetails || [];
+
+  // ================================================================
+  // RESUME SUPPORT — reconstruct messages from saved interactions
+  // ================================================================
+  const isResume = savedInteractions && savedInteractions.length > 0;
+
+  const buildRestoredMessages = (): Message[] => {
+    if (!isResume) return [
+      {
+        id: "initial",
+        role: "assistant",
+        content: "Em qual idioma você prefere que eu conduza as perguntas? / Which language should I use?",
+        type: "question",
+        questionType: "single_choice",
+        options: ["🇧🇷 Português", "🇺🇸 English", "🇪🇸 Español"],
+        allowMoreOptions: false,
+      },
+    ];
+
+    // Sort by step_order to ensure correct sequence
+    const sorted = [...savedInteractions!].sort((a, b) => a.step_order - b.step_order);
+    return sorted.map((interaction) => ({
+      id: crypto.randomUUID(),
+      role: "assistant" as const,
+      content: interaction.question_text,
+      type: "question" as const,
+      questionType: (interaction.question_type as Message['questionType']) || 'text',
+      options: interaction.options_offered || [],
+      allowMoreOptions: false,
+      userAnswer: interaction.user_answer,
+      isDepthQuestion: interaction.is_depth_question || false,
+    }));
+  };
+
   // O initial state preencherá o que vier em core_fields.
   const initialBase: Record<string, unknown> = {};
   if (activeTemplate && activeTemplate.core_fields) {
@@ -73,7 +136,12 @@ export function BriefingProvider({
     initialBase.publico = "";
   }
 
-  const [briefingState, setBriefingState] = useState<BriefingState>(initialBase);
+  // Merge saved state on top of initialBase for resume
+  const mergedInitialState: BriefingState = savedState
+    ? { ...initialBase, ...(savedState as BriefingState) }
+    : initialBase;
+
+  const [briefingState, setBriefingState] = useState<BriefingState>(mergedInitialState);
 
   // Use existing session ID from props (e.g., /b/{id} routes)
   // For new sessions (home page), we lazily create on first submitAnswer
@@ -81,8 +149,8 @@ export function BriefingProvider({
   const sessionCreatedRef = React.useRef(false);
 
   // Active Listening — accumulated signals across the session
-  const detectedSignalsRef = React.useRef<BriefingSignal[]>([]);
-  const [detectedSignals, setDetectedSignals] = useState<BriefingSignal[]>([]);
+  const detectedSignalsRef = React.useRef<BriefingSignal[]>(savedSignals || []);
+  const [detectedSignals, setDetectedSignals] = useState<BriefingSignal[]>(savedSignals || []);
   const [engagementLevel, setEngagementLevel] = useState<'high' | 'medium' | 'low'>('high');
 
   // Lazy session creation — only creates when user actually starts interacting
@@ -116,21 +184,16 @@ export function BriefingProvider({
     }
   };
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "initial",
-      role: "assistant",
-      content: "Em qual idioma você prefere que eu conduza as perguntas? / Which language should I use?",
-      type: "question",
-      questionType: "single_choice",
-      options: ["🇧🇷 Português", "🇺🇸 English", "🇪🇸 Español"],
-      allowMoreOptions: false,
-    },
-  ]);
+  const restoredMessages = buildRestoredMessages();
+  const [messages, setMessages] = useState<Message[]>(restoredMessages);
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // On resume: start from the LAST answered step + 1 so user sees a "Continue" prompt
+  // On new session: start at step 0 (language selection)
+  const [currentStepIndex, setCurrentStepIndex] = useState(
+    isResume ? restoredMessages.length - 1 : 0
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const [chosenLanguage, setChosenLanguage] = useState("pt"); // Default: Portuguese
+  const [chosenLanguage, setChosenLanguage] = useState(savedLanguage || "pt"); // Default: Portuguese
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   
   // Controle de estágios do final
@@ -140,7 +203,7 @@ export function BriefingProvider({
   const [assets, setAssets] = useState<FinalAssets | null>(null);
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [basalInfo, setBasalInfo] = useState<BasalCoverageInfo>({
-    basalCoverage: 0,
+    basalCoverage: savedBasalCoverage || 0,
     currentSection: 'company',
     basalFieldsCollected: [],
     basalFieldsMissing: [],
@@ -159,6 +222,116 @@ export function BriefingProvider({
       })
       .catch(() => {}); // Fallback to defaults silently
   }, []);
+
+  // ================================================================
+  // RESUME — After restoring, immediately ask the AI for the next question
+  // ================================================================
+  const [hasRequestedResumeContinuation, setHasRequestedResumeContinuation] = useState(false);
+
+  useEffect(() => {
+    if (!isResume || hasRequestedResumeContinuation || isFinished) return;
+    if (messages.length === 0) return;
+
+    // Trigger continuation automatically
+    const triggerResumeContinuation = async () => {
+      setHasRequestedResumeContinuation(true);
+      setIsLoading(true);
+
+      const historyPayload = messages.map(m => {
+        const resp = Array.isArray(m.userAnswer) ? m.userAnswer.join(', ') : m.userAnswer;
+        return {
+          role: m.role,
+          content: m.content + (resp ? `\n\nRespondi: ${resp}` : "")
+        };
+      });
+
+      const activeSessionId = existingSessionId || null;
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), perfSettings.timeoutMs);
+
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            answer: "__RESUME__", // special signal to the API
+            currentState: briefingState,
+            history: historyPayload,
+            generateMore: false,
+            activeTemplate,
+            initialContext,
+            chosenLanguage,
+            selectedPackages,
+            detectedSignals: detectedSignals.map(s => s.summary),
+            isResume: true,
+            sessionId: activeSessionId,
+          }),
+        });
+
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error("Erro na API de retomada");
+
+        const data = await res.json();
+
+        if (data.updates) {
+          setBriefingState(prev => ({ ...prev, ...data.updates }));
+        }
+
+        if (data.isFinished) {
+          setIsFinished(true);
+          if (data.assets) setAssets(data.assets);
+          setIsUploadStep(true);
+        } else {
+          const questionsToAdd: Omit<Message, 'id'>[] = [];
+
+          if (data.active_listening?.depth_question) {
+            const dq = data.active_listening.depth_question;
+            questionsToAdd.push({
+              role: "assistant",
+              content: dq.text,
+              type: "question",
+              questionType: dq.questionType || 'text',
+              options: dq.options || [],
+              allowMoreOptions: false,
+              isDepthQuestion: true,
+              depthSignalCategory: dq.signal_category || 'implicit_pain',
+            });
+          }
+
+          if (data.nextQuestion) {
+            questionsToAdd.push({
+              role: "assistant",
+              content: data.nextQuestion.text,
+              type: "question",
+              questionType: data.nextQuestion.questionType || 'text',
+              options: data.nextQuestion.options,
+              allowMoreOptions: data.nextQuestion.allowMoreOptions || false,
+              minOption: data.nextQuestion.minOption,
+              maxOption: data.nextQuestion.maxOption,
+              microFeedback: data.micro_feedback || undefined,
+            });
+          }
+
+          if (questionsToAdd.length > 0) {
+            setMessages(prev => [
+              ...prev,
+              ...questionsToAdd.map(q => ({ ...q, id: crypto.randomUUID() }))
+            ]);
+            setCurrentStepIndex(prev => prev + 1);
+          }
+        }
+      } catch (err) {
+        console.error("[Resume] Failed to fetch next question:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    triggerResumeContinuation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResume, hasRequestedResumeContinuation]);
 
   const updateBriefingState = (updates: Partial<BriefingState>) => {
     setBriefingState((prev) => ({ ...prev, ...updates }));
