@@ -328,7 +328,7 @@ export default function PackagesPage() {
 
           {packages.length === 0 && (
             <div className="py-12 text-center text-zinc-500">
-              Nenhum pacote criado ainda. Clique em "Novo Pacote" para começar.
+              Nenhum pacote criado ainda. Clique em &quot;Novo Pacote&quot; para começar.
             </div>
           )}
         </div>

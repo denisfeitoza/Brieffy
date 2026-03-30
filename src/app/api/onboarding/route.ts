@@ -124,7 +124,7 @@ export async function POST(req: Request) {
         max_tokens: llmConfig.maxTokens,
         messages: [
           { role: "system", content: systemPrompt },
-          ...((history || []).map((m: any) => ({ role: m.role, content: m.content }))),
+          ...((history || []).map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))),
           { role: "user", content: typeof answer === 'string' ? answer : JSON.stringify(answer || "Begin onboarding") }
         ],
       }),

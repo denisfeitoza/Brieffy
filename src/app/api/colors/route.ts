@@ -43,7 +43,7 @@ Output strictly valid JSON only:
 {"colors": ["#HEX1", "#HEX2", "#HEX3", "#HEX4"]}`;
     }
 
-    const messages: any = [
+    const messages: { role: string; content: string }[] = [
       { role: "system", content: systemPrompt }
     ];
 
