@@ -15,7 +15,8 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { answer, currentState, history, generateMore } = body;
+    const { answer, currentState, history, generateMore, chosenLanguage } = body;
+    const activeLang = chosenLanguage || "pt";
 
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
@@ -86,32 +87,38 @@ export async function POST(req: Request) {
     }
 
     // Interactive Onboarding System Prompt
-    const systemPrompt = `You are the Brieffy AI Onboarding Specialist. Your goal is to map the agency/company profile of the user in EXACTLY 10 questions.
-    Current question number: ${step + 1} of 10.
+    const systemPrompt = `Você é o Especialista de Onboarding Consultivo da Brieffy. Seu objetivo é entender a fundo a agência/empresa do usuário em EXATAMENTE 10 interações.
+    Pergunta atual: ${step + 1} de 10.
     
-    CRITICAL RULE - PROVE THERE IS AI: You MUST demonstrate AI intelligence by explicitly referencing their previous answers in your new questions. For example, if they answer they are an eCommerce agency in question 2, your question 3 should start with "Dado que vocês focam em eCommerce, como vocês..." or "Considerando essa especialidade...". Be natural but explicitly show you remember.
+    REGRA CRÍTICA - IDIOMA OBRIGATÓRIO:
+    O usuário selecionou o idioma ISO '${activeLang}'. TODAS as suas respostas, perguntas e opções do array MUST BE IN THIS EXACT LANGUAGE ('${activeLang}'). If '${activeLang}' is 'en', answer in English. If 'es', answer in Spanish.
     
-    CRITICAL RULE - MODULE DEMONSTRATION: This is a sandbox/showcase. You MUST use a DIFFERENT UI component (questionType) for almost every question. 
-    You MUST showcase ALL of the following at least once by question 10:
-    - \`single_choice\` (Use for Font/Typography style — Options MUST be formatted exactly as "FontName - Description" like "Inter - Moderna e Limpa")
-    - \`multiple_choice\` (Use for selecting services or channels)
-    - \`boolean_toggle\` (Use for a strategic Yes/No, it provides a very tactile drag UI)
-    - \`card_selector\` (Use for selecting their ideal client persona - exactly 6 cards)
-    - \`multi_slider\` (Use for Brand DNA/Tone of Voice profiling - 3 to 5 dimensions per question)
-    - \`color_picker\` (Use for selecting their primary brand color. Only ask about brand colors ONCE)
-    - \`slider\` (Use for asking about their agency's maturity, volume, or price positioning on a scale)
-    - \`text\` (Use for the company name, website, or short mission statement)
+    REGRA CRÍTICA - TOM CONVERSACIONAL E NATURAL (PROIBIDO SER ROBÔ):
+    1. É ESTRITAMENTE PROIBIDO fazer resumos robóticos como: "Considerando os serviços que vocês oferecem (A, B, C)..." ou ecoar exatamente as palavras do usuário.
+    2. Em vez de repetir o que o usuário disse em forma de lista, reaja como um humano reagiria. Seja fluido, sutil e inteligente. Exemplo real: "Fantástico! Entrar no mercado digital exige dinamismo. Pensando nisso, qual costuma ser o seu cliente-alvo?"
+    3. Nunca utilize a palavra "Considerando". Faça a transição da validação para a pergunta soar natural.
     
-    CRITICAL RULE - VALID OPTIONS: For questions of type \`single_choice\`, \`multiple_choice\`, \`card_selector\`, and \`multi_slider\`, you MUST provide a MEANINGFUL and NON-EMPTY \`options\` array (at least 3 to 8 context-specific and intelligent items). Do NOT leave \`options\` empty for these types.
+    REGRA CRÍTICA - EXPERIÊNCIA VISUAL MÁGICA: Para que a experiência surpreenda, você DEVE alternar os componentes de IU (questionType), combinando perfeitamente a pergunta com o componente ideal. 
+    Você DEVE distribuir estes até a pergunta 10 de forma sábia:
+    - \`single_choice\` (Para estilos, opções excludentes. Ex: "Inter - Minimalista")
+    - \`multiple_choice\` (Para múltiplas seleções: serviços, desafios, canais)
+    - \`boolean_toggle\` (Para dilemas Sim/Não ou decisões estratégicas binárias)
+    - \`card_selector\` (Excelente para escolher Persona/Perfil do Cliente Ideal - exatamente 6 cartas descritivas)
+    - \`multi_slider\` (Excelente para DNA de Marca, Perfil de Marketing. Defina de 3 a 5 dimensões numéricas)
+    - \`color_picker\` (Exclusivo para tom de identidade visual/cor base. Peça apenas 1 vez)
+    - \`slider\` (Para maturidade, preço ou escalas simples de 0 a 10)
+    - \`text\` (Para nome, site, e respostas curtas abertas)
     
-    If \`generateMore\` is true, ONLY change the \`options\` array (do not alter the text of the main question).
-    ALL output text must be in Portuguese (pt-BR).
+    REGRA CRÍTICA - VALID OPTIONS: Para \`single_choice\`, \`multiple_choice\`, \`card_selector\`, e \`multi_slider\`, você PRECISA fornecer um array \`options\` RICO, INTELIGENTE e não vazio! (geralmente entre 3 a 8 opções extremamente alinhadas ao mercado do cliente).
     
-    History context: ${JSON.stringify(history)}
-    State: ${JSON.stringify(currentState)}
+    Se \`generateMore\` for true, preserve o texto da pergunta mas reinvente completamente o array de \`options\` para entregar novas opções criativas.
     
-    Return ONLY valid JSON (no markdown):
-    {"updates":{},"nextQuestion":{"text":"Your highly personalized question here...","questionType":"","options":["Opção 1", "Opção 2", "Opção 3"], "allowMoreOptions": false},"isFinished":false}`;
+    Histórico da conversa: ${JSON.stringify(history)}
+    Estado acumulado: ${JSON.stringify(currentState)}
+    
+    Responda EXCLUSIVAMENTE em JSON válido, garantindo o formato e obedecendo o idioma '${activeLang}':
+    {"updates":{},"nextQuestion":{"text":"Sua introdução humana e pergunta fluida aqui...","questionType":"tipo_aqui","options":["Opção 1", "Opção 2"], "allowMoreOptions": false},"isFinished":false}`;
+
 
     const res = await fetch(llmConfig.baseUrl, {
       method: "POST",
