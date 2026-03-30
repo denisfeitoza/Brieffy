@@ -249,7 +249,7 @@ export function DynamicInput({
   // Para Slider
   const [sliderValue, setSliderValue] = useState<number[]>([Number(activeMessage.minOption) || 0]);
   // Para Color Wizard
-  const [colorWizardStep, setColorWizardStep] = useState<1 | 2 | 3 | 4>(1);
+  const [colorWizardStep, setColorWizardStep] = useState<1 | 2 | 3>(1);
   const [suggestedMainColors, setSuggestedMainColors] = useState<string[]>([]);
   const [selectedMainColors, setSelectedMainColors] = useState<string[]>([]);
   const [mainColors, setMainColors] = useState<string[]>([]);
@@ -258,6 +258,7 @@ export function DynamicInput({
   const [detailColors, setDetailColors] = useState<string[]>(["#F8FAFC", "#94A3B8"]);
   const [isFetchingColors, setIsFetchingColors] = useState(false);
   const [colorHint, setColorHint] = useState<string>("");
+  const [showHintInput, setShowHintInput] = useState(false);
   
   // Instant visual feedback for submission
   const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
@@ -807,49 +808,83 @@ export function DynamicInput({
     setIsFetchingColors(true);
     try {
       const brandContext = getBrandContext();
+      const kept = selectedMainColors.length > 0 ? selectedMainColors : [];
       const res = await fetch("/api/colors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "initial", context: brandContext, hint: colorHint, keptColors: selectedMainColors })
+        body: JSON.stringify({ 
+          type: "initial", 
+          context: brandContext, 
+          hint: colorHint.trim() || undefined,
+          keptColors: kept 
+        })
       });
       if (res.ok) {
         const data = await res.json();
-        const newColors = (data.colors || []).slice(0, Math.max(0, 4 - selectedMainColors.length));
-        setSuggestedMainColors([...selectedMainColors, ...newColors]);
+        const apiColors: string[] = data.colors || [];
+        if (kept.length > 0) {
+          // Merge: keep selected + add new ones
+          const newOnes = apiColors.filter((c: string) => !kept.includes(c));
+          const merged = [...kept, ...newOnes].slice(0, 4);
+          setSuggestedMainColors(merged);
+        } else {
+          setSuggestedMainColors(apiColors.slice(0, 4));
+          setSelectedMainColors([]);
+        }
       }
     } catch (e) {
-      console.error(e);
-      setSuggestedMainColors(["#0F172A", "#3B82F6", "#10B981", "#F59E0B"]);
+      console.error("[Colors] fetchInitial error:", e);
+      if (suggestedMainColors.length === 0) {
+        setSuggestedMainColors(["#6366F1", "#EC4899", "#14B8A6", "#F97316"]);
+      }
     } finally {
       setIsFetchingColors(false);
+      setShowHintInput(false);
+      setColorHint("");
     }
   };
 
-  const fetchComplementaryColors = async () => {
+  const fetchDetailColors = async () => {
     setIsFetchingColors(true);
     try {
       const brandContext = getBrandContext();
-      // Usar a mainColors que já deve estar settada via setSelectedMainColors
       const currentMain = mainColors.length >= 1 ? mainColors : selectedMainColors;
+      const kept = selectedSuggestions.length > 0 ? selectedSuggestions : [];
       const res = await fetch("/api/colors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "complementary", mainColors: currentMain, context: brandContext, hint: colorHint, keptColors: selectedSuggestions })
+        body: JSON.stringify({ 
+          type: "detail", 
+          mainColors: currentMain, 
+          context: brandContext, 
+          hint: colorHint.trim() || undefined,
+          keptColors: kept 
+        })
       });
       if (res.ok) {
         const data = await res.json();
-        const newColors = (data.colors || []).slice(0, Math.max(0, 4 - selectedSuggestions.length));
-        setSuggestedColors([...selectedSuggestions, ...newColors]);
+        const apiColors: string[] = data.colors || [];
+        if (kept.length > 0) {
+          const newOnes = apiColors.filter((c: string) => !kept.includes(c));
+          const merged = [...kept, ...newOnes].slice(0, 4);
+          setSuggestedColors(merged);
+        } else {
+          setSuggestedColors(apiColors.slice(0, 4));
+          setSelectedSuggestions([]);
+        }
         setColorWizardStep(2);
       }
     } catch (e) {
-      console.error(e);
+      console.error("[Colors] fetchComplementary error:", e);
       setColorWizardStep(2);
     } finally {
       setIsFetchingColors(false);
+      setShowHintInput(false);
+      setColorHint("");
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (activeMessage.questionType === 'color_picker' && colorWizardStep === 1 && suggestedMainColors.length === 0 && !isFetchingColors) {
       fetchInitialColors();
@@ -857,18 +892,22 @@ export function DynamicInput({
   }, [activeMessage.questionType, colorWizardStep, suggestedMainColors.length]);
 
   const renderColorPicker = () => {
+    // Step 1: Primary Colors — select 1-2
     if (colorWizardStep === 1) {
       return (
         <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in zoom-in duration-500">
-          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
-            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-6 text-center">
-              {t.step1Title}<br/>
-              <span className="text-[11px] text-neutral-500 normal-case tracking-normal">A IA sugeriu estas {suggestedMainColors.length} cores baseadas nas suas respostas. Selecione 1 ou 2 cores.</span>
+          <div className="flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
+            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
+              {t.step1Title}
             </span>
+            <p className="text-[12px] text-neutral-500 mb-6 text-center max-w-md">
+              A IA sugeriu cores com base nas suas respostas. Selecione 1 ou 2 cores principais para sua marca.
+            </p>
+
             {isFetchingColors && suggestedMainColors.length === 0 ? (
                <div className="py-12 flex flex-col items-center">
                  <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                 <p className="text-neutral-400 font-medium">Analisando respostas e gerando sugestões de marca...</p>
+                 <p className="text-neutral-400 font-medium">Gerando paleta com base no seu perfil...</p>
                </div>
             ) : (
               <div className="flex flex-wrap items-center justify-center gap-4">
@@ -876,48 +915,44 @@ export function DynamicInput({
                     const isSelected = selectedMainColors.includes(hex);
                     return (
                       <div 
-                        key={idx} 
-                        className={`cursor-pointer group flex flex-col items-center gap-3 p-4 rounded-2xl relative transition-all border-2 ${isSelected ? 'border-primary bg-primary/10' : 'border-white/5 hover:border-white/20'}`}
+                        key={`main-${idx}-${hex}`} 
+                        className={`cursor-pointer group flex flex-col items-center gap-3 p-4 rounded-2xl relative transition-all border-2 ${isSelected ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--color-primary),0.2)]' : 'border-white/5 hover:border-white/20'}`}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedMainColors(selectedMainColors.filter(c => c !== hex));
+                          } else if (selectedMainColors.length < 2) {
+                            setSelectedMainColors([...selectedMainColors, hex]);
+                          }
+                        }}
                       >
-                      <div className="relative flex items-center justify-center">
-                        <div 
-                          className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10 relative overflow-hidden flex items-center justify-center"
-                          style={{ backgroundColor: hex, boxShadow: isSelected ? `0 0 20px ${hex}60` : undefined }}
-                        >
-                          <input 
-                            type="color" 
-                            value={hex} 
-                            onChange={(e) => {
-                              const newColors = [...suggestedMainColors];
-                              newColors[idx] = e.target.value.toUpperCase();
-                              setSuggestedMainColors(newColors);
-                              if (isSelected) {
-                                  setSelectedMainColors(selectedMainColors.map(c => c === hex ? e.target.value.toUpperCase() : c));
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`absolute inset-0 w-full h-full opacity-0 cursor-pointer ${isSelected ? 'z-20' : 'pointer-events-none z-[-1]'}`}
-                          />
-                          {isSelected && (
-                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-                              <Pipette className="w-6 h-6 text-white drop-shadow-md" />
-                            </div>
-                          )}
+                        <div className="relative flex items-center justify-center">
+                          <div 
+                            className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10 relative overflow-hidden flex items-center justify-center"
+                            style={{ backgroundColor: hex, boxShadow: isSelected ? `0 0 25px ${hex}60` : undefined }}
+                          >
+                            <input 
+                              type="color" 
+                              value={hex} 
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const newHex = e.target.value.toUpperCase();
+                                const newColors = [...suggestedMainColors];
+                                newColors[idx] = newHex;
+                                setSuggestedMainColors(newColors);
+                                if (isSelected) {
+                                  setSelectedMainColors(selectedMainColors.map(c => c === hex ? newHex : c));
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`absolute inset-0 w-full h-full opacity-0 cursor-pointer ${isSelected ? 'z-20' : 'pointer-events-none z-[-1]'}`}
+                            />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                                <Pipette className="w-6 h-6 text-white drop-shadow-md" />
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                        {/* Overlay clicavel para selecionar, posicionado abaixo da bolinha */}
-                        <div 
-                           className="w-full h-full absolute top-0 left-0 z-0" 
-                           onClick={() => {
-                            if (isSelected) {
-                              setSelectedMainColors(selectedMainColors.filter(c => c !== hex));
-                            } else {
-                              if (selectedMainColors.length < 2) {
-                                setSelectedMainColors([...selectedMainColors, hex]);
-                              }
-                            }
-                          }}
-                        />
                         <div className="flex flex-col items-center z-10 pointer-events-none">
                           <span className="text-xs font-mono text-neutral-300">{hex}</span>
                         </div>
@@ -926,148 +961,210 @@ export function DynamicInput({
                  })}
               </div>
             )}
-            <div className="w-full max-w-sm mt-6">
-               <input 
-                 type="text" 
-                 value={colorHint}
-                 onChange={(e) => setColorHint(e.target.value)}
-                 placeholder="Alguma dica de cor ou estilo? (opcional)"
-                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
-                 onKeyDown={(e) => {
-                   if (e.key === 'Enter') fetchInitialColors();
-                 }}
-               />
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 mt-4">
+
+            {/* Hint input — appears when "Gerar Mais" is clicked */}
+            {showHintInput && (
+              <div className="w-full max-w-sm mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <label className="text-[11px] text-neutral-400 uppercase tracking-wider mb-2 block text-center">Descreva o estilo que você quer</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={colorHint}
+                    onChange={(e) => setColorHint(e.target.value)}
+                    placeholder="Ex: verde neon, tons pastéis, azul royal..."
+                    className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && colorHint.trim()) {
+                        fetchInitialColors();
+                      }
+                    }}
+                  />
+                  <Button 
+                    className="rounded-xl bg-primary hover:bg-primary/90 text-white px-4"
+                    onClick={() => fetchInitialColors()}
+                    disabled={isFetchingColors}
+                  >
+                    {isFetchingColors ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
               <Button 
                 variant="outline" 
-                className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-                onClick={fetchInitialColors}
-                disabled={isFetchingColors || isLoading || isSubmittingLocal}
-              >
-                {isFetchingColors ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                {isFetchingColors ? t.generating : t.generateMore}
-              </Button>
-              <Button
-                className="h-12 px-8 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.5)] transition-all hover:scale-105"
+                className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm"
                 onClick={() => {
-                  if (selectedMainColors.length >= 1) {
-                     setMainColors(selectedMainColors);
-                     setColorHint(""); // Clear hint for next step
-                     fetchComplementaryColors();
+                  if (showHintInput) {
+                    // Already showing hint — just regenerate without hint
+                    setColorHint("");
+                    fetchInitialColors();
+                  } else {
+                    setShowHintInput(true);
                   }
                 }}
-                disabled={selectedMainColors.length < 1 || isFetchingColors || isLoading || isSubmittingLocal}
+                disabled={isFetchingColors}
               >
-                {isFetchingColors || isSubmittingLocal || isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowRight className="w-5 h-5 mr-2" />}
+                {isFetchingColors ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                {showHintInput ? "Gerar sem dica" : t.generateMore}
+              </Button>
+              <Button
+                className="h-11 px-6 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.4)] transition-all hover:scale-105 text-sm"
+                onClick={() => {
+                  if (selectedMainColors.length >= 1) {
+                    setMainColors(selectedMainColors);
+                    setShowHintInput(false);
+                    setColorHint("");
+                    // Fetch detail colors
+                    fetchDetailColors();
+                  }
+                }}
+                disabled={selectedMainColors.length < 1 || isFetchingColors}
+              >
+                {isFetchingColors ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowRight className="w-5 h-5 mr-2" />}
                 {t.next}
               </Button>
             </div>
           </div>
-          <div className="opacity-70 hover:opacity-100 transition-opacity">
-            <p className="text-sm text-center text-neutral-400 mb-3">{t.adjustPalette}</p>
-            {renderTextAndAudio()}
-          </div>
         </div>
       );
     }
 
+    // Step 2: Detail Colors — select 1-2
     if (colorWizardStep === 2) {
       return (
         <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
-          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
-            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-6 text-center">
-              {t.step2Title}<br/>
-              <span className="text-[11px] text-neutral-500 normal-case tracking-normal">{t.step2Sub}</span>
+          <div className="flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
+            {/* Show chosen main colors as context */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-[10px] text-neutral-500 uppercase tracking-wider mr-2">Principais:</span>
+              {mainColors.map((hex, i) => (
+                <div key={i} className="w-8 h-8 rounded-full border border-white/10" style={{ backgroundColor: hex }} title={hex} />
+              ))}
+            </div>
+
+            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
+              Cores de Detalhe
             </span>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-               {suggestedColors.map((hex, idx) => {
-                  const isSelected = selectedSuggestions.includes(hex);
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`cursor-pointer group flex flex-col items-center gap-3 p-4 rounded-2xl relative transition-all border-2 ${isSelected ? 'border-primary bg-primary/10' : 'border-white/5 hover:border-white/20'}`}
-                    >
-                      <div className="relative flex items-center justify-center">
-                        <div 
-                          className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10 relative overflow-hidden flex items-center justify-center"
-                          style={{ backgroundColor: hex, boxShadow: isSelected ? `0 0 20px ${hex}60` : undefined }}
-                        >
-                          <input 
-                            type="color" 
-                            value={hex} 
-                            onChange={(e) => {
-                              const newColors = [...suggestedColors];
-                              newColors[idx] = e.target.value.toUpperCase();
-                              setSuggestedColors(newColors);
-                              if (isSelected) {
-                                  setSelectedSuggestions(selectedSuggestions.map(c => c === hex ? e.target.value.toUpperCase() : c));
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`absolute inset-0 w-full h-full opacity-0 cursor-pointer ${isSelected ? 'z-20' : 'pointer-events-none z-[-1]'}`}
-                          />
-                          {isSelected && (
-                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-                              <Pipette className="w-6 h-6 text-white drop-shadow-md" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
+            <p className="text-[12px] text-neutral-500 mb-6 text-center max-w-md">
+              Escolha 1 ou 2 cores de detalhe que complementam suas cores principais. São usadas em bordas, badges e acentos sutis.
+            </p>
+
+            {isFetchingColors && suggestedColors.length === 0 ? (
+               <div className="py-12 flex flex-col items-center">
+                 <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                 <p className="text-neutral-400 font-medium">Gerando cores que harmonizam com sua paleta...</p>
+               </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                 {suggestedColors.map((hex, idx) => {
+                    const isSelected = selectedSuggestions.includes(hex);
+                    return (
                       <div 
-                         className="w-full h-full absolute top-0 left-0 z-0" 
-                         onClick={() => {
+                        key={`detail-${idx}-${hex}`} 
+                        className={`cursor-pointer group flex flex-col items-center gap-3 p-4 rounded-2xl relative transition-all border-2 ${isSelected ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--color-primary),0.2)]' : 'border-white/5 hover:border-white/20'}`}
+                        onClick={() => {
                           if (isSelected) {
                             setSelectedSuggestions(selectedSuggestions.filter(c => c !== hex));
-                          } else {
-                            if (selectedSuggestions.length < 2) {
-                              setSelectedSuggestions([...selectedSuggestions, hex]);
-                            }
+                          } else if (selectedSuggestions.length < 2) {
+                            setSelectedSuggestions([...selectedSuggestions, hex]);
                           }
                         }}
-                      />
-                      <div className="flex flex-col items-center z-10 pointer-events-none">
-                        <span className="text-xs font-mono text-neutral-300">{hex}</span>
+                      >
+                        <div className="relative flex items-center justify-center">
+                          <div 
+                            className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10 relative overflow-hidden flex items-center justify-center"
+                            style={{ backgroundColor: hex, boxShadow: isSelected ? `0 0 25px ${hex}60` : undefined }}
+                          >
+                            <input 
+                              type="color" 
+                              value={hex} 
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const newHex = e.target.value.toUpperCase();
+                                const newColors = [...suggestedColors];
+                                newColors[idx] = newHex;
+                                setSuggestedColors(newColors);
+                                if (isSelected) {
+                                  setSelectedSuggestions(selectedSuggestions.map(c => c === hex ? newHex : c));
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`absolute inset-0 w-full h-full opacity-0 cursor-pointer ${isSelected ? 'z-20' : 'pointer-events-none z-[-1]'}`}
+                            />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                                <Pipette className="w-6 h-6 text-white drop-shadow-md" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center z-10 pointer-events-none">
+                          <span className="text-xs font-mono text-neutral-300">{hex}</span>
+                        </div>
                       </div>
-                    </div>
-                  );
-               })}
-             </div>
-            <div className="w-full max-w-sm mt-6">
-               <input 
-                 type="text" 
-                 value={colorHint}
-                 onChange={(e) => setColorHint(e.target.value)}
-                 placeholder="Alguma dica de cor ou estilo? (opcional)"
-                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
-                 onKeyDown={(e) => {
-                   if (e.key === 'Enter') {
-                     fetchComplementaryColors();
-                   }
-                 }}
-               />
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 mt-4">
-              <Button variant="outline" className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800" onClick={() => setColorWizardStep(1)}>
+                    );
+                 })}
+              </div>
+            )}
+
+            {/* Hint input for detail step */}
+            {showHintInput && (
+              <div className="w-full max-w-sm mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <label className="text-[11px] text-neutral-400 uppercase tracking-wider mb-2 block text-center">Descreva o estilo de detalhe</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={colorHint}
+                    onChange={(e) => setColorHint(e.target.value)}
+                    placeholder="Ex: tons neutros, cinza quente, bege suave..."
+                    className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && colorHint.trim()) {
+                        fetchDetailColors();
+                      }
+                    }}
+                  />
+                  <Button 
+                    className="rounded-xl bg-primary hover:bg-primary/90 text-white px-4"
+                    onClick={() => fetchDetailColors()}
+                    disabled={isFetchingColors}
+                  >
+                    {isFetchingColors ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              <Button variant="outline" className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm" onClick={() => { setShowHintInput(false); setColorHint(""); setColorWizardStep(1); }}>
                 {t.back}
               </Button>
               <Button 
                 variant="outline" 
-                className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800" 
+                className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm"
                 onClick={() => {
-                  fetchComplementaryColors();
+                  if (showHintInput) {
+                    setColorHint("");
+                    fetchDetailColors();
+                  } else {
+                    setShowHintInput(true);
+                  }
                 }}
-                disabled={isFetchingColors || isLoading || isSubmittingLocal}
+                disabled={isFetchingColors}
               >
                 {isFetchingColors ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                {isFetchingColors ? t.generating : t.generateMore}
+                {showHintInput ? "Gerar sem dica" : t.generateMore}
               </Button>
               <Button 
-                className="h-12 px-8 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.5)] transition-all hover:scale-105" 
-                onClick={() => setColorWizardStep(3)}
-                disabled={selectedSuggestions.length !== 2 || isLoading || isSubmittingLocal}
+                className="h-11 px-6 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.4)] transition-all hover:scale-105 text-sm"
+                onClick={() => doSubmit([...mainColors, ...selectedSuggestions])}
+                disabled={selectedSuggestions.length < 1 || isLoading || isSubmittingLocal}
               >
-                {t.continue}{" "}<ArrowRight className="w-5 h-5 ml-2" />
+                {(isLoading || isSubmittingLocal) ? <Loader2 className="w-5 h-5 mr-2 animate-spin text-white" /> : <CheckCircle2 className="w-5 h-5 mr-2" />}
+                {t.finishPalette}
               </Button>
             </div>
           </div>
@@ -1075,95 +1172,42 @@ export function DynamicInput({
       );
     }
 
-    // Step 3
-    if (colorWizardStep === 3) {
-      return (
-        <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
-          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
-            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-6 text-center">
-              {t.step3Title}<br/>
-              <span className="text-[11px] text-neutral-500 normal-case tracking-normal">{t.step3Sub}</span>
-            </span>
-            <div className="flex gap-6">
-               {detailColors.map((hex, idx) => (
-                  <div key={idx} className="group flex flex-col items-center gap-3 relative">
-                    <input 
-                      type="color" 
-                      value={hex} 
-                      onChange={(e) => {
-                        const newColors = [...detailColors];
-                        newColors[idx] = e.target.value.toUpperCase();
-                        setDetailColors(newColors);
-                      }}
-                      className="absolute opacity-0 cursor-pointer z-10 w-full h-1/2 top-0"
-                    />
-                    <div 
-                      className="w-20 h-20 rounded-full transition-transform group-hover:scale-110 border-2 border-white/10 relative overflow-hidden"
-                      style={{ backgroundColor: hex }}
-                    >
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-                        <Pipette className="w-6 h-6 text-white drop-shadow-md" />
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] uppercase font-bold text-neutral-400">{t.detail}{" "}{idx + 1}</span>
-                      <span className="text-xs font-mono text-neutral-300 mt-1">{hex}</span>
-                    </div>
-                  </div>
-               ))}
-            </div>
-            <div className="flex gap-4 mt-8">
-              <Button variant="outline" className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800" onClick={() => setColorWizardStep(2)}>
-                {t.back}
-              </Button>
-              <Button 
-                className="h-12 px-8 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.5)] transition-all hover:scale-105"
-                onClick={() => doSubmit([...mainColors, ...selectedSuggestions, ...detailColors])}
-                disabled={isLoading || isSubmittingLocal}
-              >
-                {(isLoading || isSubmittingLocal) ? <Loader2 className="w-5 h-5 mr-2 animate-spin text-white" /> : <CheckCircle2 className="w-5 h-5 mr-2" />} {t.finishPalette}
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Step 4: Summary View / Loading View
+    // Summary view — after submission or when answer exists
     const ansArray = Array.isArray(activeMessage.userAnswer) ? (activeMessage.userAnswer as string[]) : [];
-    const finalColors = activeMessage.userAnswer && ansArray.length >= 6 
+    const finalColors = ansArray.length >= 2 
       ? ansArray 
-      : [...mainColors, ...selectedSuggestions, ...detailColors];
+      : [...mainColors, ...selectedSuggestions];
 
-    if (colorWizardStep === 4 || (activeMessage.userAnswer && ansArray.length >= 6) || (isLoading && colorWizardStep === 3)) {
+    if (finalColors.length >= 2) {
+      const mainCount = mainColors.length || Math.min(2, Math.ceil(finalColors.length / 2));
       return (
         <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
           <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
-            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-6 text-center">
-              Paleta Final<br/>
-              <span className="text-[11px] text-neutral-500 normal-case tracking-normal">Abaixo estão as 6 cores selecionadas para sua marca.</span>
+            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
+              Paleta Final
             </span>
-            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mt-4">
-              {finalColors.slice(0, 6).map((hex: string, idx: number) => {
-                const label = idx < 2 ? "Principal" : idx < 4 ? "Complementar" : "Detalhe";
+            <p className="text-[11px] text-neutral-500 mb-6 text-center">Sua paleta de marca selecionada</p>
+            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+              {finalColors.map((hex: string, idx: number) => {
+                const label = idx < mainCount ? "Principal" : "Detalhe";
                 return (
                   <div key={idx} className="group flex flex-col items-center gap-3 relative">
                     <div 
                       className="w-16 h-16 md:w-20 md:h-20 rounded-[1.5rem] border-2 border-white/10 relative overflow-hidden shadow-lg"
                       style={{ backgroundColor: hex }}
                     />
-                    <div className="flex flex-col items-center mt-2">
+                    <div className="flex flex-col items-center mt-1">
                        <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider whitespace-nowrap">{label}</span>
-                       <span className="text-xs font-mono text-neutral-300 mt-1.5 px-2 py-0.5 rounded-md bg-neutral-900/50 border border-neutral-800">{hex}</span>
+                       <span className="text-xs font-mono text-neutral-300 mt-1 px-2 py-0.5 rounded-md bg-neutral-900/50 border border-neutral-800">{hex}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
             
-            {(!activeMessage.userAnswer || activeMessage.userAnswer === undefined) && !isLoading && !isSubmittingLocal && (
+            {!activeMessage.userAnswer && !isLoading && !isSubmittingLocal && (
                <div className="flex gap-4 mt-8">
-                 <Button variant="outline" className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800" onClick={() => setColorWizardStep(1)}>
+                 <Button variant="outline" className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm" onClick={() => setColorWizardStep(1)}>
                    Editar Cores
                  </Button>
                </div>

@@ -168,16 +168,21 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json();
-    let content = data.choices[0].message.content;
+    let content = data.choices?.[0]?.message?.content;
     const usage = data.usage;
     
+    if (!content || content.trim() === '') {
+      console.error("[Onboarding] LLM returned empty content. Full response:", JSON.stringify(data));
+      return NextResponse.json({ error: "AI returned empty response. Please try again." }, { status: 500 });
+    }
+
     let parsed;
     try {
       content = content.replace(/```json/g, "").replace(/```/g, "").trim();
       parsed = JSON.parse(content);
     } catch (parseError) {
-      console.error("[LLM parse error]:", parseError, "Raw content:", content);
-      throw new Error("Invalid JSON from LLM");
+      console.error("[Onboarding parse error]:", parseError, "Raw content:", content);
+      return NextResponse.json({ error: "Invalid response from AI. Please try again." }, { status: 500 });
     }
 
     if (usage) {

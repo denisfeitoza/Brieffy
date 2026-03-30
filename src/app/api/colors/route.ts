@@ -3,68 +3,83 @@ import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
 
 export async function POST(req: Request) {
   try {
-    const { mainColors, context, type = "complementary", hint, keptColors = [] } = await req.json();
+    const { mainColors, context, type = "initial", hint, keptColors = [] } = await req.json();
 
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
 
-    const numToGenerate = Math.max(1, 4 - (keptColors?.length || 0));
+    const kept = Array.isArray(keptColors) ? keptColors : [];
+    const numToGenerate = Math.max(1, 4 - kept.length);
 
     if (!llmConfig.apiKey) {
-      console.warn("API Key não encontrada. Usando modo MOCK para cores.");
-      return NextResponse.json({
-        colors: ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"].slice(0, numToGenerate)
-      });
+      console.warn("[Colors API] No API key — returning random palette");
+      return NextResponse.json({ colors: generateFallbackColors(numToGenerate) });
     }
 
-    let systemPrompt = "";
-    
-    // hint injection
-    const hintInstruction = hint 
-      ? `\n\nCRITICAL OVERRIDE: The user provided a specific hint for the colors they want: "${hint}". You MUST prioritize this hint above all other rules while keeping the colors harmonious.`
+    const hintInstruction = hint?.trim()
+      ? `\n\nUSER STYLE HINT: "${hint}". This is the user's explicit preference — PRIORITIZE this above default choices. If they say "verde neon", your palette MUST center around neon green. If they say "tons pastéis", use pastel tones. ALWAYS honor this hint.`
       : "";
 
-    const keptInstruction = keptColors && keptColors.length > 0
-      ? `\n\nThe user has already selected and kept these colors: ${keptColors.join(", ")}. Do not include them in your output, but ensure your new generated colors harmonize perfectly with them.`
+    const keptInstruction = kept.length > 0
+      ? `\n\nALREADY CHOSEN: ${kept.join(", ")}. Do NOT include these exact colors. Generate colors that COMPLEMENT and HARMONIZE with them to form a cohesive palette.`
       : "";
+
+    let systemPrompt = "";
 
     if (type === "initial") {
-      systemPrompt = `You are an expert color theorist and UI designer. The user has provided the following context about their brand/company/project:
-"${context || 'No specific context provided'}"
+      // Step 1: Generate main/primary brand colors
+      systemPrompt = `You are a world-class brand color strategist. Your job is to generate a COHESIVE color palette for a brand's UI.
 
-Your task is to suggest EXACTLY ${numToGenerate} brand colors (in HEX format) to be used as UI details and accents in a briefing interface that represents their brand.
-IMPORTANT: We are NOT redefining their entire visual identity. We need beautiful, UI-friendly palette colors that match their brand DNA for elements like buttons, highlights, and borders.
+Brand context from the user's previous answers:
+"${context || 'Modern brand'}"
+
+Generate EXACTLY ${numToGenerate} PRIMARY brand colors (HEX format).
+These colors will be used as the MAIN accent colors in the brand's UI — primary buttons, headers, key highlights.
 ${hintInstruction}${keptInstruction}
-IMPORTANT: The ${numToGenerate} generated color(s) must NOT be too similar to each other (if generating > 1)! Make them distinct to provide a good variety of options.
 
-Output strictly valid JSON only, with exactly ${numToGenerate} items:
-{"colors": ["#HEX1", ...]}`;
+PALETTE RULES:
+- Colors must form a HARMONIOUS palette together (not random)
+- Use color theory: analogous, complementary, or triadic relationships
+- Each color must be vibrant enough for UI buttons/accents on a dark background
+- No whites, no near-blacks, no grays — these are ACCENT colors
+- Each color must be visually DISTINCT from the others
+- Make them feel premium and modern
+
+Return ONLY valid JSON: {"colors": [${Array.from({length: numToGenerate}, (_, i) => `"#HEX${i+1}"`).join(', ')}]}`;
     } else {
+      // Step 2: Generate detail/accent colors that complement the main ones
       if (!mainColors || mainColors.length < 1) {
-        return NextResponse.json({ error: "Pelo menos uma cor principal é obrigatória para gerar complementares." }, { status: 400 });
+        return NextResponse.json({ error: "At least one main color is required." }, { status: 400 });
       }
-      systemPrompt = `You are an expert color theorist and brand designer. The user has provided 1 or 2 main brand colors in HEX format. 
-Also, consider the following brand context to ensure the colors are harmonious with the brand's identity:
-"${context || 'No specific context provided'}"
+      systemPrompt = `You are a world-class brand color strategist. The user has chosen their PRIMARY brand colors: ${mainColors.join(", ")}.
 
-Your task is to generate EXACTLY ${numToGenerate} complementary HEX colors that perfectly harmonize with the main color(s) and the brand context, and are suitable for modern web design (UI backgrounds, typography accents, secondary buttons, etc).
-Focus on contrast and aesthetic beauty.
+Brand context: "${context || 'Modern brand'}"
+
+Now generate EXACTLY ${numToGenerate} DETAIL/ACCENT colors (HEX format).
+These are SECONDARY colors for: subtle backgrounds, text accents, borders, badges, and UI details.
 ${hintInstruction}${keptInstruction}
-IMPORTANT: The ${numToGenerate} generated color(s) must NOT be too similar to each other, nor too similar to the main/kept colors! Make them distinctly different from each other.
 
-Output strictly valid JSON only, with exactly ${numToGenerate} items:
-{"colors": ["#HEX1", ...]}`;
+PALETTE RULES:
+- These MUST harmonize perfectly with the main colors (${mainColors.join(", ")})
+- Detail colors should be SOFTER or more MUTED than the primaries
+- Think: lighter tints, desaturated versions, or complementary soft tones
+- They should provide CONTRAST when paired with the main colors
+- NO pure white (#FFFFFF) or pure black (#000000)
+- Good examples: soft slate, muted teal, warm cream, light lavender
+- Each must be distinct from each other AND from the main colors
+
+Return ONLY valid JSON: {"colors": [${Array.from({length: numToGenerate}, (_, i) => `"#HEX${i+1}"`).join(', ')}]}`;
     }
 
     const messages: { role: string; content: string }[] = [
-      { role: "system", content: systemPrompt }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: type === "detail" 
+        ? `Main colors: ${mainColors.join(", ")}. Generate ${numToGenerate} detail colors now.`
+        : `Generate ${numToGenerate} primary brand colors now.`
+      }
     ];
 
-    if (type === "complementary") {
-      messages.push({ role: "user", content: `Main Color(s): ${mainColors.join(", ")}` });
-    } else {
-       messages.push({ role: "user", content: `Please provide the initial 4 primary color suggestions.` });
-    }
+    console.log(`[Colors API] type=${type}, num=${numToGenerate}, hint="${hint || ''}", kept=${JSON.stringify(kept)}`);
 
     const res = await fetch(llmConfig.baseUrl, {
       method: "POST",
@@ -75,26 +90,58 @@ Output strictly valid JSON only, with exactly ${numToGenerate} items:
       body: JSON.stringify({
         model: llmConfig.model,
         response_format: { type: "json_object" },
-        temperature: 0.8,
-        max_tokens: 200,
+        temperature: 0.85,
+        max_tokens: 500,
         messages,
       }),
     });
 
     if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`AI API failed: ${err}`);
+      const errText = await res.text();
+      console.error(`[Colors API] LLM failed (${res.status}):`, errText);
+      return NextResponse.json({ colors: generateFallbackColors(numToGenerate) });
     }
 
     const data = await res.json();
-    const content = JSON.parse(data.choices[0].message.content);
-    
-    return NextResponse.json({
-      colors: content.colors || content.complementaryColors || content.initialColors || ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"]
-    });
+    const rawContent = data.choices?.[0]?.message?.content;
+
+    if (!rawContent) {
+      console.error("[Colors API] Empty content from LLM:", JSON.stringify(data));
+      return NextResponse.json({ colors: generateFallbackColors(numToGenerate) });
+    }
+
+    console.log("[Colors API] Raw output:", rawContent);
+
+    const parsed = JSON.parse(rawContent);
+    const colors: string[] = parsed.colors || parsed.complementaryColors || parsed.initialColors || [];
+
+    // Validate hex format and clean
+    const validColors = colors
+      .filter((c: string) => typeof c === 'string' && /^#[0-9A-Fa-f]{6}$/.test(c))
+      .map((c: string) => c.toUpperCase())
+      .slice(0, numToGenerate);
+
+    if (validColors.length === 0) {
+      console.error("[Colors API] No valid hex colors in:", parsed);
+      return NextResponse.json({ colors: generateFallbackColors(numToGenerate) });
+    }
+
+    console.log("[Colors API] Returning:", validColors);
+    return NextResponse.json({ colors: validColors });
 
   } catch (error) {
-    console.error("Color API Error:", error);
-    return NextResponse.json({ colors: ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"] });
+    console.error("[Colors API] Error:", error);
+    return NextResponse.json({ colors: generateFallbackColors(4) });
   }
+}
+
+function generateFallbackColors(count: number): string[] {
+  const palettes = [
+    ["#6366F1", "#EC4899", "#14B8A6", "#F97316"],
+    ["#8B5CF6", "#F43F5E", "#06B6D4", "#EAB308"],
+    ["#A855F7", "#E11D48", "#0EA5E9", "#84CC16"],
+    ["#7C3AED", "#DB2777", "#0891B2", "#D97706"],
+  ];
+  const palette = palettes[Math.floor(Math.random() * palettes.length)];
+  return palette.slice(0, count);
 }
