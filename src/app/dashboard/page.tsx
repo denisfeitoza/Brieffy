@@ -109,16 +109,16 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
-        <Link href="/dashboard/templates">
+        <Link href="/dashboard/templates/new">
           <Button className="bg-cyan-600 hover:bg-cyan-500 rounded-xl shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)]">
             <Plus className="w-4 h-4 mr-2" />
-            New Briefing
+            Criar Novo Briefing
           </Button>
         </Link>
-        <Link href="/dashboard/templates/new">
+        <Link href="/dashboard/templates">
           <Button variant="outline" className="border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl">
             <FileText className="w-4 h-4 mr-2" />
-            Create Template
+            Ver Meus Briefings
           </Button>
         </Link>
       </div>

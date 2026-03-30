@@ -56,6 +56,38 @@ const mockQuestions: Message[] = [
     questionType: "text",
   },
   {
+    id: "q_multi_slider",
+    role: "assistant",
+    content: "Como você definiria o perfil da sua marca nos seguintes eixos?",
+    questionType: "multi_slider",
+    options: [
+      {
+        label: "Tom de Voz",
+        min: 1,
+        max: 5,
+        minLabel: "Sério/Formal",
+        maxLabel: "Descontraído",
+        defaultValue: 3,
+      },
+      {
+        label: "Posicionamento",
+        min: 1,
+        max: 5,
+        minLabel: "Acessível",
+        maxLabel: "Premium",
+        defaultValue: 3,
+      },
+      {
+        label: "Foco",
+        min: 1,
+        max: 5,
+        minLabel: "Produto/Serviço",
+        maxLabel: "Relacionamento",
+        defaultValue: 3,
+      }
+    ],
+  },
+  {
     id: "q_card",
     role: "assistant",
     content: "Qual o estágio atual do seu negócio no mercado digital?",
@@ -74,6 +106,20 @@ const mockQuestions: Message[] = [
         description: "Processos alinhados, CAQ e LTV mapeados. Preciso de tecnologia e tráfego para injetar volume."
       }
     ]
+  },
+  {
+    id: "q_font",
+    role: "assistant",
+    content: "Qual dessas opções de tipografia mais se alinha com a personalidade que você deseja passar na sua comunicação?",
+    questionType: "single_choice",
+    options: [
+      "Inter - Moderna e Neutra", 
+      "Playfair Display - Elegante e Clássica", 
+      "Outfit - Geométrica e Tech", 
+      "Merriweather - Tradicional e Confiável",
+      "Roboto Mono - Técnica e Precisa",
+      "Montserrat - Ousada e Impactante"
+    ],
   }
 ];
 
@@ -114,8 +160,10 @@ export default function SandboxPage() {
         </div>
       </header>
       
-      <main className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 overflow-y-auto">
-         <div className="w-full max-w-3xl flex flex-col space-y-12">
+      <main className="flex-1 w-full overflow-y-auto overflow-x-hidden">
+        <div className="min-h-full w-full flex flex-col items-center p-6 lg:p-12">
+          <div className="flex-1 shrink-0" />
+          <div className="w-full max-w-3xl flex flex-col space-y-12 shrink-0 py-12">
             <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
               {activeMessage.content}
             </h1>
@@ -132,9 +180,13 @@ export default function SandboxPage() {
                   setIsRecording={setIsRecording}
                   generateMoreOptions={() => alert("Simulando call na API: gerando mais alternativas...")}
                   isGeneratingMore={false}
+                  voiceLanguage="pt"
+                  messages={mockQuestions}
                 />
             </div>
-         </div>
+          </div>
+          <div className="flex-1 shrink-0" />
+        </div>
       </main>
     </div>
   )

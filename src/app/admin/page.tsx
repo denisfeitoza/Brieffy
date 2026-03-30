@@ -1,4 +1,4 @@
-import { getGlobalStats, getAllUsersAdmin } from '@/lib/services/briefingService';
+import { getGlobalStats, getAllUsersAdmin, getAdminCostMetrics } from '@/lib/services/briefingService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, FileText, CalendarDays, CheckCircle2, ExternalLink, Shield } from 'lucide-react';
@@ -8,10 +8,14 @@ import { format } from 'date-fns';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboardPage() {
-  const [stats, users] = await Promise.all([
+  const [stats, users, costMetrics] = await Promise.all([
     getGlobalStats(),
     getAllUsersAdmin(),
+    getAdminCostMetrics()
   ]);
+
+  // Import locally (only rendered on client)
+  const { CostCharts } = await import('./components/CostCharts');
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -73,6 +77,14 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cost Charts Component */}
+      <CostCharts 
+        totalCostUSD={costMetrics.totalCostUSD}
+        totalCostBRL={costMetrics.totalCostBRL}
+        costByCompany={costMetrics.costByCompany}
+        timelineData={costMetrics.timelineData}
+      />
 
       {/* Users Table */}
       <div className="space-y-4">

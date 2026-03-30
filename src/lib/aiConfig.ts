@@ -164,3 +164,50 @@ export function getPerformanceConfig(overrides?: SettingsOverride) {
     basalThreshold: parseFloat(overrides?.briefing_basal_threshold || "0.85"),
   };
 }
+
+// ================================================================
+// Cost Estimation (Based on Groq / OpenRouter Pricing per 1M tokens)
+// Pricing in USD
+// ================================================================
+export function estimateCost(provider: string, model: string, promptTokens: number, completionTokens: number): number {
+  let promptCostPer1M = 0;
+  let completionCostPer1M = 0;
+
+  if (provider === "groq") {
+    // Groq Pricing approximations (per 1M tokens)
+    if (model.includes("70b") || model.includes("70B")) {
+      promptCostPer1M = 0.59;
+      completionCostPer1M = 0.79;
+    } else if (model.includes("8b") || model.includes("8B")) {
+      promptCostPer1M = 0.05;
+      completionCostPer1M = 0.08;
+    } else if (model.includes("mixtral") || model.includes("8x7b")) {
+      promptCostPer1M = 0.24;
+      completionCostPer1M = 0.24;
+    } else {
+      // Default fallback for Groq if unknown
+      promptCostPer1M = 0.15;
+      completionCostPer1M = 0.20;
+    }
+  } else if (provider === "openrouter") {
+    // OpenRouter fallback (generic average or specific)
+    if (model.includes("gpt-4o-mini")) {
+      promptCostPer1M = 0.15;
+      completionCostPer1M = 0.60;
+    } else if (model.includes("gpt-4o")) {
+      promptCostPer1M = 2.50;
+      completionCostPer1M = 10.00;
+    } else if (model.includes("claude-3-5-sonnet")) {
+      promptCostPer1M = 3.00;
+      completionCostPer1M = 15.00;
+    } else {
+      // Very cheap fallback
+      promptCostPer1M = 0.10;
+      completionCostPer1M = 0.10;
+    }
+  }
+
+  const promptCost = (promptTokens / 1_000_000) * promptCostPer1M;
+  const completionCost = (completionTokens / 1_000_000) * completionCostPer1M;
+  return promptCost + completionCost;
+}

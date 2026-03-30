@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { name, category, objectives, core_fields } = body;
 
@@ -20,9 +23,10 @@ export async function POST(req: Request) {
       .insert([
         { 
           name, 
-          category,
+          category: category || 'Geral',
           objectives: Array.isArray(objectives) ? objectives : [],
-          core_fields: Array.isArray(core_fields) ? core_fields : []
+          core_fields: Array.isArray(core_fields) ? core_fields : [],
+          user_id: user.id
         }
       ])
       .select()
@@ -39,3 +43,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Erro de servidor' }, { status: 500 });
   }
 }
+

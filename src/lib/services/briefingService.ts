@@ -144,6 +144,26 @@ export async function deleteSession(sessionId: string) {
 }
 
 // ========================
+// PACKAGES
+// ========================
+
+export async function getPackagesBySlugs(slugs: string[]) {
+  if (!slugs || slugs.length === 0) return [];
+  const supabase = await createServerSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from('briefing_category_packages')
+    .select('slug, name, icon, department')
+    .in('slug', slugs);
+    
+  if (error) {
+    console.error('Error fetching packages by slugs:', error);
+    return [];
+  }
+  return data || [];
+}
+
+// ========================
 // TEMPLATES
 // ========================
 
@@ -308,5 +328,72 @@ export async function getGlobalStats() {
     totalSessions: allSessions.length,
     todaySessions: todaySessions.length,
     finishedSessions: allSessions.filter(s => s.status === 'finished').length,
+  };
+}
+
+// ========================
+// ADMIN — COSTS & API USAGE
+// ========================
+
+export async function getAdminCostMetrics() {
+  const supabase = await createServerSupabaseClient();
+
+  // Fetch all usage logs, joining with profiles to get the company name
+  const { data: usageLogs, error } = await supabase
+    .from('api_usage')
+    .select('*, briefing_profiles!api_usage_user_id_fkey(company_name, display_name)')
+    .order('created_at', { ascending: true }); // Ascending for time-series charts
+
+  if (error) {
+    console.error('Error fetching API usage logs:', error);
+    return { totalCostUSD: 0, totalCostBRL: 0, costByCompany: [], timelineData: [] };
+  }
+
+  const EXCHANGE_RATE_BRL = 6.0; // Current approx conversion rate, can be dynamic later
+  let totalCostUSD = 0;
+
+  // Track costs grouped by company
+  const companyCosts: Record<string, { companyName: string; costUsd: number; tokens: number }> = {};
+  
+  // Track costs by day for timeline chart
+  const timelineCosts: Record<string, { date: string; costUsd: number; costBrl: number }> = {};
+
+  (usageLogs || []).forEach(log => {
+    // Note: Database might return the relation as an object or array of objects depending on schema
+    const profile = Array.isArray(log.briefing_profiles) ? log.briefing_profiles[0] : log.briefing_profiles;
+    const companyName = profile?.company_name || profile?.display_name || 'Usuário Avulso';
+    const cost = Number(log.estimated_cost_usd) || 0;
+    const tokens = (log.prompt_tokens || 0) + (log.completion_tokens || 0);
+    
+    totalCostUSD += cost;
+
+    // Group by company
+    if (!companyCosts[companyName]) {
+      companyCosts[companyName] = { companyName, costUsd: 0, tokens: 0 };
+    }
+    companyCosts[companyName].costUsd += cost;
+    companyCosts[companyName].tokens += tokens;
+
+    // Group by date (YYYY-MM-DD)
+    const dateStr = new Date(log.created_at).toISOString().split('T')[0];
+    if (!timelineCosts[dateStr]) {
+      timelineCosts[dateStr] = { date: dateStr, costUsd: 0, costBrl: 0 };
+    }
+    timelineCosts[dateStr].costUsd += cost;
+    timelineCosts[dateStr].costBrl += (cost * EXCHANGE_RATE_BRL);
+  });
+
+  // Convert dicts to arrays and sort
+  const costByCompany = Object.values(companyCosts)
+    .sort((a, b) => b.costUsd - a.costUsd);
+
+  const timelineData = Object.values(timelineCosts)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  return {
+    totalCostUSD,
+    totalCostBRL: totalCostUSD * EXCHANGE_RATE_BRL,
+    costByCompany,
+    timelineData
   };
 }

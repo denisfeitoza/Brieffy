@@ -16,10 +16,11 @@ export async function GET() {
     if (error) throw error;
 
     return NextResponse.json(data);
-  } catch (error: any) {
-    console.error("Error fetching packages:", error.message || error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching packages:", msg);
     return NextResponse.json(
-      { error: "Failed to fetch packages", details: error.message || '' },
+      { error: "Failed to fetch packages", details: msg },
       { status: 500 }
     );
   }

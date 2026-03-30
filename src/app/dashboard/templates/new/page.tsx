@@ -39,7 +39,7 @@ export default function NewTemplatePage() {
     };
 
     if (!payload.name) {
-      setError("O nome do template é obrigatório");
+      setError("O nome do briefing é obrigatório");
       setIsSubmitting(false);
       return;
     }
@@ -51,7 +51,7 @@ export default function NewTemplatePage() {
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error('Falha ao salvar template');
+      if (!res.ok) throw new Error('Falha ao salvar briefing');
 
       // Redirect back to templates page
       router.push('/dashboard/templates');
@@ -73,7 +73,7 @@ export default function NewTemplatePage() {
             Voltar para lista
           </Link>
           <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
-            Criar Novo Template
+            Criar Novo Briefing
           </h2>
           <p className="text-zinc-400 mt-2 font-medium max-w-xl">
             Estruture o motor do agente de Briefing. Defina quais objetivos de expansão a IA terá.
@@ -160,7 +160,7 @@ export default function NewTemplatePage() {
             ) : (
               <Save className="w-5 h-5 mr-2" />
             )}
-            {isSubmitting ? 'Salvando Template...' : 'Salvar Motor Inteligente'}
+            {isSubmitting ? 'Salvando Briefing...' : 'Salvar Motor Inteligente'}
           </Button>
         </div>
 

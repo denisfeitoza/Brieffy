@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mic, ArrowRight, RefreshCw, CheckCircle2, UploadCloud, Loader2, Plus, X } from "lucide-react";
+import { Mic, ArrowRight, RefreshCw, CheckCircle2, UploadCloud, Loader2, Plus, X, Pipette } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 
-function DraggableToggle({ onSelect, disabled, t, initialAnswer }: { onSelect: (val: string) => void, disabled: boolean, t: any, initialAnswer?: string | null }) {
+function DraggableToggle({ onSelect, disabled, t, initialAnswer }: { onSelect: (val: string) => void, disabled: boolean, t: Record<string, string>, initialAnswer?: string | null }) {
   const [answered, setAnswered] = useState<string | null>(initialAnswer || null);
   const x = useMotionValue(0); 
   const trackWidth = 320;
@@ -21,29 +21,22 @@ function DraggableToggle({ onSelect, disabled, t, initialAnswer }: { onSelect: (
   useEffect(() => {
     if (initialAnswer === t.yes || initialAnswer === t.yes?.toLowerCase()) {
       x.set(-maxDrag);
-      setAnswered(t.yes);
     } else if (initialAnswer === t.no || initialAnswer === t.no?.toLowerCase()) {
       x.set(maxDrag);
-      setAnswered(t.no);
     } else {
       x.set(0);
-      setAnswered(null);
     }
   }, [initialAnswer, t.yes, t.no, x, maxDrag]);
 
-  const handleDragEnd = (event: any, info: any) => {
-    if (disabled) return;
-    if (info.offset.x > maxDrag * 0.5) {
-      animate(x, maxDrag, { type: "spring", stiffness: 300, damping: 20 });
-      setAnswered(t.no);
-      onSelect(t.no);
-    } else if (info.offset.x < -maxDrag * 0.5) {
+  const handleSelect = (val: string) => {
+    if (disabled || answered !== null) return;
+    setAnswered(val);
+    if (val === t.yes) {
       animate(x, -maxDrag, { type: "spring", stiffness: 300, damping: 20 });
-      setAnswered(t.yes);
-      onSelect(t.yes);
-    } else {
-      animate(x, 0, { type: "spring", stiffness: 300, damping: 20 });
-      setAnswered(null);
+      setTimeout(() => onSelect(t.yes), 350);
+    } else if (val === t.no) {
+      animate(x, maxDrag, { type: "spring", stiffness: 300, damping: 20 });
+      setTimeout(() => onSelect(t.no), 350);
     }
   };
 
@@ -73,23 +66,22 @@ function DraggableToggle({ onSelect, disabled, t, initialAnswer }: { onSelect: (
         className="relative flex items-center justify-center h-20 rounded-[2.5rem] overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] backdrop-blur-md"
         style={{ width: trackWidth, backgroundColor: background, borderColor, borderWidth: 1 }}
       >
-        <div className="absolute inset-0 flex justify-between items-center px-8 font-bold text-lg pointer-events-none uppercase tracking-widest z-0">
-          <span className="text-white/40">{t.yes}</span>
-          <span className="text-white/40">{t.no}</span>
+        <div className="absolute inset-0 flex z-20">
+          <div className="flex-1 flex items-center justify-center cursor-pointer" onClick={() => handleSelect(t.yes)}>
+            <span className={`font-bold text-lg uppercase tracking-widest transition-colors ${answered === t.yes ? 'text-transparent' : 'text-white/40 hover:text-white/80'}`}>{t.yes}</span>
+          </div>
+          <div className="flex-1 flex items-center justify-center cursor-pointer" onClick={() => handleSelect(t.no)}>
+            <span className={`font-bold text-lg uppercase tracking-widest transition-colors ${answered === t.no ? 'text-transparent' : 'text-white/40 hover:text-white/80'}`}>{t.no}</span>
+          </div>
         </div>
         
         <motion.div
-          className="absolute h-16 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15),inset_0_-2px_5px_rgba(0,0,0,0.1)] flex items-center justify-center font-bold text-black uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-transform z-10"
-          style={{ width: knobWidth, x }}
-          drag={disabled ? false : "x"}
-          dragConstraints={{ left: -maxDrag, right: maxDrag }}
-          dragElastic={0.05}
-          onDragEnd={handleDragEnd}
-          whileDrag={{ cursor: "grabbing" }}
+          className="absolute h-16 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15),inset_0_-2px_5px_rgba(0,0,0,0.1)] flex items-center justify-center font-bold text-black uppercase tracking-wider z-10 pointer-events-none transition-opacity duration-300"
+          style={{ width: knobWidth, x, opacity: answered ? 1 : 0 }}
           initial={false}
           animate={{ x: x.get() }}
         >
-          {answered === t.yes ? t.yes : answered === t.no ? t.no : "Arrastar"}
+          {answered === t.yes ? t.yes : answered === t.no ? t.no : ""}
         </motion.div>
       </motion.div>
     </div>
@@ -579,38 +571,86 @@ export function DynamicInput({
         <strong className="text-indigo-400 font-semibold text-[15px]">{t.onlyOneLabel}</strong>{" "}
         {t.optionLabel}
       </p>
-      <div className="flex flex-wrap gap-2 md:gap-3 items-center w-full">
-        {activeMessage.options?.map((opt: unknown, idx: number) => {
-          const optObj = typeof opt === 'object' && opt !== null ? (opt as Record<string, unknown>) : null;
-          const optText = optObj ? String(optObj.label || optObj.title || optObj.name || JSON.stringify(opt)) : String(opt);
-          const optKey = optObj ? String(optObj.id || optText || idx) : String(opt);
-          return (
-          <Button
-            key={optKey}
-            variant="outline"
-            size="lg"
-            onClick={() => doSubmit(optText)}
-            disabled={isLoading || isSubmittingLocal}
-            className="rounded-full bg-transparent border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900 text-neutral-300 h-12 md:h-14 md:px-6 font-medium tracking-wide transition-all"
-            style={isFontSelection ? { fontFamily: `"${optText.split('-')[0].replace(/[^a-zA-Z0-9 ]/g, '').trim()}", sans-serif`, fontSize: '1.25rem' } : undefined}
-          >
-            {optText}
-          </Button>
-        )})}
-        
-        {activeMessage.allowMoreOptions && (
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={generateMoreOptions}
-            disabled={isGeneratingMore || isLoading || isSubmittingLocal}
-            className="rounded-full text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 h-12 md:h-14 font-medium"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingMore ? 'animate-spin' : ''}`} />
-            {t.otherOptions}
-          </Button>
-        )}
-      </div>
+      {isFontSelection ? (
+        <div className="flex flex-col gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full cursor-pointer">
+            {activeMessage.options?.map((opt: unknown, idx: number) => {
+              const optObj = typeof opt === 'object' && opt !== null ? (opt as Record<string, unknown>) : null;
+              const optText = optObj ? String(optObj.label || optObj.title || optObj.name || JSON.stringify(opt)) : String(opt);
+              const optKey = optObj ? String(optObj.id || optText || idx) : String(opt);
+              const parts = optText.split('-');
+              const fontName = parts[0].trim();
+              const fontDesc = parts.slice(1).join('-').trim() || '';
+              const fontNameClean = fontName.replace(/[^a-zA-Z0-9 ]/g, '');
+
+              return (
+                <button
+                  key={optKey}
+                  onClick={() => doSubmit(optText)}
+                  disabled={isLoading || isSubmittingLocal}
+                  className="flex flex-col items-center justify-start gap-4 pt-10 px-6 pb-6 rounded-2xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-800 hover:border-neutral-600 hover:-translate-y-1 transition-all text-center aspect-square min-h-[220px] group cursor-pointer"
+                  style={{ fontFamily: `"${fontNameClean}", sans-serif` }}
+                >
+                  <span className="text-[36px] font-medium text-neutral-100 group-hover:text-white transition-colors leading-tight">
+                    {fontName}
+                  </span>
+                  {fontDesc && (
+                    <span className="text-[14px] text-neutral-400 group-hover:text-neutral-300 mt-auto leading-relaxed tracking-wide">
+                      {fontDesc}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {activeMessage.allowMoreOptions && (
+            <div className="flex justify-start">
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={generateMoreOptions}
+                disabled={isGeneratingMore || isLoading || isSubmittingLocal}
+                className="rounded-full text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 h-12 md:h-14 font-medium"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingMore ? 'animate-spin' : ''}`} />
+                {t.otherOptions}
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2 md:gap-3 items-center w-full">
+          {activeMessage.options?.map((opt: unknown, idx: number) => {
+            const optObj = typeof opt === 'object' && opt !== null ? (opt as Record<string, unknown>) : null;
+            const optText = optObj ? String(optObj.label || optObj.title || optObj.name || JSON.stringify(opt)) : String(opt);
+            const optKey = optObj ? String(optObj.id || optText || idx) : String(opt);
+            return (
+            <Button
+              key={optKey}
+              variant="outline"
+              size="lg"
+              onClick={() => doSubmit(optText)}
+              disabled={isLoading || isSubmittingLocal}
+              className="rounded-full bg-transparent border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900 text-neutral-300 h-12 md:h-14 md:px-6 font-medium tracking-wide transition-all"
+            >
+              {optText}
+            </Button>
+          )})}
+          
+          {activeMessage.allowMoreOptions && (
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={generateMoreOptions}
+              disabled={isGeneratingMore || isLoading || isSubmittingLocal}
+              className="rounded-full text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 h-12 md:h-14 font-medium"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingMore ? 'animate-spin' : ''}`} />
+              {t.otherOptions}
+            </Button>
+          )}
+        </div>
+      )}
       {/* Sempre mostramos o text input embaixo como Híbrido */}
       {renderTextAndAudio()}
     </div>
@@ -822,23 +862,32 @@ export function DynamicInput({
                         key={idx} 
                         className={`cursor-pointer group flex flex-col items-center gap-3 p-4 rounded-2xl relative transition-all border-2 ${isSelected ? 'border-primary bg-primary/10' : 'border-white/5 hover:border-white/20'}`}
                       >
-                        <input 
-                          type="color" 
-                          value={hex} 
-                          onChange={(e) => {
-                            const newColors = [...suggestedMainColors];
-                            newColors[idx] = e.target.value.toUpperCase();
-                            setSuggestedMainColors(newColors);
-                            if (isSelected) {
-                                setSelectedMainColors(selectedMainColors.map(c => c === hex ? e.target.value.toUpperCase() : c));
-                            }
-                          }}
-                          className="absolute opacity-0 cursor-pointer z-10 w-full h-[60%] top-0"
-                        />
+                      <div className="relative flex items-center justify-center">
                         <div 
-                          className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10"
+                          className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10 relative overflow-hidden flex items-center justify-center"
                           style={{ backgroundColor: hex, boxShadow: isSelected ? `0 0 20px ${hex}60` : undefined }}
-                        />
+                        >
+                          <input 
+                            type="color" 
+                            value={hex} 
+                            onChange={(e) => {
+                              const newColors = [...suggestedMainColors];
+                              newColors[idx] = e.target.value.toUpperCase();
+                              setSuggestedMainColors(newColors);
+                              if (isSelected) {
+                                  setSelectedMainColors(selectedMainColors.map(c => c === hex ? e.target.value.toUpperCase() : c));
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`absolute inset-0 w-full h-full opacity-0 cursor-pointer ${isSelected ? 'z-20' : 'pointer-events-none z-[-1]'}`}
+                          />
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                              <Pipette className="w-6 h-6 text-white drop-shadow-md" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
                         {/* Overlay clicavel para selecionar, posicionado abaixo da bolinha */}
                         <div 
                            className="w-full h-full absolute top-0 left-0 z-0" 
@@ -909,23 +958,32 @@ export function DynamicInput({
                       key={idx} 
                       className={`cursor-pointer group flex flex-col items-center gap-3 p-4 rounded-2xl relative transition-all border-2 ${isSelected ? 'border-primary bg-primary/10' : 'border-white/5 hover:border-white/20'}`}
                     >
-                      <input 
-                        type="color" 
-                        value={hex} 
-                        onChange={(e) => {
-                          const newColors = [...suggestedColors];
-                          newColors[idx] = e.target.value.toUpperCase();
-                          setSuggestedColors(newColors);
-                          if (isSelected) {
-                              setSelectedSuggestions(selectedSuggestions.map(c => c === hex ? e.target.value.toUpperCase() : c));
-                          }
-                        }}
-                        className="absolute opacity-0 cursor-pointer z-10 w-full h-[60%] top-0"
-                      />
-                      <div 
-                        className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10"
-                        style={{ backgroundColor: hex, boxShadow: isSelected ? `0 0 20px ${hex}60` : undefined }}
-                      />
+                      <div className="relative flex items-center justify-center">
+                        <div 
+                          className="w-16 h-16 rounded-full transition-transform group-hover:scale-110 border border-white/10 relative overflow-hidden flex items-center justify-center"
+                          style={{ backgroundColor: hex, boxShadow: isSelected ? `0 0 20px ${hex}60` : undefined }}
+                        >
+                          <input 
+                            type="color" 
+                            value={hex} 
+                            onChange={(e) => {
+                              const newColors = [...suggestedColors];
+                              newColors[idx] = e.target.value.toUpperCase();
+                              setSuggestedColors(newColors);
+                              if (isSelected) {
+                                  setSelectedSuggestions(selectedSuggestions.map(c => c === hex ? e.target.value.toUpperCase() : c));
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`absolute inset-0 w-full h-full opacity-0 cursor-pointer ${isSelected ? 'z-20' : 'pointer-events-none z-[-1]'}`}
+                          />
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                              <Pipette className="w-6 h-6 text-white drop-shadow-md" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <div 
                          className="w-full h-full absolute top-0 left-0 z-0" 
                          onClick={() => {
@@ -997,9 +1055,13 @@ export function DynamicInput({
                       className="absolute opacity-0 cursor-pointer z-10 w-full h-1/2 top-0"
                     />
                     <div 
-                      className="w-20 h-20 rounded-full transition-transform group-hover:scale-110 border-2 border-white/10"
+                      className="w-20 h-20 rounded-full transition-transform group-hover:scale-110 border-2 border-white/10 relative overflow-hidden"
                       style={{ backgroundColor: hex }}
-                    />
+                    >
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                        <Pipette className="w-6 h-6 text-white drop-shadow-md" />
+                      </div>
+                    </div>
                     <div className="flex flex-col items-center">
                       <span className="text-[10px] uppercase font-bold text-neutral-400">{t.detail}{" "}{idx + 1}</span>
                       <span className="text-xs font-mono text-neutral-300 mt-1">{hex}</span>
@@ -1206,11 +1268,21 @@ export function DynamicInput({
   return (
     <div className="w-full">
       {isFontSelection && fontOptions.length > 0 && (
-        <style>{fontOptions.map(font => {
-          const sanitized = font.split('-')[0].replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '+');
-          if (!sanitized) return '';
-          return `@import url('https://fonts.googleapis.com/css2?family=${sanitized}:wght@400;700&display=swap');`;
-        }).join('\n')}</style>
+        <>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          {fontOptions.map((font, idx) => {
+            const sanitized = font.split('-')[0].replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '+');
+            if (!sanitized) return null;
+            return (
+              <link 
+                key={idx} 
+                href={`https://fonts.googleapis.com/css2?family=${sanitized}:wght@300;400;500;600;700&display=swap`} 
+                rel="stylesheet" 
+              />
+            );
+          })}
+        </>
       )}
 
       {hasAnswered && (

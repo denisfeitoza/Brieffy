@@ -232,7 +232,7 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
             {step === 'info' && (
-              <>Criando link baseado no template <strong className="text-cyan-400">{templateName}</strong>.</>
+              <>Criando link baseado no motor inteligente <strong className="text-cyan-400">{templateName}</strong>.</>
             )}
             {step === 'packages' && (
               <>Cada pacote é uma <strong className="text-cyan-400">skill de IA</strong> especializada que aprofunda em perguntas únicas do setor.</>

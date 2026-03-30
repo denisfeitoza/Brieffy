@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getLLMConfig, getDBSettings, getPerformanceConfig } from "@/lib/aiConfig";
 import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -77,6 +78,24 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { answer, currentState, history, generateMore, activeTemplate, chosenLanguage, selectedPackages } = body;
 
+    // Fetch user context from the Onboarding process
+    const supabaseSession = await createServerSupabaseClient();
+    const { data: { user } } = await supabaseSession.auth.getUser();
+
+    let agencySummary = "";
+    let agencyBrandColor = "";
+
+    if (user) {
+      const { data: profile } = await supabaseServer
+        .from("briefing_profiles")
+        .select("company_summary, brand_color")
+        .eq("id", user.id)
+        .single();
+        
+      if (profile?.company_summary) agencySummary = profile.company_summary;
+      if (profile?.brand_color) agencyBrandColor = profile.brand_color;
+    }
+
     // Get AI provider config from centralized configuration (DB overrides)
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
@@ -107,9 +126,17 @@ export async function POST(req: Request) {
       ? `Template: ${activeTemplate.name} (${activeTemplate.category}). Goals: ${activeTemplate.objectives.join(", ")}. Core fields: ${activeTemplate.core_fields.join(", ")}`
       : 'No template. General business interview.';
 
-    const extraContext = body.initialContext 
-      ? `KNOWN CLIENT CONTEXT: ${body.initialContext}` 
-      : '';
+    const extraContextStrings = [];
+    if (body.initialContext) {
+      extraContextStrings.push(`KNOWN CLIENT CONTEXT: ${body.initialContext}`);
+    }
+    if (agencySummary) {
+      extraContextStrings.push(`AGENCY/USER PROFILE: You are conducting this briefing on behalf of an agency described as: "${agencySummary}". Use this knowledge to contextualize choices and acknowledge their agency type. Frame questions naturally referencing their agency context if it fits.`);
+    }
+    if (agencyBrandColor) {
+      extraContextStrings.push(`AGENCY BRAND COLOR: Their agency's primary brand color is ${agencyBrandColor}. Keep this in mind if they prefer visuals aligned with their brand.`);
+    }
+    const extraContext = extraContextStrings.join('\n\n');
 
     const langMap: Record<string, string> = {
       'en': 'English',
@@ -171,16 +198,16 @@ Before generating nextQuestion, verify:
 - If basalCoverage≥${perfConfig.basalThreshold} AND objectives met: isFinished=true, fill assets.
 
 ═══ UX & COMPONENT VARIATION (CRITICAL) ═══
-You MUST aggressively vary the \`questionType\` throughout the ENTIRE briefing, ESPECIALLY to collect the basal fields. DO NOT default to "text".
-- \`text\`: Use sparingly, only for open-ended names/descriptions (e.g., company_name).
-- \`multiple_choice\`: Use for multi-select categories (e.g., communication_channels, services_offered). Send \`options\` array.
-- \`single_choice\`: Use for binary or exclusive choices (e.g., sector_segment). Send \`options\` array.
+You MUST aggressively vary the \`questionType\` throughout the ENTIRE briefing. Your goal is an interactive, tactile experience. DO NOT default to "text".
+- \`text\`: Use sparingly, only for open-ended names/descriptions (e.g. core differences, meanings).
+- \`multiple_choice\`: Multi-select categories (e.g. communication_channels). Send \`options\` array of strings.
+- \`single_choice\`: Exclusive choices. CRITICAL FOR TYPOGRAPHY: If asking about typography/fonts for the visual identity, you MUST use \`single_choice\` and format options as "FontName - Description" (e.g., "Inter - Moderna e Neutra", "Playfair Display - Clássica"). The UI will render these as specialized font-cards.
+- \`boolean_toggle\`: Use for Yes/No questions or simple binary exclusive questions. Extremely tactile UI.
 - \`card_selector\`: Use for strategic routes or descriptive personas. Send \`options\` as array of objects: \`{ title: string, description: string }\`. ALWAYS default to generating exactly 6 cards.
-- \`slider\`: Use for measurable things (e.g., company_age, maturity). Send \`minOption\` and \`maxOption\`.
-- \`boolean_toggle\`: Use for yes/no questions.
-- \`color_picker\`: Use ONLY for visual references (HEX array).
-- \`file_upload\`: Use ONLY at the very end.
-- \`multi_slider\`: Use for PROFILE-TYPE questions that need multiple dimensions measured at once (e.g., marketing DNA). Send \`options\` as array of objects: \`[{"label":"Dimension Name","min":1,"max":5,"minLabel":"Low Label","maxLabel":"High Label"}]\`. The user sees multiple compact sliders in a single question.
+- \`slider\`: Use for measurable things on a single 1-10 scale (e.g. company_age, maturity). Send \`minOption\` and \`maxOption\`.
+- \`multi_slider\`: Use for PROFILE/DNA questions requiring multiple dimensions simultaneously (e.g., Tone of Voice, Positioning). Send \`options\` as array of objects: \`[{"label":"Dimension Name","min":1,"max":5,"minLabel":"Low Label","maxLabel":"High Label"}]\`. Always output 3-5 slider dimensions per question.
+- \`color_picker\`: Use ONLY when specifically gathering brand color and visual palette vibes. The UI provides an advanced wizard automatically.
+- \`file_upload\`: Use ONLY at the very end to ask for existing assets or references.
 
 ${suggestedQuestions !== "Nenhuma pergunta sugerida disponível. Use sua criatividade baseada nos campos basais." ? `Suggested questions for inspiration: ${suggestedQuestions}` : ''}
 
@@ -221,7 +248,33 @@ Return ONLY valid JSON (no markdown):
 
     const data = await res.json();
     const content = data.choices[0].message.content;
+    const usage = data.usage;
+    
     console.log(`[AI] Response in ${Date.now() - startTime}ms`);
+
+    // ================================================================
+    // ASYNC LOGGING — Save token usage and estimated cost to db
+    // ================================================================
+    if (usage) {
+      // Import missing estimateCost from aiConfig if not already
+      const { estimateCost } = await import('@/lib/aiConfig');
+      const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
+
+      // We get user_id from the server-side auth session (if logged in)
+      const { sessionId } = body;
+
+      supabaseServer.from('api_usage').insert({
+        user_id: user?.id || null,
+        session_id: sessionId || null,
+        provider: llmConfig.provider,
+        model: llmConfig.model,
+        prompt_tokens: usage.prompt_tokens || 0,
+        completion_tokens: usage.completion_tokens || 0,
+        estimated_cost_usd: cost
+      }).then(({ error }) => {
+        if (error) console.error("[API_USAGE] Failed to log usage:", error);
+      });
+    }
     
     try {
       const parsed = JSON.parse(content);

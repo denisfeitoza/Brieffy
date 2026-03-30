@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, ArrowRight, ArrowLeft, RefreshCw, Paperclip, CheckCircle2, CloudUpload, Lock, Copy } from "lucide-react";
+import { Mic, ArrowRight, ArrowLeft, RefreshCw, Paperclip, CheckCircle2, CloudUpload, Lock, Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
@@ -61,7 +61,20 @@ const I18N: Record<string, Record<string, string>> = {
   }
 };
 
-function BrandedLogo({ branding, size = 'md' }: { branding: { logo_url: string; company_name: string; brand_color: string }; size?: 'sm' | 'md' }) {
+function getContrastColor(hexcolor: string) {
+  if (!hexcolor) return "#ffffff";
+  const hex = hexcolor.replace("#", "");
+  if (hex.length !== 6 && hex.length !== 3) return "#ffffff";
+  // Convert 3-char hex to 6-char
+  const fullHex = hex.length === 3 ? hex.split('').map(x => x + x).join('') : hex;
+  const r = parseInt(fullHex.substr(0, 2), 16);
+  const g = parseInt(fullHex.substr(2, 2), 16);
+  const b = parseInt(fullHex.substr(4, 2), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#000000" : "#ffffff";
+}
+
+function BrandedLogo({ branding, size = 'md', isSolid = false }: { branding: { logo_url: string; company_name: string; brand_color: string }; size?: 'sm' | 'md', isSolid?: boolean }) {
   const sizeClasses = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
   const initials = branding.company_name
     ? branding.company_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -72,15 +85,19 @@ function BrandedLogo({ branding, size = 'md' }: { branding: { logo_url: string; 
       <img
         src={branding.logo_url}
         alt={branding.company_name}
-        className={`${sizeClasses} rounded-xl object-contain bg-white/5 border border-white/10 p-0.5`}
+        className={`${sizeClasses} flex-shrink-0 rounded-xl object-contain bg-white border border-white/10 p-0.5 shadow-sm`}
       />
     );
   }
 
+  const contrastColor = getContrastColor(branding.brand_color || '#000000');
+  const fallbackBg = isSolid ? (contrastColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)') : `linear-gradient(135deg, ${branding.brand_color}40, ${branding.brand_color}20)`;
+  const fallbackColor = isSolid ? contrastColor : branding.brand_color;
+
   return (
     <div
-      className={`${sizeClasses} rounded-xl flex items-center justify-center font-bold border border-white/10`}
-      style={{ background: `linear-gradient(135deg, ${branding.brand_color}40, ${branding.brand_color}20)`, color: branding.brand_color }}
+      className={`${sizeClasses} flex-shrink-0 rounded-xl flex items-center justify-center font-bold border ${isSolid ? 'border-transparent' : 'border-white/10'}`}
+      style={{ background: fallbackBg, color: fallbackColor }}
     >
       {initials}
     </div>
@@ -105,6 +122,7 @@ export function TypeformWizard() {
     branding,
     editToken,
     editPassphrase,
+    selectedPackageDetails,
   } = useBriefing();
 
   const [inputText, setInputText] = useState("");
@@ -143,15 +161,23 @@ export function TypeformWizard() {
   if (isUploadStep) {
     return (
       <div className="flex flex-col h-full bg-neutral-950 text-white selection:bg-indigo-500/30">
-         <header className="flex items-center justify-between p-4 md:p-6 h-20 shrink-0">
-          <div className="flex items-center gap-3">
-            <BrandedLogo branding={branding} size="md" />
-            <div className="hidden sm:block">
-              <span className="font-outfit font-semibold text-lg tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+        <header className="flex items-center justify-between p-4 md:p-6 h-20 shrink-0">
+          <div 
+            className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-lg border border-white/5 transition-transform hover:scale-[1.02]"
+            style={{ 
+              backgroundColor: branding.brand_color || '#171717',
+              color: getContrastColor(branding.brand_color || '#171717')
+            }}
+          >
+            <BrandedLogo branding={branding} size="sm" isSolid />
+            <div className="hidden sm:flex flex-col justify-center">
+              <span className="font-outfit font-bold text-sm tracking-tight leading-tight">
                 {branding.company_name || 'Smart Briefing'}
               </span>
               {branding.tagline && (
-                <p className="text-[10px] text-zinc-500 truncate max-w-[200px]">{branding.tagline}</p>
+                <span className="text-[10px] uppercase font-semibold tracking-wider opacity-80 truncate max-w-[180px]">
+                  {branding.tagline}
+                </span>
               )}
             </div>
           </div>
@@ -333,46 +359,79 @@ export function TypeformWizard() {
       {/* Top Navigation Bar */}
       <header className="flex items-center justify-between p-4 md:p-6 h-20 shrink-0">
         <div className="flex items-center gap-3">
-          {currentStepIndex > 0 ? (
-            <Button variant="ghost" size="icon" className="hover:bg-neutral-800 shrink-0" onClick={goBack}>
+          {currentStepIndex > 0 && (
+            <Button variant="ghost" size="icon" className="hover:bg-neutral-800 shrink-0 border border-neutral-800 bg-neutral-900 shadow-sm rounded-full" onClick={goBack}>
               <ArrowLeft className="w-5 h-5 text-neutral-400" />
             </Button>
-          ) : (
-            <BrandedLogo branding={branding} size="md" />
           )}
-          <div className="hidden sm:block">
-            <span className="font-outfit font-semibold text-lg tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-              {branding.company_name || 'Smart Briefing'}
-            </span>
-            {branding.tagline && (
-              <p className="text-[10px] text-zinc-500 truncate max-w-[200px]">{branding.tagline}</p>
-            )}
+
+          <div 
+            className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-lg border border-white/5 transition-transform hover:scale-[1.02]"
+            style={{ 
+              backgroundColor: branding.brand_color || '#171717',
+              color: getContrastColor(branding.brand_color || '#171717')
+            }}
+          >
+            <BrandedLogo branding={branding} size="sm" isSolid />
+            <div className="hidden sm:flex flex-col justify-center">
+              <span className="font-outfit font-bold text-sm tracking-tight leading-tight">
+                {branding.company_name || 'Smart Briefing'}
+              </span>
+              {branding.tagline && (
+                <span className="text-[10px] uppercase font-semibold tracking-wider opacity-80 truncate max-w-[180px]">
+                  {branding.tagline}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Progresso Simplificado */}
-        <div className="text-sm font-medium text-neutral-500 flex items-center gap-2 bg-neutral-900 px-3 py-1.5 rounded-full border border-neutral-800">
-           {currentStepIndex + 1}
+        {/* Right side: Packages and Progress */}
+        <div className="flex items-center gap-4">
+          {/* Active AI Packages */}
+          {selectedPackageDetails && selectedPackageDetails.length > 0 && (
+            <div className="hidden md:flex items-center gap-2 mr-2">
+              {selectedPackageDetails.slice(0, 3).map(pkg => (
+                <div key={pkg.slug} className="text-[10px] uppercase tracking-wider font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" title={pkg.name}>
+                   <Sparkles className="w-3 h-3" />
+                   {pkg.name}
+                </div>
+              ))}
+              {selectedPackageDetails.length > 3 && (
+                <div className="text-[10px] uppercase tracking-wider font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800">
+                   +{selectedPackageDetails.length - 3} skills
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Progresso Simplificado */}
+          <div className="text-sm font-medium text-neutral-500 flex items-center gap-2 bg-neutral-900 px-4 py-1.5 rounded-full border border-neutral-800">
+             {currentStepIndex + 1}
+          </div>
         </div>
       </header>
 
       {/* Main Content Area: Centered, Large Text */}
       <main className="flex-1 w-full overflow-y-auto overflow-x-hidden">
-        <div className="min-h-full w-full flex flex-col items-center p-6 lg:p-12">
-          <div className="flex-1 shrink-0" />
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`step-${currentStepIndex}`}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="w-full max-w-3xl flex flex-col space-y-12 shrink-0 py-12"
-            >
-              {/* The IA Formatted Question */}
-              <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
-                {activeMessage.content}
-              </h1>
+        <div className="min-h-full w-full flex flex-col relative px-6 lg:px-12">
+          
+          <div className="flex-[1_0_auto]" />
+
+          <div className="w-full max-w-3xl mx-auto flex flex-col shrink-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`step-${currentStepIndex}`}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full flex flex-col space-y-12 py-12"
+              >
+                {/* The IA Formatted Question */}
+                <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
+                  {activeMessage.content}
+                </h1>
 
                 {/* Box Híbrido Dinamico (Text, Audio, Single Choice, Multiple Choice, Slider, Color Picker) */}
                 <DynamicInput 
@@ -404,9 +463,12 @@ export function TypeformWizard() {
                     </Button>
                   </div>
                 )}
-            </motion.div>
-          </AnimatePresence>
-          <div className="flex-1 shrink-0" />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <div className="flex-[2_0_auto]" />
+
         </div>
       </main>
     </div>

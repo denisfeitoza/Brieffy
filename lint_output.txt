@@ -3,109 +3,111 @@
 > eslint
 
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/api/auth/login/route.ts
-   2:10  warning  'cookies' is defined but never used  @typescript-eslint/no-unused-vars
-  40:12  warning  'error' is defined but never used    @typescript-eslint/no-unused-vars
+/Users/denisfeitoza/Documents/Brieffy/src/app/admin/components/CostCharts.tsx
+  10:3  warning  'Legend' is defined but never used  @typescript-eslint/no-unused-vars
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/api/briefing/document/route.ts
-   25:52  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   25:57  warning  'i' is defined but never used             @typescript-eslint/no-unused-vars
-  143:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/Users/denisfeitoza/Documents/Brieffy/src/app/admin/page.tsx
+  4:69  warning  'Shield' is defined but never used  @typescript-eslint/no-unused-vars
+  6:10  warning  'format' is defined but never used  @typescript-eslint/no-unused-vars
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/api/briefing/route.ts
-  150:30  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  175:17  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  187:36  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  200:13  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
-  205:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  212:44  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  212:58  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  213:18  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/api/settings/route.ts
-  19:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  45:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/api/templates/route.ts
-  37:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/api/transcribe/route.ts
-  57:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/b/[sessionId]/page.tsx
-  18:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
-
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/dashboard/[id]/page.tsx
-    5:28  warning  'Code' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
-    5:53  warning  'ImageIcon' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
-   35:47  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
-   69:45  warning  'index' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
-  101:35  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/dashboard/login/page.tsx
-  35:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/dashboard/settings/page.tsx
+/Users/denisfeitoza/Documents/Brieffy/src/app/admin/settings/page.tsx
    13:3   warning  'Settings' is defined but never used               @typescript-eslint/no-unused-vars
    13:30  warning  'FileText' is defined but never used               @typescript-eslint/no-unused-vars
    15:12  warning  'Clock' is defined but never used                  @typescript-eslint/no-unused-vars
    72:10  warning  'settingsMeta' is assigned a value but never used  @typescript-eslint/no-unused-vars
   138:14  warning  'err' is defined but never used                    @typescript-eslint/no-unused-vars
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/dashboard/templates/new/page.tsx
-    5:46   warning  'ListPlus' is defined but never used                             @typescript-eslint/no-unused-vars
-   59:18   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
-  128:93   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
-  128:114  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
-  128:117  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
-  128:136  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
-  140:121  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
-  140:137  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
-  140:140  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
-  140:150  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+/Users/denisfeitoza/Documents/Brieffy/src/app/admin/users/[id]/page.tsx
+  9:65  warning  'AlertCircle' is defined but never used  @typescript-eslint/no-unused-vars
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/providers.tsx
-  9:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/Users/denisfeitoza/Documents/Brieffy/src/app/api/briefing/packages/route.ts
+  19:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/app/sandbox/page.tsx
-  86:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/Users/denisfeitoza/Documents/Brieffy/src/app/api/briefing/route.ts
+  313:13  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/components/briefing/DynamicInput.tsx
-   54:67  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
-  195:43  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
-  233:43  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
-  409:43  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
-  455:15  warning  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
-  466:19  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+/Users/denisfeitoza/Documents/Brieffy/src/app/api/colors/route.ts
+  46:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/components/briefing/TypeformWizard.tsx
-   7:10  warning  'Input' is defined but never used                @typescript-eslint/no-unused-vars
-   8:10  warning  'Mic' is defined but never used                  @typescript-eslint/no-unused-vars
-   8:38  warning  'RefreshCw' is defined but never used            @typescript-eslint/no-unused-vars
-   8:49  warning  'Paperclip' is defined but never used            @typescript-eslint/no-unused-vars
-  60:5   warning  'isFinished' is assigned a value but never used  @typescript-eslint/no-unused-vars
+/Users/denisfeitoza/Documents/Brieffy/src/app/api/document/save/route.ts
+  41:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/components/dashboard/GenerateLinkModal.tsx
-  4:26  warning  'LinkIcon' is defined but never used  @typescript-eslint/no-unused-vars
+/Users/denisfeitoza/Documents/Brieffy/src/app/api/onboarding/route.ts
+   18:44  warning  'generateMore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  127:39  error    Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/lib/BriefingContext.tsx
-   16:24  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
-   32:37  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
-  315:13  warning  'currentMsg' is assigned a value but never used  @typescript-eslint/no-unused-vars
+/Users/denisfeitoza/Documents/Brieffy/src/app/api/profile/route.ts
+  42:12  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  84:12  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/lib/aiConfig.ts
-  146:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/Users/denisfeitoza/Documents/Brieffy/src/app/b/[sessionId]/page.tsx
+  27:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/lib/services/briefingService.ts
-  7:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/Users/denisfeitoza/Documents/Brieffy/src/app/dashboard/[id]/page.tsx
+    5:28  warning  'Code' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+    5:53  warning  'ImageIcon' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   71:45  warning  'index' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  103:35  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/lib/types.ts
-   3:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  24:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  43:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/Users/denisfeitoza/Documents/Brieffy/src/app/dashboard/layout.tsx
+    5:70  warning  'Plus' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   54:6   warning  React Hook useEffect has missing dependencies: 'pathname' and 'router'. Either include them or remove the dependency array                                                                                                                                                               react-hooks/exhaustive-deps
+   87:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  157:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
 
-/Users/denisfeitoza/Documents/Forms AI/smart-briefing/src/middleware.ts
-  22:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+/Users/denisfeitoza/Documents/Brieffy/src/app/dashboard/packages/page.tsx
+  331:53  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  331:65  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
 
-✖ 62 problems (38 errors, 24 warnings)
+/Users/denisfeitoza/Documents/Brieffy/src/app/dashboard/page.tsx
+   6:3   warning  'CalendarDays' is defined but never used  @typescript-eslint/no-unused-vars
+   6:17  warning  'ExternalLink' is defined but never used  @typescript-eslint/no-unused-vars
+   6:31  warning  'Activity' is defined but never used      @typescript-eslint/no-unused-vars
+   6:41  warning  'Sparkles' is defined but never used      @typescript-eslint/no-unused-vars
+   7:49  warning  'Trash2' is defined but never used        @typescript-eslint/no-unused-vars
+   7:57  warning  'Copy' is defined but never used          @typescript-eslint/no-unused-vars
+   8:3   warning  'Search' is defined but never used        @typescript-eslint/no-unused-vars
+   8:11  warning  'Filter' is defined but never used        @typescript-eslint/no-unused-vars
+  10:10  warning  'format' is defined but never used        @typescript-eslint/no-unused-vars
+
+/Users/denisfeitoza/Documents/Brieffy/src/app/dashboard/profile/page.tsx
+  301:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  439:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/denisfeitoza/Documents/Brieffy/src/components/briefing/DynamicInput.tsx
+   14:125  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
+   24:7    error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/denisfeitoza/Documents/Brieffy/src/components/briefing/DynamicInput.tsx:24:7
+  22 |     if (initialAnswer === t.yes || initialAnswer === t.yes?.toLowerCase()) {
+  23 |       x.set(-maxDrag);
+> 24 |       setAnswered(t.yes);
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |     } else if (initialAnswer === t.no || initialAnswer === t.no?.toLowerCase()) {
+  26 |       x.set(maxDrag);
+  27 |       setAnswered(t.no);  react-hooks/set-state-in-effect
+  843:6    warning  React Hook useEffect has missing dependencies: 'fetchInitialColors' and 'isFetchingColors'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+
+/Users/denisfeitoza/Documents/Brieffy/src/components/briefing/MultiSliderQuestion.tsx
+  80:9  warning  'stepsArray' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/denisfeitoza/Documents/Brieffy/src/components/briefing/TypeformWizard.tsx
+   7:10  warning  'Input' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   8:10  warning  'Mic' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   8:38  warning  'RefreshCw' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   8:49  warning  'Paperclip' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  85:7   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/denisfeitoza/Documents/Brieffy/src/components/dashboard/CopyButtons.tsx
+  23:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  48:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  54:16  warning  'e' is defined but never used    @typescript-eslint/no-unused-vars
+
+✖ 51 problems (8 errors, 43 warnings)
 

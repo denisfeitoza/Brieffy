@@ -16,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [branding, setBranding] = useState<{
     company_name: string; logo_url: string; brand_color: string; brand_accent: string; tagline: string;
   }>({ company_name: 'Smart Briefing', logo_url: '', brand_color: '#06b6d4', brand_accent: '#8b5cf6', tagline: '' });
+  const [isOnboarded, setIsOnboarded] = useState(true);
 
   const isLoginPage = pathname === '/dashboard/login';
   const isRegisterPage = pathname === '/dashboard/register';
@@ -27,12 +28,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (user) {
         const { data: profile } = await supabase
           .from('briefing_profiles')
-          .select('display_name, company_name, logo_url, brand_color, brand_accent, tagline, is_admin')
+          .select('display_name, company_name, logo_url, brand_color, brand_accent, tagline, is_admin, is_onboarded')
           .eq('id', user.id)
           .single();
         setUserName(profile?.display_name || user.email?.split('@')[0] || 'User');
         if (profile) {
           setIsAdmin(profile.is_admin || false);
+          setIsOnboarded(profile.is_onboarded ?? false);
           setBranding({
             company_name: profile.company_name || 'Smart Briefing',
             logo_url: profile.logo_url || '',
@@ -40,6 +42,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             brand_accent: profile.brand_accent || '#8b5cf6',
             tagline: profile.tagline || '',
           });
+
+          // Redirect to onboarding if not onboarded
+          if (profile.is_onboarded === false && !pathname.startsWith('/dashboard/onboarding')) {
+            router.push('/dashboard/onboarding');
+          }
         }
       }
     }
@@ -104,9 +111,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <nav className="space-y-2 flex flex-col">
             {navItems.map(item => (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={isOnboarded ? item.href : '#'}>
                 <Button
                   variant="ghost"
+                  disabled={!isOnboarded && !pathname.startsWith('/dashboard/onboarding')}
                   className={`w-full justify-start rounded-xl transition-all ${
                     item.match(pathname) 
                       ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20' 

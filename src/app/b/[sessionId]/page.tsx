@@ -1,6 +1,6 @@
 import { BriefingProvider } from "@/lib/BriefingContext";
 import { TypeformWizard } from "@/components/briefing/TypeformWizard";
-import { getSessionById, getTemplateById, getBrandingByUserId } from "@/lib/services/briefingService";
+import { getSessionById, getTemplateById, getBrandingByUserId, getPackagesBySlugs } from "@/lib/services/briefingService";
 import { notFound } from "next/navigation";
 import type { BrandingInfo } from "@/lib/types";
 
@@ -34,12 +34,15 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     ? session.selected_packages
     : [];
 
+  const selectedPackageDetails = await getPackagesBySlugs(selectedPackages);
+
   return (
     <BriefingProvider 
        activeTemplate={template} 
        sessionId={session.id} 
        initialContext={session.initial_context}
        selectedPackages={selectedPackages}
+       selectedPackageDetails={selectedPackageDetails}
        branding={branding}
        initialPassphrase={session.edit_passphrase}
     >

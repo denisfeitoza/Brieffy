@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirme seu email - Brieffy</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap');
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #09090b; /* zinc-950 */
+      color: #fafafa;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrapper {
+      width: 100%;
+      background: radial-gradient(ellipse at top, #18181b 0%, #09090b 100%);
+      padding: 40px 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: rgba(24, 24, 27, 0.5); /* zinc-900 with opacity */
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .header {
+      padding: 40px 40px 20px;
+      text-align: center;
+    }
+
+    .logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-accent {
+      color: #3b82f6; /* blue-500 */
+    }
+
+    .content {
+      padding: 0 40px 40px;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #a1a1aa; /* zinc-400 */
+      margin: 0 0 32px;
+    }
+
+    .button {
+      display: inline-block;
+      background-color: #ffffff;
+      color: #09090b !important;
+      font-weight: 600;
+      font-size: 16px;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+    }
+
+    .button:hover {
+      background-color: #f4f4f5;
+    }
+
+    .footer {
+      padding: 24px 40px;
+      text-align: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background-color: rgba(9, 9, 11, 0.5);
+    }
+
+    .footer p {
+      font-size: 14px;
+      color: #71717a; /* zinc-500 */
+      margin: 0;
+    }
+
+    .link-alt {
+      color: #3b82f6;
+      text-decoration: underline;
+      word-break: break-all;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      margin: 32px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">Brieffy<span class="logo-accent">.</span></div>
+      </div>
+      
+      <div class="content">
+        <h1>Bem-vindo ao Smart Briefing AI</h1>
+        <p>Você está a um passo de revolucionar a forma como pesquisa e coleta informações. Por favor, confirme seu endereço de email para ativar sua conta e acessar seu painel.</p>
+        
+        <a href="{{ .ConfirmationURL }}" class="button">Confirmar meu Email</a>
+
+        <div class="divider"></div>
+
+        <p style="font-size: 14px; margin-bottom: 8px;">Se o botão não funcionar, cole o link abaixo no seu navegador:</p>
+        <p style="font-size: 14px;"><a href="{{ .ConfirmationURL }}" class="link-alt">{{ .ConfirmationURL }}</a></p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; 2026 Brieffy. Todos os direitos reservados.</p>
+        <p style="margin-top: 8px;">Este é um email gerado automaticamente, por favor não responda.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

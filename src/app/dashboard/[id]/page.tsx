@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock, Code, FileText, Image as ImageIcon, MessageSquare, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { CopyButtons } from '@/components/dashboard/CopyButtons';
 export const dynamic = 'force-dynamic';
 
 // Simple Markdown → HTML converter (server component safe)
@@ -179,19 +180,27 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
                       prose-p:text-zinc-300 prose-li:text-zinc-300
                       prose-strong:text-white
                       prose-blockquote:border-l-cyan-500 prose-blockquote:bg-cyan-500/5 prose-blockquote:rounded-r-lg prose-blockquote:px-4
-                      bg-black/40 rounded-xl border border-white/5 p-6 max-h-[600px] overflow-auto custom-scrollbar"
+                      bg-black/40 rounded-xl border border-white/5 p-6 max-h-[calc(100vh-200px)] overflow-auto custom-scrollbar"
                     dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(session.final_assets.document) }}
                   />
-                  <a 
-                    href={`data:text/markdown;charset=utf-8,${encodeURIComponent(session.final_assets.document)}`}
-                    download={`briefing-${session.id.split('-')[0]}.md`}
-                    className="block"
-                  >
-                    <Button variant="outline" className="w-full bg-cyan-950/30 border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/50">
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar Documento (.md)
-                    </Button>
-                  </a>
+                  
+                  <div className="flex flex-col gap-3 mt-4">
+                    <CopyButtons 
+                      markdown={session.final_assets.document} 
+                      html={simpleMarkdownToHtml(session.final_assets.document)} 
+                    />
+                    
+                    <a 
+                      href={`data:text/markdown;charset=utf-8,${encodeURIComponent(session.final_assets.document)}`}
+                      download={`briefing-${session.id.split('-')[0]}.md`}
+                      className="block"
+                    >
+                      <Button variant="outline" className="w-full bg-cyan-950/30 border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/50">
+                        <Download className="w-4 h-4 mr-2" />
+                        Baixar Documento (.md)
+                      </Button>
+                    </a>
+                  </div>
                 </div>
               ) : Object.keys(summaryData).length === 0 ? (
                 <div className="text-center p-6 text-zinc-500 italic bg-white/5 rounded-xl border border-white/5">

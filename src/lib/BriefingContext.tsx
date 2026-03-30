@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo } from "./types";
+import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail } from "./types";
 
 const DEFAULT_BRANDING: BrandingInfo = {
   display_name: 'Smart Briefing',
@@ -33,19 +33,27 @@ export function BriefingProvider({
   sessionId: existingSessionId,
   initialContext,
   selectedPackages: initialSelectedPackages,
+  selectedPackageDetails: initialSelectedPackageDetails,
   branding: initialBranding,
-  initialPassphrase
+  initialPassphrase,
+  apiEndpoint,
+  isOnboarding
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;
   sessionId?: string;
   initialContext?: string;
   selectedPackages?: string[];
+  selectedPackageDetails?: PackageDetail[];
   branding?: BrandingInfo;
   initialPassphrase?: string;
+  apiEndpoint?: string;
+  isOnboarding?: boolean;
 }) {
+  const endpoint = apiEndpoint || "/api/briefing";
   const branding = initialBranding || DEFAULT_BRANDING;
   const selectedPackages = initialSelectedPackages || [];
+  const selectedPackageDetails = initialSelectedPackageDetails || [];
   // O initial state preencherá o que vier em core_fields.
   const initialBase: Record<string, unknown> = {};
   if (activeTemplate && activeTemplate.core_fields) {
@@ -239,7 +247,7 @@ export function BriefingProvider({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), perfSettings.timeoutMs);
 
-      const res = await fetch("/api/briefing", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -300,7 +308,13 @@ export function BriefingProvider({
 
       if (data.isFinished) {
         setIsFinished(true);
-        setIsUploadStep(true); // Triggers the upload static step UI
+        if (isOnboarding) {
+          // If onboarding, just finish right away and redirect to dashboard
+          window.location.href = '/dashboard';
+          return;
+        } else {
+          setIsUploadStep(true); // Triggers the upload static step UI
+        }
         if (data.assets) setAssets(data.assets);
 
         // Atualiza a sessão no banco com os dados computados
@@ -371,7 +385,7 @@ export function BriefingProvider({
         content: m.content + (m.userAnswer ? `\n\nRespondi: ${m.userAnswer}` : "")
       }));
 
-      const res = await fetch("/api/briefing", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -506,6 +520,7 @@ export function BriefingProvider({
         isGeneratingDocument,
         generateDocument,
         selectedPackages,
+        selectedPackageDetails,
         branding,
         editToken,
         editPassphrase,

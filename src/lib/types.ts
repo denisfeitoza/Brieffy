@@ -84,6 +84,13 @@ export type BrandingInfo = {
   website: string;
 };
 
+export type PackageDetail = {
+  slug: string;
+  name: string;
+  icon: string;
+  department: string;
+};
+
 export type BriefingContextType = {
   briefingState: BriefingState;
   updateBriefingState: (updates: Partial<BriefingState>) => void;
@@ -109,6 +116,7 @@ export type BriefingContextType = {
   isGeneratingDocument: boolean;
   generateDocument: () => Promise<void>;
   selectedPackages: string[];
+  selectedPackageDetails: PackageDetail[];
   branding: BrandingInfo;
   editToken: string | null;
   editPassphrase: string | null;
