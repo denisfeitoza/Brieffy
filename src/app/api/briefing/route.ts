@@ -233,7 +233,7 @@ ${await buildPackagePrompts(selectedPackages)}
   - \`boolean_toggle\`: Use for Yes/No questions or simple binary exclusive questions. Extremely tactile UI.
   - \`card_selector\`: Use for strategic routes or descriptive personas. Send \`options\` as array of objects: \`{ title: string, description: string }\`. ALWAYS default to generating exactly 6 cards.
   - \`slider\`: Use for measurable things on a single 1-10 scale (e.g. company_age, maturity). Send \`minOption\` and \`maxOption\`.
-  - \`multi_slider\`: Use for PROFILE/DNA questions requiring multiple dimensions simultaneously (e.g., Tone of Voice, Positioning). Send \`options\` as array of objects: \`[{"label":"Dimension Name","min":1,"max":5,"minLabel":"Low Label","maxLabel":"High Label"}]\`. Always output 3-5 slider dimensions per question.
+  - \`multi_slider\`: Use for PROFILE/DNA questions requiring multiple dimensions simultaneously (e.g., Tone of Voice, Positioning). Send \`options\` as array of objects: \`[{"label":"Dimension Name","min":1,"max":5,"minLabel":"Low Label","maxLabel":"High Label"}]\`. CRITICAL: The scale MUST STRICTLY be min:1 and max:5. NEVER return a scale of 1-10. Always output 3-5 slider dimensions per question.
   - \`color_picker\`: Use ONLY when specifically gathering brand color and visual palette vibes. The UI provides an advanced wizard automatically.
   - \`file_upload\`: Use ONLY at the very end to ask for existing assets or references.
 </UI_Components_Rules>

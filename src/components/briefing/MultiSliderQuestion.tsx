@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { MultiSliderOption } from '@/lib/types';
+import { ScrollConfirmWrapper } from './ScrollConfirmWrapper';
 
 interface MultiSliderQuestionProps {
   sliders: MultiSliderOption[];
@@ -41,23 +42,27 @@ export function MultiSliderQuestion({ sliders, onConfirm, disabled }: MultiSlide
       </div>
 
       {/* Confirm Button */}
-      <div className="flex justify-center pt-4">
-        <button
-          onClick={handleConfirm}
-          disabled={disabled}
-          className="
-            px-8 py-3 rounded-2xl font-bold text-sm tracking-wide
-            bg-gradient-to-r from-cyan-500 to-blue-600
-            text-white shadow-[0_0_20px_rgba(6,182,212,0.3)]
-            hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]
-            hover:scale-[1.02] active:scale-[0.98]
-            transition-all duration-200
-            disabled:opacity-40 disabled:cursor-not-allowed
-          "
-        >
-          Confirm Profile ✓
-        </button>
-      </div>
+      <ScrollConfirmWrapper
+        containerClassName="flex justify-center pt-4"
+        isDisabled={disabled}
+        ActionComponent={
+          <button
+            onClick={handleConfirm}
+            disabled={disabled}
+            className="
+              px-8 py-3 rounded-2xl font-bold text-sm tracking-wide
+              bg-gradient-to-r from-cyan-500 to-blue-600
+              text-white shadow-[0_0_20px_rgba(6,182,212,0.3)]
+              hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]
+              hover:scale-[1.02] active:scale-[0.98]
+              transition-all duration-200
+              disabled:opacity-40 disabled:cursor-not-allowed
+            "
+          >
+            Confirm Profile ✓
+          </button>
+        }
+      />
     </div>
   );
 }
@@ -76,8 +81,6 @@ function SingleMiniSlider({
   onChange: (val: number) => void;
   index: number;
 }) {
-  const steps = slider.max - slider.min + 1;
-  const stepsArray = Array.from({ length: steps }, (_, i) => slider.min + i);
   const progress = ((value - slider.min) / (slider.max - slider.min)) * 100;
 
   return (

@@ -2,6 +2,7 @@
 
 import { Message, MultiSliderOption, QuestionType } from "@/lib/types";
 import { MultiSliderQuestion } from "@/components/briefing/MultiSliderQuestion";
+import { ScrollConfirmWrapper } from "@/components/briefing/ScrollConfirmWrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -248,7 +249,7 @@ export function DynamicInput({
   // Para Slider
   const [sliderValue, setSliderValue] = useState<number[]>([Number(activeMessage.minOption) || 0]);
   // Para Color Wizard
-  const [colorWizardStep, setColorWizardStep] = useState<1 | 2 | 3>(1);
+  const [colorWizardStep, setColorWizardStep] = useState<1 | 2 | 3 | 4>(1);
   const [suggestedMainColors, setSuggestedMainColors] = useState<string[]>([]);
   const [selectedMainColors, setSelectedMainColors] = useState<string[]>([]);
   const [mainColors, setMainColors] = useState<string[]>([]);
@@ -269,6 +270,8 @@ export function DynamicInput({
     // Quando a activeMessage muda (usuário volta ou avança), restaurar os estados ou resetar
     const ans = activeMessage.userAnswer;
     const isEditing = ans !== undefined && ans !== null;
+
+    if (isLoading || isSubmittingLocal) return; // Não resetar a UI enquanto estiver enviando ou carregando a próxima pergunta
 
     if (activeMessage.questionType === 'multiple_choice' || activeMessage.questionType === 'card_selector') {
       if (isEditing) {
@@ -701,21 +704,25 @@ export function DynamicInput({
          {renderTextAndAudio(handleAddCustomText, <Plus className="w-5 h-5" />, true)}
       </div>
 
-      <div className="flex justify-end mt-6 border-t border-neutral-800 pt-6">
-         <Button 
-           size="lg" 
-           className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
-             (selectedMultiples.length > 0 || inputText.trim())
-               ? 'bg-indigo-500 text-white border-indigo-400 hover:bg-indigo-600 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:scale-105'
-               : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10'
-           }`}
-           onClick={handleLocalSend}
-           disabled={(selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal}
-         >
-           {(isLoading || isSubmittingLocal) ? <RefreshCw className="w-5 h-5 mr-2 animate-spin text-white/70" /> : null}
-           {t.confirmSelection}{" "}<ArrowRight className="w-5 h-5 ml-2" />
-         </Button>
-      </div>
+      <ScrollConfirmWrapper
+        containerClassName="flex justify-end mt-6 border-t border-neutral-800 pt-6"
+        isDisabled={(selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal}
+        ActionComponent={
+          <Button 
+            size="lg" 
+            className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
+              (selectedMultiples.length > 0 || inputText.trim())
+                ? 'bg-indigo-500 text-white border-indigo-400 hover:bg-indigo-600 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:scale-105'
+                : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10'
+            }`}
+             onClick={handleLocalSend}
+             disabled={(selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal}
+           >
+             {(isLoading || isSubmittingLocal) ? <RefreshCw className="w-5 h-5 mr-2 animate-spin text-white/70" /> : null}
+             {t.confirmSelection}{" "}<ArrowRight className="w-5 h-5 ml-2" />
+           </Button>
+        }
+      />
     </div>
   );
 
@@ -761,17 +768,21 @@ export function DynamicInput({
 
         </div>
 
-        <div className="flex justify-end mt-2 w-full">
-           <Button 
-             size="lg" 
-             className="w-full sm:w-auto h-14 bg-white text-black hover:bg-neutral-200 px-10 rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-105"
-             onClick={() => doSubmit(currentVal >= max ? `+${currentVal}` : currentVal)}
-             disabled={isLoading || isSubmittingLocal}
-           >
-             {(isLoading || isSubmittingLocal) ? <RefreshCw className="w-5 h-5 mr-2 animate-spin text-neutral-500" /> : null}
-             {t.next}{" "}<ArrowRight className="w-5 h-5 ml-2" />
-           </Button>
-        </div>
+        <ScrollConfirmWrapper
+           containerClassName="flex justify-end mt-2 w-full"
+           isDisabled={isLoading || isSubmittingLocal}
+           ActionComponent={
+             <Button 
+               size="lg" 
+               className="w-full sm:w-auto h-14 bg-white text-black hover:bg-neutral-200 px-10 rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-105"
+               onClick={() => doSubmit(currentVal >= max ? `+${currentVal}` : currentVal)}
+               disabled={isLoading || isSubmittingLocal}
+             >
+               {(isLoading || isSubmittingLocal) ? <RefreshCw className="w-5 h-5 mr-2 animate-spin text-neutral-500" /> : null}
+               {t.next}{" "}<ArrowRight className="w-5 h-5 ml-2" />
+             </Button>
+           }
+        />
         
         <div className="w-full opacity-70 hover:opacity-100 transition-opacity">
            <p className="text-sm text-center text-neutral-500 mb-2">{t.exactValue}</p>
@@ -799,12 +810,12 @@ export function DynamicInput({
       const res = await fetch("/api/colors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "initial", context: brandContext, hint: colorHint })
+        body: JSON.stringify({ type: "initial", context: brandContext, hint: colorHint, keptColors: selectedMainColors })
       });
       if (res.ok) {
         const data = await res.json();
-        setSuggestedMainColors(data.colors || []);
-        setSelectedMainColors([]); // reseta sempre que regera
+        const newColors = (data.colors || []).slice(0, Math.max(0, 4 - selectedMainColors.length));
+        setSuggestedMainColors([...selectedMainColors, ...newColors]);
       }
     } catch (e) {
       console.error(e);
@@ -823,11 +834,12 @@ export function DynamicInput({
       const res = await fetch("/api/colors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "complementary", mainColors: currentMain, context: brandContext, hint: colorHint })
+        body: JSON.stringify({ type: "complementary", mainColors: currentMain, context: brandContext, hint: colorHint, keptColors: selectedSuggestions })
       });
       if (res.ok) {
         const data = await res.json();
-        setSuggestedColors(data.colors || []);
+        const newColors = (data.colors || []).slice(0, Math.max(0, 4 - selectedSuggestions.length));
+        setSuggestedColors([...selectedSuggestions, ...newColors]);
         setColorWizardStep(2);
       }
     } catch (e) {
@@ -1030,7 +1042,6 @@ export function DynamicInput({
                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
                  onKeyDown={(e) => {
                    if (e.key === 'Enter') {
-                     setSelectedSuggestions([]);
                      fetchComplementaryColors();
                    }
                  }}
@@ -1044,7 +1055,6 @@ export function DynamicInput({
                 variant="outline" 
                 className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800" 
                 onClick={() => {
-                  setSelectedSuggestions([]);
                   fetchComplementaryColors();
                 }}
                 disabled={isFetchingColors || isLoading || isSubmittingLocal}
@@ -1119,7 +1129,49 @@ export function DynamicInput({
       );
     }
 
-    return null;
+    // Step 4: Summary View / Loading View
+    const ansArray = Array.isArray(activeMessage.userAnswer) ? (activeMessage.userAnswer as string[]) : [];
+    const finalColors = activeMessage.userAnswer && ansArray.length >= 6 
+      ? ansArray 
+      : [...mainColors, ...selectedSuggestions, ...detailColors];
+
+    if (colorWizardStep === 4 || (activeMessage.userAnswer && ansArray.length >= 6) || (isLoading && colorWizardStep === 3)) {
+      return (
+        <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
+          <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
+            <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-6 text-center">
+              Paleta Final<br/>
+              <span className="text-[11px] text-neutral-500 normal-case tracking-normal">Abaixo estão as 6 cores selecionadas para sua marca.</span>
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mt-4">
+              {finalColors.slice(0, 6).map((hex: string, idx: number) => {
+                const label = idx < 2 ? "Principal" : idx < 4 ? "Complementar" : "Detalhe";
+                return (
+                  <div key={idx} className="group flex flex-col items-center gap-3 relative">
+                    <div 
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-[1.5rem] border-2 border-white/10 relative overflow-hidden shadow-lg"
+                      style={{ backgroundColor: hex }}
+                    />
+                    <div className="flex flex-col items-center mt-2">
+                       <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider whitespace-nowrap">{label}</span>
+                       <span className="text-xs font-mono text-neutral-300 mt-1.5 px-2 py-0.5 rounded-md bg-neutral-900/50 border border-neutral-800">{hex}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {(!activeMessage.userAnswer || activeMessage.userAnswer === undefined) && !isLoading && !isSubmittingLocal && (
+               <div className="flex gap-4 mt-8">
+                 <Button variant="outline" className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800" onClick={() => setColorWizardStep(1)}>
+                   Editar Cores
+                 </Button>
+               </div>
+            )}
+          </div>
+        </div>
+      );
+    }
   };
 
   // RENDER: BOOLEAN TOGGLE (Futuristic Yes/No Switch)
@@ -1214,21 +1266,25 @@ export function DynamicInput({
          {renderTextAndAudio(handleAddCustomText, <Plus className="w-5 h-5" />, true)}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 w-full mt-6 items-center justify-end border-t border-neutral-800 pt-6">
-        <Button 
-           size="lg" 
-           className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
-             (selectedMultiples.length > 0 || inputText.trim())
-               ? 'bg-indigo-500 text-white border-indigo-400 hover:bg-indigo-600 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:scale-105'
-               : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10'
-           }`}
-           onClick={handleLocalSend}
-           disabled={(selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal}
-        >
-           {(isLoading || isSubmittingLocal) ? <RefreshCw className="w-5 h-5 mr-2 animate-spin text-white/70" /> : null}
-           {t.confirmSelection}{" "}<ArrowRight className="w-5 h-5 ml-2" />
-        </Button>
-      </div>
+      <ScrollConfirmWrapper
+        containerClassName="flex flex-col sm:flex-row gap-4 w-full mt-6 items-center justify-end border-t border-neutral-800 pt-6"
+        isDisabled={(selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal}
+        ActionComponent={
+          <Button 
+             size="lg" 
+             className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
+               (selectedMultiples.length > 0 || inputText.trim())
+                 ? 'bg-indigo-500 text-white border-indigo-400 hover:bg-indigo-600 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:scale-105'
+                 : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10'
+             }`}
+             onClick={handleLocalSend}
+             disabled={(selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal}
+          >
+             {(isLoading || isSubmittingLocal) ? <RefreshCw className="w-5 h-5 mr-2 animate-spin text-white/70" /> : null}
+             {t.confirmSelection}{" "}<ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        }
+      />
     </div>
   );
 
