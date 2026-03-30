@@ -1,0 +1,312 @@
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+// ========================
+// SESSIONS
+// ========================
+
+export async function getSessions() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_sessions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching sessions:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getSessionsByStatus(status?: string) {
+  const supabase = await createServerSupabaseClient();
+
+  let query = supabase
+    .from('briefing_sessions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (status && status !== 'all') {
+    query = query.eq('status', status);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching sessions by status:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getSessionStats() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: sessions, error } = await supabase
+    .from('briefing_sessions')
+    .select('id, status, created_at');
+
+  if (error) {
+    console.error('Error fetching session stats:', error);
+    return {
+      total: 0,
+      finished: 0,
+      inProgress: 0,
+      pending: 0,
+      completionRate: 0,
+      weeklyData: [],
+    };
+  }
+
+  const all = sessions || [];
+  const finished = all.filter(s => s.status === 'finished').length;
+  const inProgress = all.filter(s => s.status === 'in_progress').length;
+  const pending = all.filter(s => s.status === 'pending').length;
+  const completionRate = all.length > 0 ? Math.round((finished / all.length) * 100) : 0;
+
+  // Build weekly data for last 4 weeks
+  const now = new Date();
+  const weeklyData: { week: string; count: number }[] = [];
+  for (let i = 3; i >= 0; i--) {
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - (i * 7 + weekStart.getDay()));
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const count = all.filter(s => {
+      const d = new Date(s.created_at);
+      return d >= weekStart && d < weekEnd;
+    }).length;
+
+    const label = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
+    weeklyData.push({ week: label, count });
+  }
+
+  return { total: all.length, finished, inProgress, pending, completionRate, weeklyData };
+}
+
+export async function getSessionById(id: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_sessions')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching session ${id}:`, error);
+    throw new Error('Session not found');
+  }
+
+  return data;
+}
+
+export async function getInteractionsBySession(sessionId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_interactions')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error(`Error fetching interactions for session ${sessionId}:`, error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function deleteSession(sessionId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  // Delete interactions first (FK constraint)
+  await supabase
+    .from('briefing_interactions')
+    .delete()
+    .eq('session_id', sessionId);
+
+  const { error } = await supabase
+    .from('briefing_sessions')
+    .delete()
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error(`Error deleting session ${sessionId}:`, error);
+    throw new Error('Failed to delete session');
+  }
+}
+
+// ========================
+// TEMPLATES
+// ========================
+
+export async function getTemplates() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_templates')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching templates:', error.message || error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getTemplateById(id: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_templates')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching template ${id}:`, error);
+    throw new Error('Template not found');
+  }
+
+  return data;
+}
+
+// ========================
+// USER PROFILE & QUOTA
+// ========================
+
+export async function getUserProfile() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from('briefing_profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  return data;
+}
+
+export async function getBrandingByUserId(userId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_profiles')
+    .select('display_name, company_name, logo_url, brand_color, brand_accent, tagline, website')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data) {
+    return {
+      display_name: 'Smart Briefing',
+      company_name: 'Smart Briefing',
+      logo_url: '',
+      brand_color: '#06b6d4',
+      brand_accent: '#8b5cf6',
+      tagline: '',
+      website: '',
+    };
+  }
+
+  return data;
+}
+
+export async function getUserQuota() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from('briefing_quotas')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  return data;
+}
+
+// ========================
+// ADMIN — ALL USERS
+// ========================
+
+export async function getAllUsersAdmin() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: profiles } = await supabase
+    .from('briefing_profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (!profiles) return [];
+
+  // Get quotas for all users
+  const userIds = profiles.map(p => p.id);
+  const { data: quotas } = await supabase
+    .from('briefing_quotas')
+    .select('*')
+    .in('user_id', userIds);
+
+  // Get session counts per user
+  const { data: sessions } = await supabase
+    .from('briefing_sessions')
+    .select('user_id, status');
+
+  // Merge data
+  return profiles.map(profile => {
+    const quota = quotas?.find(q => q.user_id === profile.id);
+    const userSessions = sessions?.filter(s => s.user_id === profile.id) || [];
+    
+    return {
+      ...profile,
+      quota: quota || { max_briefings: 10, used_briefings: 0, is_blocked: false },
+      sessionCount: userSessions.length,
+      finishedCount: userSessions.filter(s => s.status === 'finished').length,
+    };
+  });
+}
+
+export async function getAllSessionsAdmin() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_sessions')
+    .select('*, briefing_profiles!briefing_sessions_user_id_fkey(display_name, company_name)')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching all sessions (admin):', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getGlobalStats() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: profiles } = await supabase.from('briefing_profiles').select('id');
+  const { data: sessions } = await supabase.from('briefing_sessions').select('id, status, created_at');
+
+  const allSessions = sessions || [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todaySessions = allSessions.filter(s => new Date(s.created_at) >= today);
+
+  return {
+    totalUsers: profiles?.length || 0,
+    totalSessions: allSessions.length,
+    todaySessions: todaySessions.length,
+    finishedSessions: allSessions.filter(s => s.status === 'finished').length,
+  };
+}
