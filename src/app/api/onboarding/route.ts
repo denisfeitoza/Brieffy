@@ -102,6 +102,8 @@ export async function POST(req: Request) {
     - \`slider\` (Use for asking about their agency's maturity, volume, or price positioning on a scale)
     - \`text\` (Use for the company name, website, or short mission statement)
     
+    CRITICAL RULE - VALID OPTIONS: For questions of type \`single_choice\`, \`multi_choice\`, and \`card_selector\`, you MUST provide a MEANINGFUL and NON-EMPTY \`options\` array (at least 3 to 8 context-specific and intelligent items). Do NOT leave \`options\` empty for these types.
+    
     If \`generateMore\` is true, ONLY change the \`options\` array (do not alter the text of the main question).
     ALL output text must be in Portuguese (pt-BR).
     
@@ -109,7 +111,7 @@ export async function POST(req: Request) {
     State: ${JSON.stringify(currentState)}
     
     Return ONLY valid JSON (no markdown):
-    {"updates":{},"nextQuestion":{"text":"Your highly personalized question here...","questionType":"","options":[], "allowMoreOptions": false},"isFinished":false}`;
+    {"updates":{},"nextQuestion":{"text":"Your highly personalized question here...","questionType":"","options":["Opção 1", "Opção 2", "Opção 3"], "allowMoreOptions": false},"isFinished":false}`;
 
     const res = await fetch(llmConfig.baseUrl, {
       method: "POST",

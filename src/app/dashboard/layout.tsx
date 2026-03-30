@@ -20,6 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isLoginPage = pathname === '/dashboard/login';
   const isRegisterPage = pathname === '/dashboard/register';
+  const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
 
   useEffect(() => {
     async function loadUser() {
@@ -51,9 +52,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     }
     if (!isLoginPage && !isRegisterPage) loadUser();
-  }, [isLoginPage, isRegisterPage]);
+  }, [isLoginPage, isRegisterPage, pathname, router]);
 
-  if (isLoginPage || isRegisterPage) {
+  if (isLoginPage || isRegisterPage || isOnboardingPage) {
     return <>{children}</>;
   }
 

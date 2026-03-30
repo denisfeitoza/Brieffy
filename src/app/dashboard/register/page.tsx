@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Loader2, ArrowRight, UserPlus, ShieldCheck } from 'lucide-react';
+import { Loader2, ArrowRight, UserPlus, ShieldCheck, Eye, EyeOff, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [showCredentials, setShowCredentials] = useState(false);
 
   // Simple Free Captcha
   const [num1, setNum1] = useState(0);
@@ -101,15 +102,61 @@ export default function RegisterPage() {
         className="w-full max-w-md relative z-10"
       >
         <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-              <UserPlus className="w-7 h-7 text-emerald-400" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2 tracking-tight">Criar Conta</h1>
-            <p className="text-zinc-400 text-sm">Comece a criar briefings inteligentes para seus clientes</p>
-          </div>
+          {successMsg ? (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
+                <MailCheck className="w-8 h-8 text-emerald-400" />
+              </div>
+              <h1 className="text-3xl font-bold mb-4 tracking-tight">Tudo Certo!</h1>
+              <p className="text-emerald-400/90 mb-8 leading-relaxed text-lg">
+                {successMsg}
+              </p>
 
-          <form onSubmit={handleRegister} className="space-y-4">
+              <div className="mt-8 border-t border-white/5 pt-6 text-left">
+                <button
+                  type="button"
+                  onClick={() => setShowCredentials(!showCredentials)}
+                  className="flex items-center justify-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mx-auto mb-4 w-full"
+                >
+                  {showCredentials ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showCredentials ? 'Ocultar credenciais' : 'Rever credenciais escolhidas'}
+                </button>
+
+                {showCredentials && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="bg-black/50 p-4 rounded-xl border border-white/10 space-y-4"
+                  >
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">E-mail</p>
+                      <p className="font-medium text-zinc-200 break-all">{email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Senha</p>
+                      <p className="font-mono text-zinc-200 break-all">{password}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              <Link href="/dashboard/login" className="block mt-6">
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-6 transition-all duration-300 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)]">
+                  Ir para o Login
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="text-center mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                  <UserPlus className="w-7 h-7 text-emerald-400" />
+                </div>
+                <h1 className="text-3xl font-bold mb-2 tracking-tight">Criar Conta</h1>
+                <p className="text-zinc-400 text-sm">Comece a criar briefings inteligentes para seus clientes</p>
+              </div>
+
+              <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="displayName" className="text-zinc-300">
                 Seu Nome <span className="text-red-500">*</span>
@@ -204,15 +251,7 @@ export default function RegisterPage() {
               </motion.div>
             )}
 
-            {successMsg && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="text-emerald-400 text-sm p-3 bg-emerald-950/50 rounded-lg border border-emerald-900/50"
-              >
-                {successMsg}
-              </motion.div>
-            )}
+
 
             <Button
               type="submit"
@@ -228,17 +267,19 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-zinc-500 text-sm">
-              Já tem uma conta?{' '}
-              <Link 
-                href="/dashboard/login" 
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
-              >
-                Entrar
-              </Link>
-            </p>
-          </div>
+              <div className="mt-6 text-center">
+                <p className="text-zinc-500 text-sm">
+                  Já tem uma conta?{' '}
+                  <Link 
+                    href="/dashboard/login" 
+                    className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                  >
+                    Entrar
+                  </Link>
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
