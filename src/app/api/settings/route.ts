@@ -16,8 +16,9 @@ export async function GET() {
 
     if (error) throw error;
     return NextResponse.json(data);
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+  } catch (err: any) {
+    console.error("GET /api/settings Error:", err);
+    return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });
   }
 }
 

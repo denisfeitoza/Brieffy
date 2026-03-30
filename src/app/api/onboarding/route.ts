@@ -55,8 +55,17 @@ export async function POST(req: Request) {
 
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
-        const content = JSON.parse(summaryData.choices[0].message.content);
+        let contentStr = summaryData.choices[0].message.content;
         const usage = summaryData.usage;
+        
+        let content;
+        try {
+          contentStr = contentStr.replace(/```json/g, "").replace(/```/g, "").trim();
+          content = JSON.parse(contentStr);
+        } catch(e) {
+          console.error("Summary Parse Error:", e, contentStr);
+          throw new Error("Invalid summary JSON");
+        }
         
         // Save to briefing_profiles
         await supabaseAdmin
@@ -104,14 +113,18 @@ export async function POST(req: Request) {
     - \`multiple_choice\` (Para múltiplas seleções: serviços, desafios, canais)
     - \`boolean_toggle\` (Para dilemas Sim/Não ou decisões estratégicas binárias)
     - \`card_selector\` (Excelente para escolher Persona/Perfil do Cliente Ideal - exatamente 6 cartas descritivas)
-    - \`multi_slider\` (Excelente para DNA de Marca, Perfil de Marketing. Defina de 3 a 5 dimensões numéricas)
-    - \`color_picker\` (Exclusivo para tom de identidade visual/cor base. Peça apenas 1 vez)
-    - \`slider\` (Para maturidade, preço ou escalas simples de 0 a 10)
-    - \`text\` (Para nome, site, e respostas curtas abertas)
+    - 'multi_slider' (Excelente para DNA de Marca, Perfil de Marketing. Defina de 3 a 5 dimensões numéricas)
+    - 'color_picker' (Exclusivo para tom de identidade visual/cor base. Peça apenas 1 vez)
+    - 'slider' (Para maturidade, preço ou escalas simples de 0 a 10)
+    - 'text' (Para nome, site, e respostas curtas abertas)
     
-    REGRA CRÍTICA - VALID OPTIONS: Para \`single_choice\`, \`multiple_choice\`, \`card_selector\`, e \`multi_slider\`, você PRECISA fornecer um array \`options\` RICO, INTELIGENTE e não vazio! (geralmente entre 3 a 8 opções extremamente alinhadas ao mercado do cliente).
+    REGRA CRÍTICA - PROIBIDO REPETIR PERGUNTAS DE CORES: 
+    Se a questão for sobre cores, paletas de cores ou identidade visual, VOCÊ DEVE USAR EXCLUSIVAMENTE o questionType 'color_picker'.
+    NUNCA gere perguntas do tipo 'single_choice' ou 'multiple_choice' oferecendo códigos Hexadecimais (#HEX) como opções. NUNCA pergunte sobre cores se já perguntou antes ou se o usuário já forneceu cores.
     
-    Se \`generateMore\` for true, preserve o texto da pergunta mas reinvente completamente o array de \`options\` para entregar novas opções criativas.
+    REGRA CRÍTICA - VALID OPTIONS: Para 'single_choice', 'multiple_choice', 'card_selector', e 'multi_slider', você PRECISA fornecer um array 'options' RICO, INTELIGENTE e não vazio! (geralmente entre 3 a 8 opções extremamente alinhadas ao mercado do cliente).
+    
+    Se 'generateMore' for true, preserve o texto da pergunta mas reinvente completamente o array de 'options' para entregar novas opções criativas.
     
     Histórico da conversa: ${JSON.stringify(history)}
     Estado acumulado: ${JSON.stringify(currentState)}
@@ -145,9 +158,17 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json();
-    const content = data.choices[0].message.content;
+    let content = data.choices[0].message.content;
     const usage = data.usage;
-    const parsed = JSON.parse(content);
+    
+    let parsed;
+    try {
+      content = content.replace(/```json/g, "").replace(/```/g, "").trim();
+      parsed = JSON.parse(content);
+    } catch (parseError) {
+      console.error("[LLM parse error]:", parseError, "Raw content:", content);
+      throw new Error("Invalid JSON from LLM");
+    }
 
     if (usage) {
       const { estimateCost } = await import('@/lib/aiConfig');
@@ -174,8 +195,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json(parsed);
 
-  } catch (error) {
-    console.error("Onboarding API Error:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  } catch (error: any) {
+    console.error("Onboarding API Error:", error?.message || error, error);
+    return NextResponse.json({ error: error?.message || String(error) }, { status: 500 });
   }
 }

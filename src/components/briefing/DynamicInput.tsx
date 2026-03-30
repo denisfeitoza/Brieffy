@@ -256,6 +256,7 @@ export function DynamicInput({
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
   const [detailColors, setDetailColors] = useState<string[]>(["#F8FAFC", "#94A3B8"]);
   const [isFetchingColors, setIsFetchingColors] = useState(false);
+  const [colorHint, setColorHint] = useState<string>("");
   
   // Instant visual feedback for submission
   const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
@@ -272,16 +273,9 @@ export function DynamicInput({
     if (activeMessage.questionType === 'multiple_choice' || activeMessage.questionType === 'card_selector') {
       if (isEditing) {
         if (Array.isArray(ans)) {
-          // Extrair opções versus texto adicional, comparando com as opções da tela
-          const optionTitles = (activeMessage.options || []).map((opt: unknown) => {
-             const optObj = typeof opt === 'object' && opt !== null ? (opt as Record<string, unknown>) : null;
-             return optObj ? String(optObj.label || optObj.title || optObj.name || JSON.stringify(opt)) : String(opt);
-          });
-          const selectedOpts = ans.filter(item => optionTitles.includes(item));
-          const customText = ans.filter(item => !optionTitles.includes(item)).join(" ");
-          
-          setSelectedMultiples(selectedOpts as string[]);
-          setInputText(customText);
+          // Put all selected options into selectedMultiples so they display correctly as selected items/pills
+          setSelectedMultiples(ans as string[]);
+          setInputText("");
         } else if (typeof ans === 'string') {
           setSelectedMultiples([]);
           setInputText(ans);
@@ -804,7 +798,7 @@ export function DynamicInput({
       const res = await fetch("/api/colors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "initial", context: brandContext })
+        body: JSON.stringify({ type: "initial", context: brandContext, hint: colorHint })
       });
       if (res.ok) {
         const data = await res.json();
@@ -824,11 +818,11 @@ export function DynamicInput({
     try {
       const brandContext = getBrandContext();
       // Usar a mainColors que já deve estar settada via setSelectedMainColors
-      const currentMain = mainColors.length === 2 ? mainColors : selectedMainColors;
+      const currentMain = mainColors.length >= 1 ? mainColors : selectedMainColors;
       const res = await fetch("/api/colors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "complementary", mainColors: currentMain, context: brandContext })
+        body: JSON.stringify({ type: "complementary", mainColors: currentMain, context: brandContext, hint: colorHint })
       });
       if (res.ok) {
         const data = await res.json();
@@ -856,7 +850,7 @@ export function DynamicInput({
           <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
             <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-6 text-center">
               {t.step1Title}<br/>
-              <span className="text-[11px] text-neutral-500 normal-case tracking-normal">A IA sugeriu estas {suggestedMainColors.length} cores baseadas nas suas respostas. Selecione exatamente 2 cores.</span>
+              <span className="text-[11px] text-neutral-500 normal-case tracking-normal">A IA sugeriu estas {suggestedMainColors.length} cores baseadas nas suas respostas. Selecione 1 ou 2 cores.</span>
             </span>
             {isFetchingColors && suggestedMainColors.length === 0 ? (
                <div className="py-12 flex flex-col items-center">
@@ -919,7 +913,19 @@ export function DynamicInput({
                  })}
               </div>
             )}
-            <div className="flex flex-wrap justify-center gap-4 mt-8">
+            <div className="w-full max-w-sm mt-6">
+               <input 
+                 type="text" 
+                 value={colorHint}
+                 onChange={(e) => setColorHint(e.target.value)}
+                 placeholder="Alguma dica de cor ou estilo? (opcional)"
+                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
+                 onKeyDown={(e) => {
+                   if (e.key === 'Enter') fetchInitialColors();
+                 }}
+               />
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
               <Button 
                 variant="outline" 
                 className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800"
@@ -932,12 +938,13 @@ export function DynamicInput({
               <Button
                 className="h-12 px-8 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.5)] transition-all hover:scale-105"
                 onClick={() => {
-                  if (selectedMainColors.length === 2) {
+                  if (selectedMainColors.length >= 1) {
                      setMainColors(selectedMainColors);
+                     setColorHint(""); // Clear hint for next step
                      fetchComplementaryColors();
                   }
                 }}
-                disabled={selectedMainColors.length !== 2 || isFetchingColors || isLoading || isSubmittingLocal}
+                disabled={selectedMainColors.length < 1 || isFetchingColors || isLoading || isSubmittingLocal}
               >
                 {isFetchingColors || isSubmittingLocal || isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowRight className="w-5 h-5 mr-2" />}
                 {t.next}
@@ -1012,8 +1019,23 @@ export function DynamicInput({
                     </div>
                   );
                })}
+             </div>
+            <div className="w-full max-w-sm mt-6">
+               <input 
+                 type="text" 
+                 value={colorHint}
+                 onChange={(e) => setColorHint(e.target.value)}
+                 placeholder="Alguma dica de cor ou estilo? (opcional)"
+                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
+                 onKeyDown={(e) => {
+                   if (e.key === 'Enter') {
+                     setSelectedSuggestions([]);
+                     fetchComplementaryColors();
+                   }
+                 }}
+               />
             </div>
-            <div className="flex flex-wrap justify-center gap-4 mt-8">
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
               <Button variant="outline" className="h-12 px-6 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800" onClick={() => setColorWizardStep(1)}>
                 {t.back}
               </Button>
