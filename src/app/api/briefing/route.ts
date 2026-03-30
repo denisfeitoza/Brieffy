@@ -4,9 +4,15 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServer = createClient(supabaseUrl, supabaseKey);
+// BUG-05 FIX: Do NOT create Supabase client at module level.
+// At Vercel build time, env vars are not available, causing "supabaseUrl is required" crash.
+// The client is created lazily inside each function call.
+function getSupabaseServer() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) throw new Error('Supabase env vars not configured');
+  return createClient(url, key);
+}
 
 // ================================================================
 // BUILD PACKAGE PROMPTS — Fetch & Concatenate Active Skill Fragments
@@ -16,7 +22,7 @@ async function buildPackagePrompts(selectedSlugs?: string[]): Promise<{ prompt: 
   if (!selectedSlugs || selectedSlugs.length === 0) return empty;
 
   try {
-    const { data: packages, error } = await supabaseServer
+    const { data: packages, error } = await getSupabaseServer()
       .from('briefing_category_packages')
       .select('slug, name, system_prompt_fragment, max_questions, briefing_purpose, depth_signals')
       .in('slug', selectedSlugs)
@@ -106,7 +112,7 @@ export async function POST(req: Request) {
     let agencyBrandColor = "";
 
     if (user) {
-      const { data: profile } = await supabaseServer
+      const { data: profile } = await getSupabaseServer()
         .from("briefing_profiles")
         .select("company_summary, brand_color")
         .eq("id", user.id)
@@ -563,7 +569,7 @@ active_listening rules:
       // We get user_id from the server-side auth session (if logged in)
       const { sessionId } = body;
 
-      supabaseServer.from('api_usage').insert({
+      getSupabaseServer().from('api_usage').insert({
         user_id: user?.id || null,
         session_id: sessionId || null,
         provider: llmConfig.provider,
@@ -571,7 +577,7 @@ active_listening rules:
         prompt_tokens: usage.prompt_tokens || 0,
         completion_tokens: usage.completion_tokens || 0,
         estimated_cost_usd: cost
-      }).then(({ error }) => {
+      }).then(({ error }: { error: { message: string } | null }) => {
         if (error) console.error("[API_USAGE] Failed to log usage:", error);
       });
     }

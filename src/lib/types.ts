@@ -144,6 +144,7 @@ export type BriefingContextType = {
   chosenLanguage: string; // ISO code from initial language selection (pt, en, es)
   generatedDocument: string | null;
   isGeneratingDocument: boolean;
+  documentError: string | null;
   generateDocument: () => Promise<void>;
   selectedPackages: string[];
   selectedPackageDetails: PackageDetail[];

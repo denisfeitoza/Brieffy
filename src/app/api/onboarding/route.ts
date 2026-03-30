@@ -4,9 +4,15 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseKey);
+// BUG-05 FIX: Do NOT create Supabase client at module level.
+// In Vercel build-time, env vars are not available and createClient() would throw.
+// The admin client is created lazily inside the handler.
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) throw new Error('Supabase env vars not configured');
+  return createClient(url, key);
+}
 
 export async function POST(req: Request) {
   try {
@@ -32,7 +38,11 @@ export async function POST(req: Request) {
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
 
-    const step = history ? Math.floor(history.length / 2) : 0;
+    // BUG-04 FIX: Count only 'user' role messages to determine step number.
+    // This prevents depth_questions (assistant-only) from skewing the count
+    // and causing premature or delayed termination of the onboarding session.
+    const userMessages = history ? history.filter((m: { role: string }) => m.role === 'user') : [];
+    const step = userMessages.length;
     const isFinished = step >= 8;
 
     // If step is exactly 8, the user just answered the 8th question. Let's process the summary and finish.
@@ -85,7 +95,7 @@ export async function POST(req: Request) {
         }
         
         // Save to briefing_profiles
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("briefing_profiles")
           .update({ 
             company_summary: content.company_summary,
@@ -96,7 +106,7 @@ export async function POST(req: Request) {
 
         if (usage) {
           const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
-          supabaseAdmin.from('api_usage').insert({
+          getSupabaseAdmin().from('api_usage').insert({
             user_id: user.id,
             session_id: null,
             provider: llmConfig.provider,
@@ -104,7 +114,7 @@ export async function POST(req: Request) {
             prompt_tokens: usage.prompt_tokens || 0,
             completion_tokens: usage.completion_tokens || 0,
             estimated_cost_usd: cost
-          }).then(({ error }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
+          }).then(({ error }: { error: { message: string } | null }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
         }
       }
 
@@ -199,7 +209,7 @@ export async function POST(req: Request) {
     if (usage) {
       const { estimateCost } = await import('@/lib/aiConfig');
       const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
-      supabaseAdmin.from('api_usage').insert({
+      getSupabaseAdmin().from('api_usage').insert({
         user_id: user.id,
         session_id: null,
         provider: llmConfig.provider,
@@ -207,7 +217,7 @@ export async function POST(req: Request) {
         prompt_tokens: usage.prompt_tokens || 0,
         completion_tokens: usage.completion_tokens || 0,
         estimated_cost_usd: cost
-      }).then(({ error }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
+      }).then(({ error }: { error: { message: string } | null }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
     }
     
     // Safety auto-fill for UI components (only when there IS a next question)

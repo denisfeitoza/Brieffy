@@ -261,6 +261,48 @@ export async function getUserQuota() {
 }
 
 // ========================
+// USER — RECENT ACTIVITY & PACKAGES USAGE
+// ========================
+
+export async function getUserDashboardExtras() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { lastSession: null, topPackages: [] };
+
+  // Last session (non-onboarding)
+  const { data: lastSession } = await supabase
+    .from('briefing_sessions')
+    .select('id, status, created_at, company_info, session_quality_score, basal_coverage, data_completeness, edit_token, final_assets')
+    .eq('user_id', user.id)
+    .not('template_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  // All sessions for package aggregation
+  const { data: allSessions } = await supabase
+    .from('briefing_sessions')
+    .select('selected_packages')
+    .eq('user_id', user.id)
+    .not('template_id', 'is', null);
+
+  // Aggregate package usage
+  const pkgCount: Record<string, number> = {};
+  (allSessions || []).forEach(s => {
+    const pkgs = s.selected_packages as string[] | null;
+    if (Array.isArray(pkgs)) {
+      pkgs.forEach(p => { pkgCount[p] = (pkgCount[p] || 0) + 1; });
+    }
+  });
+  const topPackages = Object.entries(pkgCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([slug, count]) => ({ slug, count }));
+
+  return { lastSession, topPackages };
+}
+
+// ========================
 // ADMIN — ALL USERS
 // ========================
 
@@ -293,7 +335,7 @@ export async function getAllUsersAdmin() {
     
     return {
       ...profile,
-      quota: quota || { max_briefings: 10, used_briefings: 0, is_blocked: false },
+      quota: quota || { max_briefings: 3, used_briefings: 0, is_blocked: false },
       sessionCount: userSessions.length,
       finishedCount: userSessions.filter(s => s.status === 'finished').length,
     };
@@ -342,28 +384,23 @@ export async function getGlobalStats() {
 export async function getAdminCostMetrics() {
   const supabase = await createServerSupabaseClient();
 
-  // Fetch all usage logs, joining with profiles to get the company name
   const { data: usageLogs, error } = await supabase
     .from('api_usage')
     .select('*, briefing_profiles!api_usage_user_id_fkey(company_name, display_name)')
-    .order('created_at', { ascending: true }); // Ascending for time-series charts
+    .order('created_at', { ascending: true });
 
   if (error) {
     console.error('Error fetching API usage logs:', error);
     return { totalCostUSD: 0, totalCostBRL: 0, costByCompany: [], timelineData: [] };
   }
 
-  const EXCHANGE_RATE_BRL = 6.0; // Current approx conversion rate, can be dynamic later
+  const EXCHANGE_RATE_BRL = 6.0;
   let totalCostUSD = 0;
 
-  // Track costs grouped by company
   const companyCosts: Record<string, { companyName: string; costUsd: number; tokens: number }> = {};
-  
-  // Track costs by day for timeline chart
   const timelineCosts: Record<string, { date: string; costUsd: number; costBrl: number }> = {};
 
   (usageLogs || []).forEach(log => {
-    // Note: Database might return the relation as an object or array of objects depending on schema
     const profile = Array.isArray(log.briefing_profiles) ? log.briefing_profiles[0] : log.briefing_profiles;
     const companyName = profile?.company_name || profile?.display_name || 'Usuário Avulso';
     const cost = Number(log.estimated_cost_usd) || 0;
@@ -371,14 +408,12 @@ export async function getAdminCostMetrics() {
     
     totalCostUSD += cost;
 
-    // Group by company
     if (!companyCosts[companyName]) {
       companyCosts[companyName] = { companyName, costUsd: 0, tokens: 0 };
     }
     companyCosts[companyName].costUsd += cost;
     companyCosts[companyName].tokens += tokens;
 
-    // Group by date (YYYY-MM-DD)
     const dateStr = new Date(log.created_at).toISOString().split('T')[0];
     if (!timelineCosts[dateStr]) {
       timelineCosts[dateStr] = { date: dateStr, costUsd: 0, costBrl: 0 };
@@ -387,7 +422,6 @@ export async function getAdminCostMetrics() {
     timelineCosts[dateStr].costBrl += (cost * EXCHANGE_RATE_BRL);
   });
 
-  // Convert dicts to arrays and sort
   const costByCompany = Object.values(companyCosts)
     .sort((a, b) => b.costUsd - a.costUsd);
 
@@ -398,6 +432,101 @@ export async function getAdminCostMetrics() {
     totalCostUSD,
     totalCostBRL: totalCostUSD * EXCHANGE_RATE_BRL,
     costByCompany,
-    timelineData
+    timelineData,
+  };
+}
+
+// ========================
+// ADMIN — EXTENDED STATS
+// ========================
+
+export async function getAdminExtendedStats() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: profiles } = await supabase
+    .from('briefing_profiles')
+    .select('id, is_admin, is_onboarded, created_at, plan')
+    .order('created_at', { ascending: true });
+
+  const { data: recentSessionsRaw } = await supabase
+    .from('briefing_sessions')
+    .select('id, status, created_at, user_id, session_quality_score, briefing_profiles!briefing_sessions_user_id_fkey(display_name, company_name)')
+    .not('template_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  const { data: allSessions } = await supabase
+    .from('briefing_sessions')
+    .select('id, status')
+    .not('template_id', 'is', null);
+
+  const { data: usageLogs } = await supabase
+    .from('api_usage')
+    .select('estimated_cost_usd');
+
+  const { data: blockedQuotas } = await supabase
+    .from('briefing_quotas')
+    .select('user_id, is_blocked')
+    .eq('is_blocked', true);
+
+  const nonAdmin = (profiles || []).filter(p => !p.is_admin);
+  const onboardedCount = nonAdmin.filter(p => p.is_onboarded).length;
+  const onboardingRate = nonAdmin.length > 0 ? Math.round((onboardedCount / nonAdmin.length) * 100) : 0;
+
+  // Plan distribution
+  const planDist: Record<string, number> = {};
+  nonAdmin.forEach(p => {
+    const plan = (p.plan as string) || 'free';
+    planDist[plan] = (planDist[plan] || 0) + 1;
+  });
+  const planDistribution = Object.entries(planDist).map(([plan, count]) => ({ plan, count }));
+
+  // Avg cost per finished briefing
+  const totalCostUSD = (usageLogs || []).reduce((sum, l) => sum + (Number(l.estimated_cost_usd) || 0), 0);
+  const finishedCount = (allSessions || []).filter(s => s.status === 'finished').length;
+  const avgCostPerBriefingUSD = finishedCount > 0 ? totalCostUSD / finishedCount : 0;
+
+  // New users per week (last 8 weeks)
+  const now = new Date();
+  const newUsersWeekly: { week: string; count: number }[] = [];
+  for (let i = 7; i >= 0; i--) {
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - (i * 7));
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const count = nonAdmin.filter(p => {
+      const d = new Date(p.created_at);
+      return d >= weekStart && d < weekEnd;
+    }).length;
+    const label = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
+    newUsersWeekly.push({ week: label, count });
+  }
+
+  const blockedCount = blockedQuotas?.length || 0;
+
+  // Format recent sessions
+  const recentSessions = (recentSessionsRaw || []).map(s => {
+    const profile = Array.isArray(s.briefing_profiles) ? s.briefing_profiles[0] : s.briefing_profiles;
+    return {
+      id: s.id,
+      status: s.status,
+      created_at: s.created_at,
+      user_id: s.user_id,
+      session_quality_score: s.session_quality_score as number | null,
+      display_name: (profile as { display_name?: string } | null)?.display_name,
+      company_name: (profile as { company_name?: string } | null)?.company_name,
+    };
+  });
+
+  return {
+    onboardingRate,
+    onboardedCount,
+    totalNonAdminUsers: nonAdmin.length,
+    avgCostPerBriefingUSD,
+    newUsersWeekly,
+    planDistribution,
+    blockedCount,
+    recentSessions,
   };
 }

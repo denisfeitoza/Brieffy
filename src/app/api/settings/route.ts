@@ -1,15 +1,43 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { invalidateSettingsCache } from "@/lib/aiConfig";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// BUG-03 FIX: All settings endpoints now require an authenticated admin session.
+// Both GET and PUT are protected; non-admins receive 401.
 
-// GET — Fetch all settings
+async function requireAdmin() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return { supabase: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+
+  // Check admin role in user metadata or profiles table
+  const isAdmin = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin';
+  if (!isAdmin) {
+    // Also try checking the profiles table as fallback
+    const { data: profile } = await supabase
+      .from("briefing_profiles")
+      .select("is_admin")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!profile?.is_admin) {
+      return { supabase: null, error: NextResponse.json({ error: "Forbidden: admin access required" }, { status: 403 }) };
+    }
+  }
+
+  return { supabase, error: null };
+}
+
+// GET — Fetch all settings (admin only)
 export async function GET() {
+  const { supabase, error: authError } = await requireAdmin();
+  if (authError) return authError;
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from("app_settings")
       .select("*")
       .order("category");
@@ -22,8 +50,11 @@ export async function GET() {
   }
 }
 
-// PUT — Batch update settings
+// PUT — Batch update settings (admin only)
 export async function PUT(req: Request) {
+  const { supabase, error: authError } = await requireAdmin();
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const updates: { key: string; value: string }[] = body.settings;
@@ -34,13 +65,17 @@ export async function PUT(req: Request) {
 
     // Batch upsert all settings
     const promises = updates.map(({ key, value }) =>
-      supabase
+      supabase!
         .from("app_settings")
         .update({ value, updated_at: new Date().toISOString() })
         .eq("key", key)
     );
 
     await Promise.all(promises);
+
+    // BUG-10 FIX: Immediately bust the in-memory settings cache so the next
+    // briefing request picks up the new values without waiting for TTL expiry.
+    invalidateSettingsCache();
 
     return NextResponse.json({ success: true });
   } catch (err) {

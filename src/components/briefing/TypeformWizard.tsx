@@ -137,6 +137,7 @@ export function TypeformWizard() {
     chosenLanguage,
     generatedDocument,
     isGeneratingDocument,
+    documentError,
     generateDocument,
     branding,
     editToken,
@@ -188,23 +189,36 @@ export function TypeformWizard() {
   const activeFont = fontChoice || branding.brand_font || 'Outfit';
 
   useEffect(() => {
-    // Injeta a fonte escolhida dinamicamente no head para conseguirmos usar no preview
+    // BUG-08 FIX: Track how many wizards are using the same font with a ref-count
+    // to prevent premature cleanup when multiple instances share the same font.
     if (activeFont && activeFont !== 'Outfit' && activeFont !== 'Inter' && activeFont !== 'Aa') {
       const linkId = `google-font-${activeFont.replace(/\s+/g, '-')}`;
-      if (!document.getElementById(linkId)) {
-        const link = document.createElement('link');
-        link.id = linkId;
-        link.rel = 'stylesheet';
-        link.href = `https://fonts.googleapis.com/css2?family=${activeFont.replace(/ /g, '+')}&display=swap`;
-        document.head.appendChild(link);
+      const countAttr = 'data-use-count';
+      let el = document.getElementById(linkId) as HTMLLinkElement | null;
+      if (!el) {
+        el = document.createElement('link');
+        el.id = linkId;
+        el.rel = 'stylesheet';
+        el.href = `https://fonts.googleapis.com/css2?family=${activeFont.replace(/ /g, '+')}&display=swap`;
+        el.setAttribute(countAttr, '1');
+        document.head.appendChild(el);
+      } else {
+        el.setAttribute(countAttr, String(parseInt(el.getAttribute(countAttr) || '0') + 1));
       }
     }
-    // Fix #12: Cleanup injected font links on unmount
     return () => {
+      // BUG-08 FIX: Only remove the <link> when no other instances reference it
       if (activeFont && activeFont !== 'Outfit' && activeFont !== 'Inter' && activeFont !== 'Aa') {
         const linkId = `google-font-${activeFont.replace(/\s+/g, '-')}`;
         const el = document.getElementById(linkId);
-        if (el) el.remove();
+        if (el) {
+          const count = parseInt(el.getAttribute('data-use-count') || '1') - 1;
+          if (count <= 0) {
+            el.remove();
+          } else {
+            el.setAttribute('data-use-count', String(count));
+          }
+        }
       }
     };
   }, [activeFont]);
@@ -237,8 +251,21 @@ export function TypeformWizard() {
 
   // Se o usuário der "Avançar" ou "Enviar"
   const handleSend = () => {
-    if (!inputText.trim() && !messages[currentStepIndex].userAnswer) {
-      // Se ele não digitou nada e já tinha uma resposta lá, não avança. 
+    // BUG-12 FIX: also check type — for interactive types, userAnswer lives in DynamicInput state,
+    // so if inputText is empty AND there's a prior userAnswer, allow advancing via goNext.
+    const currentMsg = messages[currentStepIndex];
+    const isInteractiveType = (
+      currentMsg?.questionType === 'single_choice' ||
+      currentMsg?.questionType === 'multiple_choice' ||
+      currentMsg?.questionType === 'card_selector' ||
+      currentMsg?.questionType === 'boolean_toggle' ||
+      currentMsg?.questionType === 'slider' ||
+      currentMsg?.questionType === 'multi_slider'
+    );
+
+    // For interactive types, DynamicInput handles submission directly;
+    // handleSend should only be called for text inputs.
+    if (!inputText.trim() && !currentMsg?.userAnswer && !isInteractiveType) {
       return; 
     }
     
@@ -393,26 +420,38 @@ export function TypeformWizard() {
                 >
                   <div className="space-y-4">
                      <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
-                      {t.allSet}
+                      {/* BUG-07 FIX: Show error title when document generation failed */}
+                      {documentError
+                        ? (chosenLanguage === 'en' ? 'Something went wrong' : chosenLanguage === 'es' ? 'Algo salió mal' : 'Algo deu errado')
+                        : t.allSet}
                     </h1>
                     <p className="text-lg text-neutral-400 max-w-lg mx-auto leading-relaxed">
-                      {t.uploadRef}
+                      {documentError ? documentError : t.uploadRef}
                     </p>
                   </div>
 
-                  <div className="w-24 h-24 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                    <Sparkles className="w-10 h-10 text-indigo-400" />
+                  {/* BUG-07 FIX: Show warning icon when there is an error */}
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center ${documentError ? 'bg-red-500/10 border border-red-500/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                    {documentError
+                      ? <span className="text-4xl">⚠️</span>
+                      : <Sparkles className="w-10 h-10 text-indigo-400" />
+                    }
                   </div>
                   
                   <div className="w-full pt-4">
                     <Button 
                         size="lg"
-                        className="w-full h-16 bg-white text-black hover:bg-neutral-200 text-lg font-medium rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all"
+                        className={`w-full h-16 text-lg font-medium rounded-2xl transition-all ${
+                          documentError
+                            ? 'bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30'
+                            : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+                        }`}
                         onClick={generateDocument}
                       >
-                        {t.generateDiag}
-                        {" "}
-                        <ArrowRight className="w-5 h-5 ml-2" />
+                        {documentError
+                          ? (chosenLanguage === 'en' ? '↺ Try Again' : chosenLanguage === 'es' ? '↺ Reintentar' : '↺ Tentar Novamente')
+                          : <>{t.generateDiag} <ArrowRight className="w-5 h-5 ml-2" /></>
+                        }
                     </Button>
                   </div>
                 </motion.div>

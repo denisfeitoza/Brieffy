@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// BUG-02 FIX: This endpoint is intentionally public (serves the briefing wizard share page),
+// but we now validate the userId UUID format to prevent injection/enumeration attacks,
+// and only return non-sensitive branding fields (no email, no PII).
+// The Supabase Anon key is acceptable here since briefing_profiles has RLS allowing
+// read on fields used for branding display.
+function isValidUUID(s: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -17,8 +26,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'userId required' }, { status: 400 });
     }
 
+    // BUG-02 FIX: Reject non-UUID values to prevent probing/injection
+    if (!isValidUUID(userId)) {
+      return NextResponse.json({ error: 'Invalid userId format' }, { status: 400 });
+    }
+
     const { data, error } = await supabase
       .from('briefing_profiles')
+      // BUG-02 FIX: Only select non-sensitive, branding-only fields
       .select('display_name, company_name, logo_url, brand_color, brand_accent, tagline, website')
       .eq('id', userId)
       .single();

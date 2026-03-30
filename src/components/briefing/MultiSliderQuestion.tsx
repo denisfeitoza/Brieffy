@@ -83,7 +83,9 @@ function SingleMiniSlider({
   onChange: (val: number) => void;
   index: number;
 }) {
-  const progress = ((value - slider.min) / (slider.max - slider.min)) * 100;
+  // BUG-09 FIX: If min === max (invalid range from AI), default range to avoid division by zero
+  const effectiveRange = Math.max(slider.max - slider.min, 1);
+  const progress = ((value - slider.min) / effectiveRange) * 100;
 
   return (
     <div

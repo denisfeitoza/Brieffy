@@ -108,7 +108,7 @@ export default function ProfilePage() {
 
       if (quota) {
         setUsedBriefings(quota.used_briefings || 0);
-        setMaxBriefings(quota.max_briefings || 10);
+        setMaxBriefings(quota.max_briefings || 3);
       }
 
       setLoading(false);

@@ -79,6 +79,7 @@ export function BriefingProvider({
   const sessionCreatedRef = React.useRef(false);
 
   // Active Listening — accumulated signals across the session
+  const detectedSignalsRef = React.useRef<BriefingSignal[]>([]);
   const [detectedSignals, setDetectedSignals] = useState<BriefingSignal[]>([]);
   const [engagementLevel, setEngagementLevel] = useState<'high' | 'medium' | 'low'>('high');
 
@@ -135,6 +136,7 @@ export function BriefingProvider({
   const [isUploadStep, setIsUploadStep] = useState(false); // Tela estática de upload
   
   const [assets, setAssets] = useState<FinalAssets | null>(null);
+  const [documentError, setDocumentError] = useState<string | null>(null);
   const [basalInfo, setBasalInfo] = useState<BasalCoverageInfo>({
     basalCoverage: 0,
     currentSection: 'company',
@@ -301,12 +303,21 @@ export function BriefingProvider({
           timestamp: Date.now(),
         }));
 
-        setDetectedSignals(prev => [...prev, ...newSignals]);
+        // BUG-01 FIX: Use ref to avoid stale closure when persisting accumulated signals
+        setDetectedSignals(prev => {
+          const merged = [...prev, ...newSignals];
+          detectedSignalsRef.current = merged;
+          return merged;
+        });
 
         // Persist signals to the session (async, non-blocking)
+        // BUG-01 FIX: Use ref value (always up-to-date) instead of stale `detectedSignals` state
         if (activeSessionId) {
+          const mergedForPersist = [...detectedSignalsRef.current, ...newSignals.filter(
+            s => !detectedSignalsRef.current.find(e => e.id === s.id)
+          )];
           supabase.from('briefing_sessions')
-            .update({ detected_signals: [...detectedSignals, ...newSignals] })
+            .update({ detected_signals: mergedForPersist })
             .eq('id', activeSessionId)
             .then(({ error }) => {
               if (error) console.error('[ActiveListening] Failed to persist signals:', error);
@@ -363,32 +374,36 @@ export function BriefingProvider({
 
       if (data.isFinished) {
         setIsFinished(true);
+        if (data.assets) setAssets(data.assets);
+
+        // BUG-06 FIX: Always persist metrics BEFORE redirecting (even for onboarding)
+        const persistPromise = activeSessionId
+          ? supabase.from('briefing_sessions').update({ 
+              status: 'finished', 
+              company_info: data.updates || briefingState,
+              final_assets: data.assets,
+              // BUG-01 FIX: Use ref to get the latest accumulated signals
+              detected_signals: detectedSignalsRef.current,
+              // Quality metrics from AI finalization
+              session_quality_score: data.session_quality_score || null,
+              engagement_summary: data.engagement_summary || { overall: engagementLevel, by_area: {} },
+              data_completeness: data.data_completeness || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', activeSessionId)
+            .then(({error}) => {
+              if (error) console.error("Erro ao fechar sessão no DB:", error);
+            })
+          : Promise.resolve();
+
         if (isOnboarding) {
-          // If onboarding, just finish right away and redirect to dashboard
-          window.location.href = '/dashboard';
+          // BUG-06 FIX: Wait for metrics to be saved before redirecting
+          persistPromise.then(() => {
+            window.location.href = '/dashboard';
+          });
           return;
         } else {
           setIsUploadStep(true); // Triggers the upload static step UI
-        }
-        if (data.assets) setAssets(data.assets);
-
-        // Atualiza a sessão no banco com os dados computados + quality metrics
-        if (activeSessionId) {
-          supabase.from('briefing_sessions').update({ 
-            status: 'finished', 
-            company_info: data.updates || briefingState,
-            final_assets: data.assets,
-            detected_signals: detectedSignals,
-            // Quality metrics from AI finalization
-            session_quality_score: data.session_quality_score || null,
-            engagement_summary: data.engagement_summary || { overall: engagementLevel, by_area: {} },
-            data_completeness: data.data_completeness || null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', activeSessionId)
-          .then(({error}) => {
-             if (error) console.error("Erro ao fechar sessão no DB:", error);
-          });
         }
       } else {
         // ================================================================
@@ -486,7 +501,11 @@ export function BriefingProvider({
           history: historyPayload,
           generateMore: true,
           chosenLanguage,
-          selectedPackages
+          selectedPackages,
+          // BUG-11 FIX: include template context and session signals so AI generates relevant options
+          activeTemplate,
+          sessionId,
+          detectedSignals: detectedSignalsRef.current.map(s => s.summary),
         }),
       });
 
@@ -520,6 +539,8 @@ export function BriefingProvider({
   const [generatedDocument, setGeneratedDocument] = useState<string | null>(null);
   const [isGeneratingDocument, setIsGeneratingDocument] = useState(false);
   const [editToken, setEditToken] = useState<string | null>(null);
+
+  // BUG-07 is exposed via documentError state (declared above alongside assets)
   const [editPassphrase, setEditPassphrase] = useState<string | null>(initialPassphrase || null);
 
   const generateDocument = async () => {
@@ -583,6 +604,8 @@ export function BriefingProvider({
       }
     } catch (error) {
       console.error("Document generation failed:", error);
+      // BUG-07 FIX: Surface the error to the user via state
+      setDocumentError(error instanceof Error ? error.message : "Falha ao gerar o documento. Tente novamente.");
     } finally {
       setIsGeneratingDocument(false);
     }
@@ -613,6 +636,7 @@ export function BriefingProvider({
         chosenLanguage,
         generatedDocument,
         isGeneratingDocument,
+        documentError,
         generateDocument,
         selectedPackages,
         selectedPackageDetails,

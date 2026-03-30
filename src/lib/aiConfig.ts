@@ -116,7 +116,18 @@ export function getVoiceConfig(overrides?: SettingsOverride): VoiceConfig {
 // ================================================================
 let settingsCache: SettingsOverride | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 60_000; // 60 seconds
+// BUG-10 FIX: Reduced TTL from 60s to 10s to limit stale config window.
+// Also export invalidateSettingsCache() so /api/settings PUT can immediately bust it.
+const CACHE_TTL = 10_000; // 10 seconds
+
+/**
+ * Force-invalidates the settings cache.
+ * Call this after an admin updates app_settings via PUT /api/settings.
+ */
+export function invalidateSettingsCache() {
+  settingsCache = null;
+  cacheTimestamp = 0;
+}
 
 export async function getDBSettings(): Promise<SettingsOverride> {
   const now = Date.now();
