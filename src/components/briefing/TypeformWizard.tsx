@@ -145,6 +145,7 @@ export function TypeformWizard() {
     briefingState,
     basalInfo,
     detectedSignals,
+    engagementLevel,
   } = useBriefing();
 
   const t = I18N[chosenLanguage] || I18N.pt;
@@ -547,10 +548,36 @@ export function TypeformWizard() {
                   </motion.div>
                 )}
 
+                {/* Micro-feedback badge from AI consultant */}
+                {activeMessage.microFeedback && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="inline-flex items-start gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-200/90 text-sm leading-relaxed w-fit mb-4"
+                  >
+                    <Sparkles className="w-4 h-4 flex-shrink-0 text-amber-400 mt-0.5" />
+                    <span className="italic">{activeMessage.microFeedback}</span>
+                  </motion.div>
+                )}
+
                 {/* The IA Formatted Question */}
                 <h1 className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
                   {activeMessage.content}
                 </h1>
+
+                {/* Engagement encouragement when fatigue detected */}
+                {engagementLevel === 'low' && currentStepIndex > 3 && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-sm text-neutral-500 mt-2"
+                  >
+                    {chosenLanguage === 'en' ? '⚡ Almost there — just a few key questions left.' 
+                      : chosenLanguage === 'es' ? '⚡ Ya casi — solo quedan algunas preguntas clave.' 
+                      : '⚡ Quase lá — restam poucas perguntas importantes.'}
+                  </motion.p>
+                )}
 
 
                 {/* Box Híbrido Dinamico (Text, Audio, Single Choice, Multiple Choice, Slider, Color Picker) */}
