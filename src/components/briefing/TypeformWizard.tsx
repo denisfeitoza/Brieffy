@@ -159,12 +159,16 @@ export function TypeformWizard() {
 
   // ─── AI Splash Screen on First Load ───
   const [showSplash, setShowSplash] = useState(true);
+  const [justExitedSplash, setJustExitedSplash] = useState(false);
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Auto-dismiss splash after ~4 seconds
     splashTimerRef.current = setTimeout(() => {
       setShowSplash(false);
+      setJustExitedSplash(true);
+      // Reset after entrance animation completes
+      setTimeout(() => setJustExitedSplash(false), 800);
     }, 4000);
     return () => {
       if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
@@ -509,9 +513,12 @@ export function TypeformWizard() {
   }
 
   return (
-    <div
+    <motion.div
       className="flex flex-col h-full bg-neutral-950 text-white selection:bg-indigo-500/30"
       style={{ '--brand-color': branding.brand_color, '--brand-accent': branding.brand_accent } as React.CSSProperties}
+      initial={justExitedSplash ? { opacity: 0, scale: 0.98, filter: 'blur(4px)' } : false}
+      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
     >
       
       {/* Top Navigation Bar */}
@@ -708,6 +715,6 @@ export function TypeformWizard() {
 
       {/* Active Listening Insights Panel — visible only to agency owner */}
       <InsightsPanel signals={detectedSignals} isOwner={isOwner} />
-    </div>
+    </motion.div>
   );
 }
