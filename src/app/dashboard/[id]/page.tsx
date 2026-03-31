@@ -2,10 +2,11 @@ import { getSessionById, getInteractionsBySession } from '@/lib/services/briefin
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, FileText, MessageSquare, Download, Activity, Brain, AlertTriangle, CheckCircle2, TrendingUp, BarChart3, Eye, Zap, Shield } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, MessageSquare, Download, Activity, Brain, AlertTriangle, CheckCircle2, TrendingUp, BarChart3, Eye, Zap, Shield, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CopyButtons } from '@/components/dashboard/CopyButtons';
+import { Suspense } from 'react';
 export const dynamic = 'force-dynamic';
 
 // Simple Markdown → HTML converter (server component safe)
@@ -32,10 +33,10 @@ function simpleMarkdownToHtml(md: string): string {
 // Engagement label & color helpers
 function engagementColor(level: string) {
   switch (level) {
-    case 'high': return { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30', label: 'Alto' };
-    case 'medium': return { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/30', label: 'Médio' };
-    case 'low': return { bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/30', label: 'Baixo' };
-    default: return { bg: 'bg-zinc-500/15', text: 'text-zinc-400', border: 'border-zinc-500/30', label: 'N/A' };
+    case 'high': return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', label: 'Alto' };
+    case 'medium': return { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20', label: 'Médio' };
+    case 'low': return { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/20', label: 'Baixo' };
+    default: return { bg: 'bg-zinc-500/10', text: 'text-zinc-400', border: 'border-zinc-500/20', label: 'N/A' };
   }
 }
 
@@ -62,10 +63,12 @@ function areaLabel(area: string) {
   return map[area] || area.charAt(0).toUpperCase() + area.slice(1);
 }
 
-export default async function SessionDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const session = await getSessionById(id);
-  const interactions = await getInteractionsBySession(id);
+// ── Full content component — fetches in parallel ─────────────────
+async function SessionContent({ id }: { id: string }) {
+  const [session, interactions] = await Promise.all([
+    getSessionById(id),
+    getInteractionsBySession(id),
+  ]);
 
   const summaryData = (session.summary_data as Record<string, unknown>) || {};
   
@@ -80,37 +83,29 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
   const hasInsights = qualityScore || engagementSummary || dataCompleteness || (detectedSignals && detectedSignals.length > 0);
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col gap-4">
-        <Link href="/dashboard">
-          <Button variant="ghost" className="w-fit text-zinc-400 hover:text-white -ml-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar para Sessões
-          </Button>
-        </Link>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            Detalhes do Briefing
-            <span className="text-xs font-mono bg-cyan-950/50 text-cyan-400 px-3 py-1 rounded-full border border-cyan-900/50">
-              {session.id.split('-')[0]}
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center flex-wrap gap-2">
+          Detalhes do Briefing
+          <span className="text-xs font-mono bg-cyan-950/50 text-cyan-400 px-3 py-1 rounded-full border border-cyan-900/50">
+            {session.id.split('-')[0]}
+          </span>
+          {session.status === 'finished' && (
+            <span className="text-xs bg-emerald-950/50 text-emerald-400 px-3 py-1 rounded-full border border-emerald-900/50 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              Concluído
             </span>
-            {session.status === 'finished' && (
-              <span className="text-xs bg-emerald-950/50 text-emerald-400 px-3 py-1 rounded-full border border-emerald-900/50 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                Concluído
-              </span>
-            )}
-          </h2>
-          <div className="flex items-center text-zinc-400 mt-2">
-            <Clock className="w-4 h-4 mr-2" />
-            Criado em {format(new Date(session.created_at), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR })}
-            {interactions.length > 0 && (
-              <span className="ml-4 flex items-center gap-1">
-                <MessageSquare className="w-4 h-4" />
-                {interactions.length} interações
-              </span>
-            )}
-          </div>
+          )}
+        </h2>
+        <div className="flex items-center text-zinc-400 mt-2 flex-wrap gap-2">
+          <Clock className="w-4 h-4" />
+          Criado em {format(new Date(session.created_at), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR })}
+          {interactions.length > 0 && (
+            <span className="flex items-center gap-1">
+              <MessageSquare className="w-4 h-4" />
+              {interactions.length} interações
+            </span>
+          )}
         </div>
       </div>
 
@@ -134,7 +129,7 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
                     <BarChart3 className="w-4 h-4 text-zinc-500" />
                   </div>
                   <div className="flex items-end gap-3">
-                    <span className={`text-4xl font-black bg-gradient-to-r ${qualityGradient(qualityScore)} bg-clip-text text-transparent`}>
+                    <span className={`text-3xl font-bold bg-gradient-to-r ${qualityGradient(qualityScore)} bg-clip-text text-transparent`}>
                       {qualityScore}
                     </span>
                     <span className="text-zinc-500 text-sm mb-1">/100</span>
@@ -164,8 +159,8 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
                     const ec = engagementColor(engagementSummary.overall);
                     return (
                       <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${ec.bg} ${ec.border} border`}>
-                        <div className={`w-2.5 h-2.5 rounded-full ${ec.text.replace('text-', 'bg-')} animate-pulse`} />
-                        <span className={`text-lg font-bold ${ec.text}`}>{ec.label}</span>
+                        <div className={`w-2 h-2 rounded-full ${ec.text.replace('text-', 'bg-')}`} />
+                        <span className={`text-base font-semibold ${ec.text}`}>{ec.label}</span>
                       </div>
                     );
                   })()}
@@ -185,7 +180,7 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
                     <Shield className="w-4 h-4 text-zinc-500" />
                   </div>
                   <div className="flex items-end gap-2">
-                    <span className="text-4xl font-black text-cyan-400">{Math.round(basalCoverage * 100)}%</span>
+                    <span className="text-3xl font-bold text-cyan-400">{Math.round(basalCoverage * 100)}%</span>
                   </div>
                   <div className="w-full bg-white/5 rounded-full h-2 mt-3 overflow-hidden">
                     <div
@@ -208,7 +203,7 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
                     <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Pacotes Ativos</span>
                     <Zap className="w-4 h-4 text-zinc-500" />
                   </div>
-                  <span className="text-4xl font-black text-violet-400">{selectedPackages.length}</span>
+                  <span className="text-3xl font-bold text-violet-400">{selectedPackages.length}</span>
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {selectedPackages.map((pkg, i) => (
                       <span key={i} className="text-[10px] bg-violet-500/10 text-violet-400 px-2 py-0.5 rounded-full border border-violet-500/20 truncate max-w-[140px]">
@@ -388,27 +383,26 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
               return (
                 <div key={interaction.id} className="relative pl-8">
                   {/* Timeline Dot */}
-                  <div className={`absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full ${isDepthQ ? 'bg-violet-500 shadow-[0_0_10px_2px_rgba(139,92,246,0.5)]' : 'bg-cyan-500 shadow-[0_0_10px_2px_rgba(8,145,178,0.5)]'}`} />
+                  <div className={`absolute -left-[5px] top-6 w-2.5 h-2.5 rounded-full ${isDepthQ ? 'bg-violet-500 shadow-[0_0_8px_1px_rgba(139,92,246,0.3)]' : 'bg-cyan-500/60'}`} />
                   
                   {/* AI Question */}
                   <div className="mb-4">
-                    <span className={`text-xs font-semibold uppercase tracking-wider mb-1 inline-flex items-center gap-1 ${isDepthQ ? 'text-violet-500' : 'text-cyan-500'}`}>
+                    <span className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 inline-flex items-center gap-1 px-1 ${isDepthQ ? 'text-violet-400' : 'text-cyan-400/70'}`}>
                       {isDepthQ ? (
                         <><Brain className="w-3 h-3" /> Active Listening</>
                       ) : (
                         'Forms AI'
                       )}
                     </span>
-                    <div className={`${isDepthQ ? 'bg-violet-500/5 border-violet-500/20' : 'bg-white/5 border-white/10'} border p-5 rounded-2xl rounded-tl-sm text-zinc-300`}>
-                      <p className="font-medium text-white mb-2">{questionText}</p>
+                    <div className={`${isDepthQ ? 'bg-violet-500/5 border-violet-500/20' : 'bg-black/20 border-white/5'} border p-4 rounded-2xl rounded-tl-sm text-zinc-300 w-fit max-w-[95%]`}>
+                      <p className="font-medium text-white text-sm">{questionText}</p>
                     </div>
                   </div>
 
                   {/* User Answer */}
-                  <div className="pl-8 sm:pl-16">
-                    <div className="flex justify-end relative">
-                       <span className="absolute -top-5 right-2 text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-1 inline-block">Cliente ({inputType})</span>
-                       <div className="bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl rounded-tr-sm text-emerald-100 w-fit min-w-[50%] max-w-full">
+                  <div className="pl-4 sm:pl-12 flex flex-col items-end mt-2">
+                     <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-500/70 mb-1.5 px-1 inline-block">Cliente ({inputType})</span>
+                     <div className="bg-emerald-950/20 border border-emerald-500/10 p-4 rounded-2xl rounded-tr-sm text-emerald-100/90 w-fit min-w-[10%] max-w-[95%] text-sm">
                           
                           {inputType === 'file_upload' && (
                              <div className="flex flex-col items-center gap-3">
@@ -462,8 +456,6 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
                        </div>
                     </div>
                   </div>
-
-                </div>
               );
             })}
           </div>
@@ -493,7 +485,7 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
                       prose-p:text-zinc-300 prose-li:text-zinc-300
                       prose-strong:text-white
                       prose-blockquote:border-l-cyan-500 prose-blockquote:bg-cyan-500/5 prose-blockquote:rounded-r-lg prose-blockquote:px-4
-                      bg-black/40 rounded-xl border border-white/5 p-6 max-h-[calc(100vh-200px)] overflow-auto custom-scrollbar"
+                      bg-zinc-950/50 rounded-xl border border-white/5 p-6 max-h-[calc(100vh-200px)] overflow-auto custom-scrollbar"
                     dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(session.final_assets.document) }}
                   />
                   
@@ -531,6 +523,68 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
         </div>
 
       </div>
+    </div>
+  );
+}
+
+// ── Skeleton while SessionContent loads ───────────────────────────
+function SessionDetailsSkeleton() {
+  return (
+    <div className="space-y-8 animate-pulse">
+      {/* Header skeleton */}
+      <div className="space-y-3">
+        <div className="h-5 w-32 bg-zinc-800/60 rounded-lg" />
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-64 bg-zinc-800/60 rounded-lg" />
+          <div className="h-6 w-16 bg-cyan-900/30 rounded-full" />
+        </div>
+        <div className="h-4 w-48 bg-zinc-800/40 rounded" />
+      </div>
+
+      {/* Metrics skeleton */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-zinc-900/50 border border-white/10 rounded-xl p-4">
+            <div className="h-3 w-20 bg-zinc-800/60 rounded mb-3" />
+            <div className="h-8 w-16 bg-zinc-800/40 rounded-lg" />
+          </div>
+        ))}
+      </div>
+
+      {/* Content skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-zinc-900/40 border border-white/5 rounded-2xl p-5 space-y-3">
+              <div className="h-4 w-3/4 bg-zinc-800/60 rounded" />
+              <div className="h-16 bg-zinc-800/30 rounded-xl" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-zinc-900/50 border border-white/10 rounded-xl h-64" />
+      </div>
+    </div>
+  );
+}
+
+// ── Page shell — back button renders instantly, content streams in ─
+export default async function SessionDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-300">
+      {/* Static back button — renders immediately */}
+      <Link href="/dashboard">
+        <Button variant="ghost" className="w-fit text-zinc-400 hover:text-white -ml-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Voltar para Sessões
+        </Button>
+      </Link>
+
+      {/* Data streams in with skeleton fallback */}
+      <Suspense fallback={<SessionDetailsSkeleton />}>
+        <SessionContent id={id} />
+      </Suspense>
     </div>
   );
 }
