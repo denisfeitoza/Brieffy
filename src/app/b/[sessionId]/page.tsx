@@ -94,6 +94,15 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     return 'pt';
   })();
 
+  // Load messages snapshot for seamless resume (preserves all metadata)
+  const savedMessagesSnapshot = (isInProgress && Array.isArray(session.messages_snapshot) && session.messages_snapshot.length > 0)
+    ? session.messages_snapshot
+    : undefined;
+
+  const savedStepIndex = (isInProgress && typeof session.current_step_index === 'number')
+    ? session.current_step_index
+    : undefined;
+
   return (
     <BriefingProvider 
        activeTemplate={template} 
@@ -108,6 +117,8 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        savedSignals={savedSignals}
        savedBasalCoverage={savedBasalCoverage}
        savedLanguage={savedLanguage}
+       savedMessagesSnapshot={savedMessagesSnapshot}
+       savedStepIndex={savedStepIndex}
     >
       <main className="h-screen w-full bg-neutral-950 font-inter">
         <TypeformWizard />

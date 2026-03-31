@@ -62,6 +62,8 @@ export function BriefingProvider({
   savedSignals,
   savedBasalCoverage,
   savedLanguage,
+  savedMessagesSnapshot,
+  savedStepIndex,
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;
@@ -84,6 +86,10 @@ export function BriefingProvider({
   savedBasalCoverage?: number;
   /** Pre-loaded language for session resume */
   savedLanguage?: string;
+  /** Full messages snapshot for seamless resume */
+  savedMessagesSnapshot?: Partial<Message>[];
+  /** Step index for exact resume position */
+  savedStepIndex?: number;
 }) {
   const endpoint = apiEndpoint || "/api/briefing";
   const branding = initialBranding || DEFAULT_BRANDING;
@@ -91,9 +97,9 @@ export function BriefingProvider({
   const selectedPackageDetails = initialSelectedPackageDetails || [];
 
   // ================================================================
-  // RESUME SUPPORT — reconstruct messages from saved interactions
+  // RESUME SUPPORT — reconstruct messages from saved interactions or snapshot
   // ================================================================
-  const isResume = savedInteractions && savedInteractions.length > 0;
+  const isResume = (savedMessagesSnapshot && savedMessagesSnapshot.length > 0) || (savedInteractions && savedInteractions.length > 0);
 
   const buildRestoredMessages = (): Message[] => {
     if (!isResume) return [
@@ -108,7 +114,25 @@ export function BriefingProvider({
       },
     ];
 
-    // Sort by step_order to ensure correct sequence
+    // Prefer the complete messages_snapshot if available (preserves all metadata)
+    if (savedMessagesSnapshot && Array.isArray(savedMessagesSnapshot) && savedMessagesSnapshot.length > 0) {
+      return savedMessagesSnapshot.map((m: Partial<Message>) => ({
+        id: m.id || crypto.randomUUID(),
+        role: (m.role || 'assistant') as Message['role'],
+        content: m.content || '',
+        type: (m.type || 'question') as Message['type'],
+        questionType: (m.questionType as Message['questionType']) || 'text',
+        options: m.options || [],
+        allowMoreOptions: m.allowMoreOptions || false,
+        userAnswer: m.userAnswer,
+        isDepthQuestion: m.isDepthQuestion || false,
+        microFeedback: m.microFeedback,
+        minOption: m.minOption,
+        maxOption: m.maxOption,
+      }));
+    }
+
+    // Fallback: reconstruct from interactions (loses some metadata)
     const sorted = [...savedInteractions!].sort((a, b) => a.step_order - b.step_order);
     return sorted.map((interaction) => ({
       id: crypto.randomUUID(),
@@ -191,7 +215,9 @@ export function BriefingProvider({
   // On resume: start from the LAST answered step + 1 so user sees a "Continue" prompt
   // On new session: start at step 0 (language selection)
   const [currentStepIndex, setCurrentStepIndex] = useState(
-    isResume ? restoredMessages.length - 1 : 0
+    isResume
+      ? (typeof savedStepIndex === 'number' ? savedStepIndex : restoredMessages.length - 1)
+      : 0
   );
   const [isLoading, setIsLoading] = useState(false);
   const [chosenLanguage, setChosenLanguage] = useState(savedLanguage || "pt"); // Default: Portuguese
@@ -360,6 +386,41 @@ export function BriefingProvider({
   const addMessage = (msg: Omit<Message, "id">) => {
     const id = crypto.randomUUID();
     setMessages((prev) => [...prev, { ...msg, id }]);
+  };
+
+  // ================================================================
+  // SNAPSHOT PERSISTENCE — Save full messages + step index to DB
+  // Enables seamless resume with all metadata (questionType, options, microFeedback, etc.)
+  // ================================================================
+  const persistSnapshot = (updatedMessages: Message[], newStepIndex: number) => {
+    const sid = existingSessionId || sessionId;
+    if (!sid) return;
+    
+    // Strip functions/refs and keep only serializable data
+    const snapshot = updatedMessages.map(m => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      type: m.type,
+      questionType: m.questionType,
+      options: m.options,
+      allowMoreOptions: m.allowMoreOptions,
+      userAnswer: m.userAnswer,
+      isDepthQuestion: m.isDepthQuestion,
+      microFeedback: m.microFeedback,
+      minOption: m.minOption,
+      maxOption: m.maxOption,
+    }));
+
+    supabase.from('briefing_sessions').update({
+      messages_snapshot: snapshot,
+      current_step_index: newStepIndex,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', sid)
+    .then(({ error }) => {
+      if (error) console.error('[Snapshot] Failed to persist:', error);
+    });
   };
 
   const submitAnswer = async (answer: string | string[] | number) => {
@@ -673,19 +734,44 @@ export function BriefingProvider({
         if (questionsToAdd.length > 0) {
           setMessages((prev) => {
             const trunc = prev.slice(0, currentStepIndex + 1);
-            return [
+            const updated = [
               ...trunc,
               ...questionsToAdd.map(q => ({ ...q, id: crypto.randomUUID() }))
             ];
+            // Persist snapshot with the new messages array
+            persistSnapshot(updated, currentStepIndex + 1);
+            return updated;
           });
           setCurrentStepIndex((prev) => prev + 1);
         }
       }
     } catch (error) {
       console.error(error);
-      // Instead of adding an error message as a new "question" (which pollutes
-      // conversation history and gets persisted to Supabase), we clear the current
-      // step's answer so the user can simply re-submit on the SAME question.
+      // ================================================================
+      // ERROR UX — Show a polished toast and let user retry on the SAME step.
+      // NEVER expose internal data, question text, or stack traces.
+      // ================================================================
+      const errorLang: Record<string, string> = {
+        pt: 'Estamos processando, tente enviar novamente.',
+        en: 'Still processing — please try sending again.',
+        es: 'Estamos procesando, intente enviar nuevamente.',
+      };
+      
+      // Dynamic import to avoid bundle bloat on success path
+      import('sonner').then(({ toast }) => {
+        toast.error(errorLang[chosenLanguage] || errorLang.pt, {
+          duration: 4000,
+          style: {
+            background: '#1c1c1c',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: '#e5e5e5',
+            fontFamily: '"Inter", sans-serif',
+            fontSize: '13px',
+          },
+        });
+      });
+
+      // Clear the answer so user can re-submit, but DON'T change the step
       setMessages((prev) => {
         const newMessages = [...prev];
         newMessages[currentStepIndex] = { ...newMessages[currentStepIndex], userAnswer: undefined };

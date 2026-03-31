@@ -136,6 +136,64 @@ const BrandedLogo = memo(function BrandedLogo({ branding, size = 'md', isSolid =
   );
 });
 
+// ================================================================
+// PROGRESSIVE LOADING FEEDBACK — Cycling contextual messages to reduce perceived wait time
+// ================================================================
+const LOADING_MESSAGES: Record<string, string[]> = {
+  pt: [
+    'Analisando sua resposta...',
+    'Identificando os pontos-chave...',
+    'Preparando a pr\u00f3xima pergunta...',
+    'Conectando as informa\u00e7\u00f5es...',
+  ],
+  en: [
+    'Analyzing your response...',
+    'Identifying key insights...',
+    'Preparing the next question...',
+    'Connecting the dots...',
+  ],
+  es: [
+    'Analizando su respuesta...',
+    'Identificando puntos clave...',
+    'Preparando la siguiente pregunta...',
+    'Conectando la informaci\u00f3n...',
+  ],
+};
+
+function ProgressiveLoadingFeedback({ language }: { language: string }) {
+  const [idx, setIdx] = useState(0);
+  const msgs = LOADING_MESSAGES[language] || LOADING_MESSAGES.pt;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIdx(prev => (prev + 1) % msgs.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [msgs.length]);
+
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div className="flex gap-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0ms' }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '300ms' }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '600ms' }} />
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={idx}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.3 }}
+          className="text-sm text-zinc-500 font-medium font-inter"
+        >
+          {msgs[idx]}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function TypeformWizard() {
   const {
     messages,
@@ -900,6 +958,11 @@ export function TypeformWizard() {
                   </motion.p>
                 )}
 
+
+                {/* Progressive Loading Feedback — reduces perceived wait time */}
+                {isLoading && (
+                  <ProgressiveLoadingFeedback language={chosenLanguage} />
+                )}
 
                 {/* Box Híbrido Dinamico (Text, Audio, Single Choice, Multiple Choice, Slider, Color Picker) */}
                 <DynamicInput 

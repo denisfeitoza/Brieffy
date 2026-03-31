@@ -37,47 +37,52 @@ export default async function TemplatesPage() {
           {templates.map((template) => (
             <div 
               key={template.id} 
-              className="group relative flex flex-col p-6 rounded-2xl bg-zinc-900/40 border border-white/5 hover:border-cyan-500/30 backdrop-blur-md overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/10"
+              className="group relative flex flex-col rounded-2xl bg-zinc-900/40 border border-white/5 hover:border-cyan-500/30 backdrop-blur-md overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/10"
             >
-              {/* Card Header */}
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 rounded-full bg-cyan-950/50 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
-                  <FileText className="w-5 h-5 text-cyan-400" />
+              {/* Clickable Card Body */}
+              <Link href={`/dashboard/templates/${template.id}`} className="flex flex-col flex-1 p-6">
+                {/* Card Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 rounded-full bg-cyan-950/50 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
+                    <FileText className="w-5 h-5 text-cyan-400" />
+                  </div>
                 </div>
-              </div>
 
-              {/* Name */}
-              <h3 className="text-lg font-bold text-white mb-1.5 leading-tight">
-                {template.name}
-              </h3>
-              
-              {/* Purpose Preview */}
-              {template.briefing_purpose && (
-                <div className="flex items-start gap-1.5 mt-2">
-                  <Target className="w-3 h-3 text-indigo-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">
-                    {template.briefing_purpose}
-                  </p>
-                </div>
-              )}
-              
-              {/* Depth Signals */}
-              {template.depth_signals && template.depth_signals.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {template.depth_signals.slice(0, 3).map((signal: string) => (
-                    <span key={signal} className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/15">
-                      {signal}
-                    </span>
-                  ))}
-                  {template.depth_signals.length > 3 && (
-                    <span className="text-[10px] text-zinc-600 self-center">+{template.depth_signals.length - 3}</span>
-                  )}
-                </div>
-              )}
+                {/* Name */}
+                <h3 className="text-lg font-bold text-white mb-1.5 leading-tight group-hover:text-cyan-300 transition-colors">
+                  {template.name}
+                </h3>
+                
+                {/* Purpose Preview */}
+                {template.briefing_purpose && (
+                  <div className="flex items-start gap-1.5 mt-2">
+                    <Target className="w-3 h-3 text-indigo-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">
+                      {template.briefing_purpose}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Depth Signals */}
+                {template.depth_signals && template.depth_signals.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {template.depth_signals.slice(0, 3).map((signal: string) => (
+                      <span key={signal} className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/15">
+                        {signal}
+                      </span>
+                    ))}
+                    {template.depth_signals.length > 3 && (
+                      <span className="text-[10px] text-zinc-600 self-center">+{template.depth_signals.length - 3}</span>
+                    )}
+                  </div>
+                )}
+              </Link>
 
-              {/* Generate Link Action */}
-              <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
-                <GenerateLinkModal templateId={template.id} templateName={template.name} />
+              {/* Generate Link Action (not part of the link) */}
+              <div className="px-6 pb-6 pt-0">
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                  <GenerateLinkModal templateId={template.id} templateName={template.name} />
+                </div>
               </div>
             </div>
           ))}

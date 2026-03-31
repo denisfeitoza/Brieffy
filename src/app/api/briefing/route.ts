@@ -453,6 +453,7 @@ ${packageData.prompt}
     - If basalCoverage>=${perfConfig.basalThreshold} AND objectives met AND pre-finalization review passed: isFinished=true, fill assets.
     - ABSOLUTE RULE: NEVER ask a question that has NO CLEAR CONNECTION to the briefing purpose, the active packages, or the basal fields. Every question MUST have a strategic reason.
     - You have access to the FULL conversation history. Use it to avoid redundancy. Reference past answers naturally.
+    - ANTI-REPEAT RULE: A <PreviousQuestions> block is injected below. You MUST NOT generate a nextQuestion that is semantically similar to ANY question in that list. If you cannot think of a new angle, SKIP to the next topic or set isFinished=true.
   </Module>
 
   <Module name="ADAPTIVE_LENGTH">
@@ -616,6 +617,10 @@ ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${p
   - file_upload: Use ONLY at the very end to ask for existing assets or references.
 </UI_Components_Rules>
 
+<PreviousQuestions>
+${history.filter((m: { role: string }) => m.role === 'assistant').map((m: { content: string }, i: number) => `${i + 1}. ${m.content.split('\n')[0].slice(0, 120)}`).join('\n')}
+</PreviousQuestions>
+
 <CurrentSessionState>
 ${JSON.stringify(currentState)}
 </CurrentSessionState>
@@ -639,6 +644,22 @@ active_listening rules:
 </OutputFormat>`;
 
 
+    // ================================================================
+    // DEDUPE GUARD — Jaccard word-similarity to catch semantic repeats
+    // ================================================================
+    const normalizeText = (t: string) => t.toLowerCase().replace(/[^a-záéíóúàãõâêîôûç\s]/gi, '').split(/\s+/).filter(w => w.length > 2);
+    const jaccardSimilarity = (a: string, b: string): number => {
+      const setA = new Set(normalizeText(a));
+      const setB = new Set(normalizeText(b));
+      if (setA.size === 0 || setB.size === 0) return 0;
+      const intersection = new Set([...setA].filter(x => setB.has(x)));
+      const union = new Set([...setA, ...setB]);
+      return intersection.size / union.size;
+    };
+    const previousQuestions = history
+      .filter((m: { role: string }) => m.role === 'assistant')
+      .map((m: { content: string }) => m.content.split('\n')[0]);
+
     // Chamada para o provider configurado (Groq, OpenRouter, etc.) — WITH RETRY
     const startTime = Date.now();
     console.log(`[AI] Using ${llmConfig.provider} / ${llmConfig.model}`);
@@ -649,7 +670,7 @@ active_listening rules:
       { role: "user", content: typeof answer === 'string' ? answer : JSON.stringify(answer) }
     ];
 
-    const MAX_RETRIES = 2;
+    const MAX_RETRIES = 3;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -754,6 +775,26 @@ active_listening rules:
             }
           }
 
+          // ================================================================
+          // DEDUPE GUARD — Check if new question is too similar to a previous one
+          // ================================================================
+          if (parsed.nextQuestion?.text && !parsed.isFinished) {
+            const newQ = parsed.nextQuestion.text;
+            const isDuplicate = previousQuestions.some((pq: string) => jaccardSimilarity(pq, newQ) > 0.55);
+            
+            if (isDuplicate && attempt < MAX_RETRIES - 1) {
+              console.warn(`[Briefing] Dedupe guard: "${newQ}" is too similar to a previous question. Retrying (attempt ${attempt + 1}).`);
+              // Inject a dedupe instruction into the user message for the retry
+              llmMessages[llmMessages.length - 1] = {
+                role: "user",
+                content: `${typeof answer === 'string' ? answer : JSON.stringify(answer)}\n\n[SYSTEM: The question you generated ("${newQ}") is too similar to a question already asked. Generate a COMPLETELY DIFFERENT question about a DIFFERENT topic.]`
+              };
+              lastError = new Error("Duplicate question detected");
+              await new Promise(r => setTimeout(r, 200));
+              continue;
+            }
+          }
+
           // Safety auto-fill for UI components
           if (parsed.nextQuestion) {
             if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
@@ -764,8 +805,38 @@ active_listening rules:
               ];
             }
           } else if (!parsed.isFinished) {
-            console.warn("[Briefing] AI returned null nextQuestion without isFinished=true. Forcing text fallback.");
-            parsed.nextQuestion = { text: "Conte mais detalhes...", questionType: "text", options: [] };
+            console.warn("[Briefing] AI returned null nextQuestion without isFinished=true. Generating smart fallback.");
+            
+            // Build a smart fallback question targeting the most critical missing field
+            const missingFields = parsed.basalFieldsMissing || UNIVERSAL_BASAL_FIELDS.filter(f => !currentState?.[f]);
+            const fallbackLangMap: Record<string, Record<string, string>> = {
+              pt: {
+                publico_alvo: "Para quem sua empresa vende? Descreva seu público ideal.",
+                segmento: "Em qual segmento ou nicho sua empresa atua?",
+                diferencial: "O que diferencia sua empresa dos concorrentes?",
+                objetivos: "Quais são seus principais objetivos com esse projeto?",
+                default: "Pode me contar um pouco mais sobre esse ponto?",
+              },
+              en: {
+                publico_alvo: "Who does your company sell to? Describe your ideal customer.",
+                segmento: "What industry or niche does your company operate in?",
+                diferencial: "What sets your company apart from competitors?",
+                objetivos: "What are your main goals with this project?",
+                default: "Could you tell me a bit more about that?",
+              },
+              es: {
+                publico_alvo: "¿A quién le vende su empresa? Describa su cliente ideal.",
+                segmento: "¿En qué sector o nicho opera su empresa?",
+                diferencial: "¿Qué diferencia a su empresa de la competencia?",
+                objetivos: "¿Cuáles son sus principales objetivos con este proyecto?",
+                default: "¿Podría contarme un poco más sobre eso?",
+              },
+            };
+            const langFallbacks = fallbackLangMap[chosenLanguage || 'pt'] || fallbackLangMap['pt'];
+            const targetField = missingFields[0];
+            const fallbackText = (targetField && langFallbacks[targetField]) || langFallbacks.default;
+            
+            parsed.nextQuestion = { text: fallbackText, questionType: "text", options: [] };
           }
 
           return NextResponse.json(parsed);

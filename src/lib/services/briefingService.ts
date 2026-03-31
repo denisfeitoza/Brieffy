@@ -204,6 +204,23 @@ export async function getTemplateById(id: string) {
   return data;
 }
 
+export async function getSessionsByTemplate(templateId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('briefing_sessions')
+    .select('id, status, created_at, session_name, company_info, session_quality_score, basal_coverage, selected_packages, edit_passphrase, edit_token')
+    .eq('template_id', templateId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(`Error fetching sessions for template ${templateId}:`, error);
+    return [];
+  }
+
+  return data || [];
+}
+
 // ========================
 // USER PROFILE & QUOTA
 // ========================
