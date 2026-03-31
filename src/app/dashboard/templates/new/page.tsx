@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X,
-  CheckCircle2, Copy, Lock, Wand2, Link2, Package,
+  CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2,
   Brain, Palette, Cpu, Megaphone, Headphones, DollarSign,
   Users, TrendingUp, Truck, Lightbulb, Shield, Server,
   ShoppingCart, Video, ChevronDown,
@@ -282,12 +282,20 @@ export default function NewBriefingWizard() {
     }
   };
   
-  // ── Copy Link ───────────────────
-  const copyToClipboard = useCallback(() => {
-    const text = `🔗 Link do Briefing:\n${generatedLink}\n\n🔑 Palavra-chave: ${editPassphrase}`;
-    navigator.clipboard.writeText(text);
+  // ── Copy Link (only link) ───────
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(generatedLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  }, [generatedLink]);
+  
+  // ── Share (link + passphrase) ───
+  const [shared, setShared] = useState(false);
+  const shareAll = useCallback(() => {
+    const text = `🔗 Link do Briefing:\n${generatedLink}\n\n🔑 Senha: ${editPassphrase}`;
+    navigator.clipboard.writeText(text);
+    setShared(true);
+    setTimeout(() => setShared(false), 2500);
   }, [generatedLink, editPassphrase]);
   
   // ── Computed ────────────────────
@@ -521,7 +529,7 @@ export default function NewBriefingWizard() {
           </motion.div>
         )}
         
-        {/* ═══════════════ STEP 2: REVIEW PACKAGES ═══════════════ */}
+        {/* ═══════════════ STEP 2: REVIEW SKILLS ═══════════════ */}
         {step === 2 && (
           <motion.div
             key="step2"
@@ -538,10 +546,10 @@ export default function NewBriefingWizard() {
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-indigo-400" />
-                  Pacotes Sugeridos pela IA
+                  Skills da IA
                 </h2>
                 <p className="text-sm text-zinc-500 mt-1">
-                  Com base no seu propósito, a IA selecionou os pacotes mais relevantes. Ajuste se precisar.
+                  A IA selecionou as skills mais relevantes para o seu briefing. Toque para ajustar.
                 </p>
               </div>
               
@@ -562,21 +570,19 @@ export default function NewBriefingWizard() {
               
               {/* Stats bar */}
               {selectedSlugs.length > 0 && (
-                <div className="flex items-center gap-3 text-xs text-zinc-500 font-mono">
-                  <span><span className="text-cyan-400 font-semibold">{selectedSlugs.length}</span> pacotes</span>
-                  <span className="text-zinc-700">·</span>
-                  <span>~<span className="text-zinc-300 font-semibold">{totalQuestions}</span>{hasUnlimited ? '+' : ''} perguntas estimadas</span>
+                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                  <span><span className="text-cyan-400 font-semibold">{selectedSlugs.length}</span> skills ativas</span>
                 </div>
               )}
               
-              {/* Package Grid */}
-              <div className="space-y-4">
+              {/* Skills Grid — Clean Toggle Cards */}
+              <div className="space-y-5">
                 {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                   <div key={dept}>
-                    <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-600 mb-2 px-0.5">
+                    <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-600 mb-2.5 px-0.5">
                       {DEPT_LABELS[dept] || dept}
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {pkgs.map(pkg => {
                         const isSelected = selectedSlugs.includes(pkg.slug);
                         const isAiSuggested = aiSuggestedSlugs.includes(pkg.slug);
@@ -588,46 +594,49 @@ export default function NewBriefingWizard() {
                             key={pkg.slug}
                             onClick={() => togglePackage(pkg.slug)}
                             type="button"
-                            whileTap={{ scale: 0.98 }}
+                            whileTap={{ scale: 0.97 }}
                             className={`
-                              relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-200
-                              border group cursor-pointer outline-none
+                              relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200
+                              border cursor-pointer outline-none
                               ${isSelected
-                                ? `${colors.bg} ${colors.border} shadow-md ${colors.glow}`
-                                : 'border-zinc-800/40 bg-zinc-900/30 hover:border-zinc-700/60 hover:bg-zinc-900/50'
+                                ? `bg-white/[0.04] border-white/15 shadow-lg`
+                                : 'border-zinc-800/30 bg-zinc-950/40 opacity-50 hover:opacity-75 hover:border-zinc-700/40'
                               }
                             `}
                           >
-                            <div className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200 ${
-                              isSelected ? 'border-cyan-400/80 bg-cyan-500/20' : 'border-zinc-700 bg-zinc-800/50 group-hover:border-zinc-600'
+                            {/* Icon */}
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
+                              isSelected ? `${colors.bg} ${colors.border} border` : 'bg-zinc-800/40'
                             }`}>
-                              {isSelected && <CheckCircle2 className="w-3 h-3 text-cyan-400" />}
+                              <IconComp className={`w-4 h-4 ${isSelected ? colors.text : 'text-zinc-600'}`} />
                             </div>
                             
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                              isSelected ? 'bg-white/8' : 'bg-zinc-800/60'
-                            }`}>
-                              <IconComp className={`w-3.5 h-3.5 ${isSelected ? colors.text : 'text-zinc-500'}`} />
-                            </div>
-                            
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-xs font-semibold truncate ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold truncate ${isSelected ? 'text-white' : 'text-zinc-500'}`}>
                                   {pkg.name}
                                 </span>
-                                {isAiSuggested && (
+                                {isAiSuggested && isSelected && (
                                   <span className="shrink-0 text-[8px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">IA</span>
                                 )}
-                                {pkg.is_default_enabled && !isAiSuggested && (
-                                  <span className="shrink-0 text-[8px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">ON</span>
-                                )}
                               </div>
-                              <p className="text-[10px] text-zinc-500 truncate mt-0.5">{pkg.description}</p>
                             </div>
                             
-                            <span className="text-[9px] font-mono text-zinc-600 shrink-0">
-                              {pkg.max_questions === null ? '∞' : `≤${pkg.max_questions}`}
-                            </span>
+                            {/* Toggle indicator */}
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${
+                              isSelected
+                                ? 'border-cyan-400 bg-cyan-500/20'
+                                : 'border-zinc-700'
+                            }`}>
+                              {isSelected && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="w-2.5 h-2.5 rounded-full bg-cyan-400"
+                                />
+                              )}
+                            </div>
                           </motion.button>
                         );
                       })}
@@ -687,7 +696,7 @@ export default function NewBriefingWizard() {
                 ) : (
                   <>
                     <Link2 className="w-5 h-5" />
-                    Gerar Link ({selectedSlugs.length} pacotes)
+                    Gerar Link ({selectedSlugs.length} skills)
                   </>
                 )}
               </Button>
@@ -723,7 +732,7 @@ export default function NewBriefingWizard() {
                   </p>
                 </div>
                 
-                {/* Link */}
+                {/* Link + Copy */}
                 <div className="w-full max-w-md flex items-center gap-2 p-2 bg-black/40 border border-white/10 rounded-xl">
                   <Input
                     value={generatedLink}
@@ -731,7 +740,7 @@ export default function NewBriefingWizard() {
                     className="bg-transparent border-none focus-visible:ring-0 text-zinc-300 text-xs h-8 font-mono"
                   />
                   <Button
-                    onClick={copyToClipboard}
+                    onClick={copyLink}
                     variant="secondary"
                     size="sm"
                     className={`rounded-lg shrink-0 gap-1.5 text-xs transition-all ${
@@ -741,7 +750,7 @@ export default function NewBriefingWizard() {
                     }`}
                   >
                     {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? 'Copiado!' : 'Copiar Tudo'}
+                    {copied ? 'Copiado!' : 'Copiar Link'}
                   </Button>
                 </div>
                 
@@ -749,15 +758,26 @@ export default function NewBriefingWizard() {
                 <div className="w-full max-w-md flex flex-col items-center p-5 bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-white/5 rounded-xl">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Lock className="w-3 h-3 text-zinc-500" />
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-bold">Palavra-Chave</span>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-bold">Senha</span>
                   </div>
                   <span className="text-2xl font-mono font-bold text-cyan-400 tracking-wider">
                     {editPassphrase}
                   </span>
-                  <p className="text-[10px] text-zinc-600 text-center mt-2.5 max-w-[260px] leading-relaxed">
-                    O cliente usará esta senha para acessar e editar o documento final do briefing.
-                  </p>
                 </div>
+                
+                {/* Share button */}
+                <Button
+                  onClick={shareAll}
+                  variant="outline"
+                  className={`w-full max-w-md h-11 rounded-xl gap-2 transition-all ${
+                    shared
+                      ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5'
+                      : 'border-white/10 text-zinc-300 hover:bg-white/5'
+                  }`}
+                >
+                  {shared ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                  {shared ? 'Copiado!' : 'Compartilhar Link + Senha'}
+                </Button>
                 
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
