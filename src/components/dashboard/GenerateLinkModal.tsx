@@ -278,7 +278,7 @@ ${generatedLink}
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
                 </div>
-                Nova Sessão de Briefing
+                Novo Briefing
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
                 Motor inteligente: <strong className="text-cyan-400">{templateName}</strong>
@@ -291,7 +291,7 @@ ${generatedLink}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">1</span>
-                  Nome da Sessão <span className="text-red-400 text-xs">*</span>
+                  Nome do Briefing <span className="text-red-400 text-xs">*</span>
                 </label>
                 <Input
                   placeholder="Ex: Acme Corp — Rebrand 2026"
@@ -546,7 +546,7 @@ ${generatedLink}
               </div>
 
               <div className="text-center space-y-1">
-                <h3 className="font-bold text-lg text-white">Sessão Criada! ✨</h3>
+                <h3 className="font-bold text-lg text-white">Briefing Criado! ✨</h3>
                 <p className="text-sm text-zinc-400 max-w-[280px]">
                   Envie o link e a senha para o cliente iniciar.
                 </p>

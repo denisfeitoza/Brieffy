@@ -2,14 +2,15 @@ import { getSessionById, getInteractionsBySession } from '@/lib/services/briefin
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Clock, FileText, MessageSquare, Download, Activity, Brain, AlertTriangle, CheckCircle2, TrendingUp, BarChart3, Eye, Zap, Shield, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Clock, FileText, MessageSquare, Download, Activity, Brain, AlertTriangle, CheckCircle2, TrendingUp, BarChart3, Eye, Zap, Shield, Loader2, Code, LayoutDashboard } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CopyButtons } from '@/components/dashboard/CopyButtons';
 import { Suspense } from 'react';
+
 export const dynamic = 'force-dynamic';
 
-// Simple Markdown → HTML converter (server component safe)
 function simpleMarkdownToHtml(md: string): string {
   let html = md
     .replace(/&/g, '&amp;')
@@ -30,7 +31,6 @@ function simpleMarkdownToHtml(md: string): string {
   return '<p>' + html + '</p>';
 }
 
-// Engagement label & color helpers
 function engagementColor(level: string) {
   switch (level) {
     case 'high': return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', label: 'Alto' };
@@ -49,21 +49,13 @@ function qualityGradient(score: number) {
 
 function areaLabel(area: string) {
   const map: Record<string, string> = {
-    discovery: 'Descoberta',
-    identity: 'Identidade',
-    audience: 'Público',
-    visual: 'Visual',
-    delivery: 'Entrega',
-    strategy: 'Estratégia',
-    market: 'Mercado',
-    brand: 'Marca',
-    execution: 'Execução',
-    consulting: 'Consultoria',
+    discovery: 'Descoberta', identity: 'Identidade', audience: 'Público', visual: 'Visual',
+    delivery: 'Entrega', strategy: 'Estratégia', market: 'Mercado', brand: 'Marca',
+    execution: 'Execução', consulting: 'Consultoria',
   };
   return map[area] || area.charAt(0).toUpperCase() + area.slice(1);
 }
 
-// ── Full content component — fetches in parallel ─────────────────
 async function SessionContent({ id }: { id: string }) {
   const [session, interactions] = await Promise.all([
     getSessionById(id),
@@ -71,8 +63,6 @@ async function SessionContent({ id }: { id: string }) {
   ]);
 
   const summaryData = (session.summary_data as Record<string, unknown>) || {};
-  
-  // Quality metrics
   const qualityScore = session.session_quality_score as number | null;
   const engagementSummary = session.engagement_summary as { overall?: string; by_area?: Record<string, string> } | null;
   const dataCompleteness = session.data_completeness as { strong_fields?: string[]; weak_fields?: string[]; inferred_fields?: string[] } | null;
@@ -83,505 +73,461 @@ async function SessionContent({ id }: { id: string }) {
   const hasInsights = qualityScore || engagementSummary || dataCompleteness || (detectedSignals && detectedSignals.length > 0);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center flex-wrap gap-2">
-          Detalhes do Briefing
-          <span className="text-xs font-mono bg-cyan-950/50 text-cyan-400 px-3 py-1 rounded-full border border-cyan-900/50">
-            {session.id.split('-')[0]}
-          </span>
-          {session.status === 'finished' && (
-            <span className="text-xs bg-emerald-950/50 text-emerald-400 px-3 py-1 rounded-full border border-emerald-900/50 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              Concluído
+    <div className="space-y-6">
+      {/* Header Profile */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-zinc-950 border border-white/5 p-6 rounded-2xl shadow-xl">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center flex-wrap gap-3">
+            Detalhes do Briefing
+            <span className="text-xs font-mono bg-cyan-950/50 text-cyan-400 px-3 py-1 rounded-full border border-cyan-900/50 shadow-inner">
+              {session.id.split('-')[0]}
             </span>
-          )}
-        </h2>
-        <div className="flex items-center text-zinc-400 mt-2 flex-wrap gap-2">
-          <Clock className="w-4 h-4" />
-          Criado em {format(new Date(session.created_at), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR })}
-          {interactions.length > 0 && (
-            <span className="flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />
-              {interactions.length} interações
+            {session.status === 'finished' && (
+              <span className="text-xs bg-emerald-950/50 text-emerald-400 px-3 py-1 rounded-full border border-emerald-900/50 flex items-center gap-1.5 shadow-inner">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Concluído
+              </span>
+            )}
+          </h2>
+          <div className="flex items-center text-zinc-400 mt-3 text-sm flex-wrap gap-4">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-zinc-500" />
+              {format(new Date(session.created_at), "dd 'de' MMM, yyyy 'às' HH:mm", { locale: ptBR })}
             </span>
-          )}
+            {interactions.length > 0 && (
+              <span className="flex items-center gap-1.5 opacity-80">
+                <MessageSquare className="w-4 h-4 text-zinc-500" />
+                {interactions.length} interações registradas
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ============================================================ */}
-      {/* INSIGHTS PANEL — Quality metrics & engagement breakdown */}
-      {/* ============================================================ */}
-      {hasInsights && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-zinc-200 flex items-center gap-2">
-            <Brain className="w-5 h-5 text-violet-400" />
-            Insights da Sessão
-          </h3>
+      {/* TABS CONTAINER */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="bg-zinc-900/80 p-1 border border-white/10 rounded-xl mb-6 shadow-md inline-flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-cyan-950/50 data-[state=active]:text-cyan-400 rounded-lg px-4 py-2 text-sm flex items-center gap-2 transition-all">
+            <LayoutDashboard className="w-4 h-4" />
+            Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="document" className="data-[state=active]:bg-emerald-950/50 data-[state=active]:text-emerald-400 rounded-lg px-4 py-2 text-sm flex items-center gap-2 transition-all">
+            <FileText className="w-4 h-4" />
+            Documento Final
+          </TabsTrigger>
+          <TabsTrigger value="transcript" className="data-[state=active]:bg-violet-950/50 data-[state=active]:text-violet-400 rounded-lg px-4 py-2 text-sm flex items-center gap-2 transition-all">
+            <MessageSquare className="w-4 h-4" />
+            Transcrição
+          </TabsTrigger>
+          <TabsTrigger value="json" className="data-[state=active]:bg-amber-950/50 data-[state=active]:text-amber-400 rounded-lg px-4 py-2 text-sm flex items-center gap-2 transition-all">
+            <Code className="w-4 h-4" />
+            JSON Raw
+          </TabsTrigger>
+        </TabsList>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Quality Score Card */}
-            {qualityScore !== null && (
-              <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10 overflow-hidden">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Score de Qualidade</span>
-                    <BarChart3 className="w-4 h-4 text-zinc-500" />
-                  </div>
-                  <div className="flex items-end gap-3">
-                    <span className={`text-3xl font-bold bg-gradient-to-r ${qualityGradient(qualityScore)} bg-clip-text text-transparent`}>
-                      {qualityScore}
-                    </span>
-                    <span className="text-zinc-500 text-sm mb-1">/100</span>
-                  </div>
-                  <div className="w-full bg-white/5 rounded-full h-2 mt-3 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${qualityGradient(qualityScore)} transition-all duration-1000`}
-                      style={{ width: `${qualityScore}%` }}
-                    />
-                  </div>
-                  <p className="text-[11px] text-zinc-500 mt-2">
-                    {qualityScore >= 80 ? 'Dados excelentes para deliverables' : qualityScore >= 60 ? 'Boa base, alguns gaps menores' : qualityScore >= 40 ? 'Dados parciais — considerar follow-up' : 'Dados insuficientes para deliverables confiáveis'}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Overall Engagement */}
-            {engagementSummary?.overall && (
-              <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Engajamento Geral</span>
-                    <Activity className="w-4 h-4 text-zinc-500" />
-                  </div>
-                  {(() => {
-                    const ec = engagementColor(engagementSummary.overall);
-                    return (
-                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${ec.bg} ${ec.border} border`}>
-                        <div className={`w-2 h-2 rounded-full ${ec.text.replace('text-', 'bg-')}`} />
-                        <span className={`text-base font-semibold ${ec.text}`}>{ec.label}</span>
-                      </div>
-                    );
-                  })()}
-                  <p className="text-[11px] text-zinc-500 mt-3">
-                    Nível de participação e profundidade das respostas do cliente ao longo do briefing
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Basal Coverage */}
-            {basalCoverage !== null && (
-              <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Cobertura Basal</span>
-                    <Shield className="w-4 h-4 text-zinc-500" />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-3xl font-bold text-cyan-400">{Math.round(basalCoverage * 100)}%</span>
-                  </div>
-                  <div className="w-full bg-white/5 rounded-full h-2 mt-3 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-1000"
-                      style={{ width: `${basalCoverage * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-[11px] text-zinc-500 mt-2">
-                    Campos essenciais coletados vs total necessário
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Packages Count */}
-            {selectedPackages && selectedPackages.length > 0 && (
-              <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Pacotes Ativos</span>
-                    <Zap className="w-4 h-4 text-zinc-500" />
-                  </div>
-                  <span className="text-3xl font-bold text-violet-400">{selectedPackages.length}</span>
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {selectedPackages.map((pkg, i) => (
-                      <span key={i} className="text-[10px] bg-violet-500/10 text-violet-400 px-2 py-0.5 rounded-full border border-violet-500/20 truncate max-w-[140px]">
-                        {pkg.replace(/_/g, ' ')}
-                      </span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Engagement by Area */}
-          {engagementSummary?.by_area && Object.keys(engagementSummary.by_area).length > 0 && (
-            <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-cyan-400" />
-                  Engajamento por Área
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-5">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {Object.entries(engagementSummary.by_area).map(([area, level]) => {
-                    const ec = engagementColor(level);
-                    return (
-                      <div key={area} className={`flex flex-col items-center gap-2 p-3 rounded-xl ${ec.bg} ${ec.border} border`}>
-                        <span className="text-xs font-medium text-zinc-300">{areaLabel(area)}</span>
-                        <div className={`w-2 h-2 rounded-full ${ec.text.replace('text-', 'bg-')}`} />
-                        <span className={`text-xs font-bold ${ec.text}`}>{ec.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Data Completeness + Detected Signals */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Data Completeness */}
-            {dataCompleteness && (
-              <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-cyan-400" />
-                    Completude dos Dados
-                  </CardTitle>
-                  <CardDescription className="text-zinc-500 text-xs">
-                    Como cada campo foi coletado e o que pode afetar a qualidade do resultado
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 pb-5">
-                  {dataCompleteness.strong_fields && dataCompleteness.strong_fields.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Campos Sólidos</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {dataCompleteness.strong_fields.map((f, i) => (
-                          <span key={i} className="text-[11px] bg-emerald-500/10 text-emerald-300 px-2 py-1 rounded-md border border-emerald-500/20">{f}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {dataCompleteness.weak_fields && dataCompleteness.weak_fields.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Campos Fracos</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {dataCompleteness.weak_fields.map((f, i) => (
-                          <span key={i} className="text-[11px] bg-amber-500/10 text-amber-300 px-2 py-1 rounded-md border border-amber-500/20">{f}</span>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-amber-500/60 mt-1.5 italic">
-                        ⚠ Estes campos tiveram respostas rasas ou incompletas — o resultado pode ser menos preciso nestas áreas
-                      </p>
-                    </div>
-                  )}
-
-                  {dataCompleteness.inferred_fields && dataCompleteness.inferred_fields.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Brain className="w-3.5 h-3.5 text-violet-400" />
-                        <span className="text-xs font-semibold text-violet-400 uppercase tracking-wider">Campos Inferidos (IA)</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {dataCompleteness.inferred_fields.map((f, i) => (
-                          <span key={i} className="text-[11px] bg-violet-500/10 text-violet-300 px-2 py-1 rounded-md border border-violet-500/20">{f}</span>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-violet-500/60 mt-1.5 italic">
-                        🧠 Estes campos foram deduzidos pela IA com base nas entrelinhas — valide antes de usar em deliverables críticos
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Detected Signals */}
-            {detectedSignals && detectedSignals.length > 0 && (
-              <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    Sinais Detectados (Active Listening)
-                  </CardTitle>
-                  <CardDescription className="text-zinc-500 text-xs">
-                    Informações captadas nas entrelinhas durante a conversa
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pb-5">
-                  <div className="space-y-3">
-                    {detectedSignals.map((signal, i) => {
-                      const categoryColors: Record<string, string> = {
-                        implicit_pain: 'text-red-400 bg-red-500/10 border-red-500/20',
-                        hidden_ambition: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-                        contradiction: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-                        competitive_signal: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-                        brand_maturity: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
-                        emotional_trigger: 'text-pink-400 bg-pink-500/10 border-pink-500/20',
-                        market_gap: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
-                      };
-                      const categoryLabels: Record<string, string> = {
-                        implicit_pain: 'Dor Implícita',
-                        hidden_ambition: 'Ambição Oculta',
-                        contradiction: 'Contradição',
-                        competitive_signal: 'Sinal Competitivo',
-                        brand_maturity: 'Maturidade de Marca',
-                        emotional_trigger: 'Gatilho Emocional',
-                        market_gap: 'Gap de Mercado',
-                      };
-                      const colors = categoryColors[signal.category] || 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20';
-                      
-                      return (
-                        <div key={i} className={`p-3 rounded-xl border ${colors.split(' ').slice(1).join(' ')}`}>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${colors.split(' ')[0]}`}>
-                              {categoryLabels[signal.category] || signal.category}
-                            </span>
-                            <span className="text-[10px] text-zinc-500">
-                              Relevância: {Math.round((signal.relevance_score || 0) * 100)}%
-                            </span>
-                          </div>
-                          <p className="text-xs text-zinc-300">{signal.summary}</p>
+        {/* TAB 1: VISÃO GERAL */}
+        <TabsContent value="overview" className="space-y-6 focus:outline-none animate-in fade-in duration-500">
+          {!hasInsights ? (
+             <div className="text-center p-12 bg-zinc-900/30 border border-zinc-800/50 rounded-2xl">
+               <Brain className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+               <p className="text-zinc-400">Dados insuficientes para gerar insights analíticos para esta sessão.</p>
+             </div>
+          ) : (
+             <div className="space-y-6">
+                {/* Metricas Principais */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Quality */}
+                  {qualityScore !== null && (
+                    <Card className="bg-gradient-to-br from-zinc-900/90 to-black/90 border-white/5 hover:border-white/10 transition-colors shadow-lg">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4" /> Score de Qualidade
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      )}
+                        <div className="flex items-end gap-2">
+                          <span className={`text-4xl font-bold bg-gradient-to-r ${qualityGradient(qualityScore)} bg-clip-text text-transparent`}>
+                            {qualityScore}
+                          </span>
+                          <span className="text-zinc-600 font-medium mb-1">/100</span>
+                        </div>
+                        <div className="w-full bg-white/5 rounded-full h-1.5 mt-4 overflow-hidden">
+                          <div className={`h-full rounded-full bg-gradient-to-r ${qualityGradient(qualityScore)}`} style={{ width: `${qualityScore}%` }} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {/* Engagement */}
+                  {engagementSummary?.overall && (
+                    <Card className="bg-gradient-to-br from-zinc-900/90 to-black/90 border-white/5 hover:border-white/10 transition-colors shadow-lg">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                            <Activity className="w-4 h-4" /> Engajamento Geral
+                          </span>
+                        </div>
+                        {(() => {
+                          const ec = engagementColor(engagementSummary.overall);
+                          return (
+                            <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl ${ec.bg} ${ec.border} border shadow-inner`}>
+                              <div className={`w-2.5 h-2.5 rounded-full ${ec.text.replace('text-', 'bg-')} shadow-[0_0_8px] shadow-current`} />
+                              <span className={`text-base font-bold ${ec.text}`}>{ec.label}</span>
+                            </div>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+                  )}
+                  {/* Basal Coverage */}
+                  {basalCoverage !== null && (
+                    <Card className="bg-gradient-to-br from-zinc-900/90 to-black/90 border-white/5 hover:border-white/10 transition-colors shadow-lg">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                            <Shield className="w-4 h-4" /> Cobertura Basal
+                          </span>
+                        </div>
+                        <span className="text-4xl font-bold text-cyan-400">{Math.round(basalCoverage * 100)}%</span>
+                        <div className="w-full bg-white/5 rounded-full h-1.5 mt-4 overflow-hidden">
+                          <div className="h-full rounded-full bg-cyan-500 shadow-lg shadow-cyan-500/50" style={{ width: `${basalCoverage * 100}%` }} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {/* Packages */}
+                  {selectedPackages && selectedPackages.length > 0 && (
+                    <Card className="bg-gradient-to-br from-zinc-900/90 to-black/90 border-white/5 hover:border-white/10 transition-colors shadow-lg">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                            <Zap className="w-4 h-4" /> Serviços Ativos
+                          </span>
+                        </div>
+                        <span className="text-4xl font-bold text-violet-400">{selectedPackages.length}</span>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Interactions Timeline */}
-        <div className="lg:col-span-2 space-y-6">
-          <h3 className="text-xl font-semibold text-zinc-200 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-cyan-400" />
-            Histórico da Conversa
-          </h3>
-          
-          <div className="relative border-l border-white/10 ml-4 space-y-8 pb-4">
-            {interactions.map((interaction) => {
-              const inputType = interaction.question_type || 'text';
-              const questionText = interaction.question_text || 'Pergunta do AI';
-              const answerRaw = interaction.user_answer;
-              const isDepthQ = interaction.is_depth_question;
-              
-              return (
-                <div key={interaction.id} className="relative pl-8">
-                  {/* Timeline Dot */}
-                  <div className={`absolute -left-[5px] top-6 w-2.5 h-2.5 rounded-full ${isDepthQ ? 'bg-violet-500 shadow-[0_0_8px_1px_rgba(139,92,246,0.3)]' : 'bg-cyan-500/60'}`} />
-                  
-                  {/* AI Question */}
-                  <div className="mb-4">
-                    <span className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 inline-flex items-center gap-1 px-1 ${isDepthQ ? 'text-violet-400' : 'text-cyan-400/70'}`}>
-                      {isDepthQ ? (
-                        <><Brain className="w-3 h-3" /> Active Listening</>
-                      ) : (
-                        'Forms AI'
-                      )}
-                    </span>
-                    <div className={`${isDepthQ ? 'bg-violet-500/5 border-violet-500/20' : 'bg-black/20 border-white/5'} border p-4 rounded-2xl rounded-tl-sm text-zinc-300 w-fit max-w-[95%]`}>
-                      <p className="font-medium text-white text-sm">{questionText}</p>
-                    </div>
-                  </div>
+                {/* Second row: Engagement breakdown and Completudiness */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {engagementSummary?.by_area && (
+                    <Card className="bg-zinc-950/80 border-white/5 shadow-xl">
+                      <CardHeader className="border-b border-white/5 bg-white/[0.02]">
+                        <CardTitle className="text-base font-medium text-zinc-200 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-emerald-400" /> Detalhamento de Engajamento
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {Object.entries(engagementSummary.by_area).map(([area, level]) => {
+                            const ec = engagementColor(level);
+                            return (
+                              <div key={area} className={`flex flex-col gap-2 p-4 rounded-xl ${ec.bg} ${ec.border} border`}>
+                                <span className="text-xs font-medium text-zinc-300">{areaLabel(area)}</span>
+                                <div className="flex items-center gap-1.5 mt-auto">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${ec.text.replace('text-', 'bg-')}`} />
+                                  <span className={`text-[11px] font-bold tracking-wide uppercase ${ec.text}`}>{ec.label}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
-                  {/* User Answer */}
-                  <div className="pl-4 sm:pl-12 flex flex-col items-end mt-2">
-                     <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-500/70 mb-1.5 px-1 inline-block">Cliente ({inputType})</span>
-                     <div className="bg-emerald-950/20 border border-emerald-500/10 p-4 rounded-2xl rounded-tr-sm text-emerald-100/90 w-fit min-w-[10%] max-w-[95%] text-sm">
-                          
-                          {inputType === 'file_upload' && (
-                             <div className="flex flex-col items-center gap-3">
-                                {String(answerRaw).match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                  <img 
-                                    src={String(answerRaw)} 
-                                    alt="Upload" 
-                                    className="max-h-64 rounded-xl border border-white/10 object-contain bg-black/50 p-2"
-                                  />
-                                ) : (
-                                  <div className="flex items-center gap-3 bg-black/40 p-4 rounded-xl border border-white/10 w-full">
-                                    <FileText className="w-8 h-8 text-emerald-400" />
-                                    <span className="text-sm line-clamp-1">{String(answerRaw).split('/').pop()}</span>
-                                  </div>
-                                )}
-                                <a 
-                                  href={String(answerRaw)} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="w-full mt-2"
-                                >
-                                  <Button variant="secondary" size="sm" className="w-full bg-emerald-950 hover:bg-emerald-900 text-emerald-300">
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Baixar Arquivo
-                                  </Button>
-                                </a>
-                             </div>
-                          )}
+                  {dataCompleteness && (
+                    <Card className="bg-zinc-950/80 border-white/5 shadow-xl">
+                      <CardHeader className="border-b border-white/5 bg-white/[0.02]">
+                        <CardTitle className="text-base font-medium text-zinc-200 flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-cyan-400" /> Qualidade dos Dados Coletados
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6 space-y-6">
+                        {dataCompleteness.strong_fields && dataCompleteness.strong_fields.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Campos Sólidos</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {dataCompleteness.strong_fields.map((f, i) => (
+                                <span key={i} className="text-[11px] font-medium bg-emerald-500/10 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-500/20">{f}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {dataCompleteness.weak_fields && dataCompleteness.weak_fields.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <AlertTriangle className="w-4 h-4 text-amber-400" />
+                              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Atenção Necessária</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {dataCompleteness.weak_fields.map((f, i) => (
+                                <span key={i} className="text-[11px] font-medium bg-amber-500/10 text-amber-300 px-2.5 py-1 rounded-md border border-amber-500/20">{f}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
 
-                          {inputType === 'color_picker' && (
-                             <div className="flex gap-2 flex-wrap">
-                               {Array.isArray(answerRaw) 
-                                  ? answerRaw.map((c: string, i: number) => (
-                                      <div key={i} className="flex flex-col items-center gap-1">
-                                        <div className="w-10 h-10 rounded-full border border-white/20 shadow-lg" style={{ backgroundColor: c }} />
-                                        <span className="text-[10px] opacity-70">{c}</span>
-                                      </div>
-                                    ))
-                                  : <div className="w-10 h-10 rounded-full border border-white/20 shadow-lg" style={{ backgroundColor: String(answerRaw) }} />
-                               }
-                             </div>
-                          )}
+                {/* Signals row */}
+                {detectedSignals && detectedSignals.length > 0 && (
+                  <Card className="bg-zinc-950/80 border-white/5 shadow-xl">
+                     <CardHeader className="border-b border-white/5 bg-white/[0.02]">
+                        <CardTitle className="text-base font-medium text-zinc-200 flex items-center gap-2">
+                          <Brain className="w-4 h-4 text-violet-400" /> Sinais Detectados (Active Listening)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {detectedSignals.map((signal, i) => {
+                            const categoryColors: Record<string, string> = {
+                              implicit_pain: 'border-red-500/30 bg-red-500/5',
+                              hidden_ambition: 'border-emerald-500/30 bg-emerald-500/5',
+                              contradiction: 'border-amber-500/30 bg-amber-500/5',
+                              competitive_signal: 'border-blue-500/30 bg-blue-500/5',
+                              brand_maturity: 'border-violet-500/30 bg-violet-500/5',
+                              emotional_trigger: 'border-pink-500/30 bg-pink-500/5',
+                              market_gap: 'border-cyan-500/30 bg-cyan-500/5',
+                            };
+                            const textColors: Record<string, string> = {
+                              implicit_pain: 'text-red-400', hidden_ambition: 'text-emerald-400',
+                              contradiction: 'text-amber-400', competitive_signal: 'text-blue-400',
+                              brand_maturity: 'text-violet-400', emotional_trigger: 'text-pink-400', gap: 'text-cyan-400'
+                            };
+                            const textColor = textColors[signal.category] || 'text-zinc-400';
+                            
+                            return (
+                              <div key={i} className={`p-4 rounded-xl border ${categoryColors[signal.category] || 'border-zinc-500/30 bg-zinc-500/5'} flex flex-col`}>
+                                <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+                                  <span className={`text-[10px] font-bold uppercase tracking-wider ${textColor}`}>
+                                    {signal.category.replace(/_/g, ' ')}
+                                  </span>
+                                  <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full text-zinc-400 font-medium">
+                                    {(signal.relevance_score || 0) * 100}% Score
+                                  </span>
+                                </div>
+                                <p className="text-sm text-zinc-300 leading-relaxed font-medium">{signal.summary}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                  </Card>
+                )}
+             </div>
+          )}
+        </TabsContent>
 
-                          {(inputType !== 'file_upload' && inputType !== 'color_picker') && (
-                             <p className="whitespace-pre-wrap font-medium">
-                               {typeof answerRaw === 'object' 
-                                 ? JSON.stringify(answerRaw, null, 2) 
-                                 : String(answerRaw)}
-                             </p>
-                          )}
-                       </div>
-                    </div>
-                  </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Column - Document & Insights */}
-        <div className="space-y-6">
-          <Card className="bg-gradient-to-br from-zinc-900/80 to-black/80 backdrop-blur-xl border-white/10 sticky top-10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-cyan-400">
-                <FileText className="w-5 h-5" />
-                Documento do Briefing
-              </CardTitle>
-              <CardDescription className="text-zinc-400">
-                Documento gerado pela IA com base em toda a conversa
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {session.final_assets?.document ? (
+        {/* TAB 2: DOCUMENTO FINAL */}
+        <TabsContent value="document" className="focus:outline-none animate-in fade-in duration-500">
+           {session.final_assets?.document ? (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-3">
+                  <Card className="bg-zinc-950 border border-white/10 shadow-2xl relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent h-32 pointer-events-none" />
+                    <CardContent className="p-8 md:p-12 relative z-10">
+                      <div 
+                        className="prose prose-invert max-w-[800px] mx-auto
+                          prose-headings:font-bold prose-headings:tracking-tight
+                          prose-h1:text-3xl prose-h1:text-white prose-h1:mb-8
+                          prose-h2:text-2xl prose-h2:text-cyan-400 prose-h2:mt-12 prose-h2:mb-6 prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-4
+                          prose-h3:text-xl prose-h3:text-zinc-200 prose-h3:mt-8
+                          prose-p:text-zinc-300 prose-p:leading-relaxed prose-p:text-base
+                          prose-li:text-zinc-300 prose-li:marker:text-cyan-500
+                          prose-strong:text-emerald-400 prose-strong:font-semibold
+                          prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/5 prose-blockquote:px-6 prose-blockquote:py-2 prose-blockquote:rounded-r-xl prose-blockquote:text-zinc-400 prose-blockquote:not-italic"
+                        dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(session.final_assets.document) }}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
                 <div className="space-y-4">
-                  <div 
-                    className="prose prose-invert prose-sm max-w-none 
-                      prose-headings:font-bold prose-headings:tracking-tight
-                      prose-h1:text-xl prose-h1:text-white
-                      prose-h2:text-lg prose-h2:text-cyan-400 prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2
-                      prose-h3:text-base prose-h3:text-zinc-300
-                      prose-p:text-zinc-300 prose-li:text-zinc-300
-                      prose-strong:text-white
-                      prose-blockquote:border-l-cyan-500 prose-blockquote:bg-cyan-500/5 prose-blockquote:rounded-r-lg prose-blockquote:px-4
-                      bg-zinc-950/50 rounded-xl border border-white/5 p-6 max-h-[calc(100vh-200px)] overflow-auto custom-scrollbar"
-                    dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(session.final_assets.document) }}
-                  />
-                  
-                  <div className="flex flex-col gap-3 mt-4">
-                    <CopyButtons 
-                      markdown={session.final_assets.document} 
-                      html={simpleMarkdownToHtml(session.final_assets.document)} 
-                    />
-                    
-                    <a 
-                      href={`data:text/markdown;charset=utf-8,${encodeURIComponent(session.final_assets.document)}`}
-                      download={`briefing-${session.id.split('-')[0]}.md`}
-                      className="block"
-                    >
-                      <Button variant="outline" className="w-full bg-cyan-950/30 border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/50">
-                        <Download className="w-4 h-4 mr-2" />
-                        Baixar Documento (.md)
-                      </Button>
-                    </a>
+                  <div className="sticky top-6">
+                    <Card className="bg-zinc-900 border-white/10">
+                      <CardHeader className="p-4 border-b border-white/5">
+                        <CardTitle className="text-sm font-medium">Ações do Documento</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 space-y-3">
+                        <CopyButtons 
+                          markdown={session.final_assets.document} 
+                          html={simpleMarkdownToHtml(session.final_assets.document)} 
+                        />
+                        <a 
+                          href={`data:text/markdown;charset=utf-8,${encodeURIComponent(session.final_assets.document)}`}
+                          download={`briefing-${session.id.split('-')[0]}.md`}
+                          className="block"
+                        >
+                          <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium border-0 shadow-lg shadow-cyan-900/50">
+                            <Download className="w-4 h-4 mr-2" />
+                            Arquivo Markdown (.md)
+                          </Button>
+                        </a>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-              ) : Object.keys(summaryData).length === 0 ? (
-                <div className="text-center p-6 text-zinc-500 italic bg-white/5 rounded-xl border border-white/5">
-                  Nenhum documento foi gerado para esta sessão.
-                </div>
-              ) : (
-                <div className="bg-black/80 rounded-xl border border-white/5 p-4 overflow-hidden">
-                  <pre className="text-xs text-emerald-400 font-mono overflow-auto custom-scrollbar max-h-[600px]">
-                    <code>{JSON.stringify(summaryData, null, 2)}</code>
-                  </pre>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+           ) : Object.keys(summaryData).length === 0 ? (
+             <div className="flex flex-col items-center justify-center p-24 text-center bg-zinc-950 border border-white/5 rounded-2xl">
+                <FileText className="w-16 h-16 text-zinc-700 mb-6" />
+                <h3 className="text-xl font-bold text-zinc-300 mb-2">Sem Documento Final</h3>
+                <p className="text-zinc-500 max-w-sm">Nenhum asset de documento foi gerado ainda para as repostas desta sessão.</p>
+             </div>
+           ) : (
+             <div className="flex flex-col items-center justify-center p-24 text-center bg-zinc-950 border border-white/5 rounded-2xl">
+                <AlertTriangle className="w-16 h-16 text-amber-500 mb-6 opacity-80" />
+                <h3 className="text-xl font-bold text-zinc-300 mb-2">Documento Indisponível</h3>
+                <p className="text-zinc-500 max-w-sm">A IA coletou propriedades, mas não compilou em um markdown legível.</p>
+                <Button className="mt-6" variant="outline">
+                  Consulte a aba JSON Raw
+                </Button>
+             </div>
+           )}
+        </TabsContent>
 
-      </div>
+        {/* TAB 3: TRANSCRIÇÃO */}
+        <TabsContent value="transcript" className="focus:outline-none animate-in fade-in duration-500">
+           <div className="max-w-4xl mx-auto space-y-8 bg-zinc-950 p-6 md:p-10 rounded-2xl border border-white/5">
+              {interactions.length === 0 ? (
+                <div className="text-center py-12 text-zinc-500">Nenhuma interação registrada.</div>
+              ) : (
+                interactions.map((interaction, idx) => {
+                  const inputType = interaction.question_type || 'text';
+                  const isDepthQ = interaction.is_depth_question;
+                  const answerRaw = interaction.user_answer;
+                  
+                  return (
+                    <div key={interaction.id} className="relative">
+                      {/* Interaction connector line */}
+                      {idx !== interactions.length - 1 && (
+                        <div className="absolute left-8 top-16 bottom-[-32px] w-px bg-white/5" />
+                      )}
+
+                      {/* AI Bubble */}
+                      <div className="flex gap-4 mb-6">
+                        <div className={`mt-1 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full border shadow-xl z-10 ${isDepthQ ? 'bg-violet-950 border-violet-500/30' : 'bg-cyan-950 border-cyan-500/30'}`}>
+                          {isDepthQ ? <Brain className="w-5 h-5 text-violet-400" /> : <MessageSquare className="w-5 h-5 text-cyan-400" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className={`inline-block px-5 py-3.5 rounded-2xl rounded-tl-sm border text-sm max-w-[90%] font-medium ${isDepthQ ? 'bg-violet-950/20 border-violet-500/20 text-violet-100' : 'bg-zinc-900 border-white/5 text-zinc-200'}`}>
+                            {interaction.question_text || 'Mensagem do sistema'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* User Bubble */}
+                      <div className="flex gap-4 mb-4 flex-row-reverse">
+                        <div className="mt-1 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-950 shadow-xl z-10">
+                          <span className="text-emerald-400 text-xs font-bold font-mono">CLI</span>
+                        </div>
+                        <div className="flex-1 flex flex-col items-end">
+                           <div className="inline-block px-5 py-3.5 rounded-2xl rounded-tr-sm border border-emerald-500/20 bg-emerald-950/20 max-w-[90%]">
+                              {inputType === 'file_upload' && (
+                                <div className="space-y-3">
+                                  {String(answerRaw).match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                    <img src={String(answerRaw)} alt="Upload do cliente" className="max-h-60 rounded-xl border border-white/10" />
+                                  ) : (
+                                    <div className="flex items-center gap-3 bg-black/40 p-3 rounded-lg border border-white/5">
+                                      <FileText className="w-6 h-6 text-emerald-400" />
+                                      <span className="text-xs font-medium text-emerald-200 break-all">{String(answerRaw).split('/').pop()}</span>
+                                    </div>
+                                  )}
+                                  <a href={String(answerRaw)} target="_blank" rel="noopener noreferrer" className="block w-full">
+                                    <Button variant="secondary" size="sm" className="w-full h-8 text-xs font-medium bg-emerald-900/50 hover:bg-emerald-800/80 text-emerald-300">BAIXAR</Button>
+                                  </a>
+                                </div>
+                              )}
+                              
+                              {inputType === 'color_picker' && (
+                                <div className="flex gap-2 flex-wrap justify-end">
+                                  {Array.isArray(answerRaw) 
+                                     ? answerRaw.map((c: string, i: number) => (
+                                         <div key={i} className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-full border border-white/5">
+                                           <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: c }} />
+                                           <span className="text-xs font-mono text-emerald-200">{c}</span>
+                                         </div>
+                                       ))
+                                     : <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-full border border-white/5">
+                                         <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: String(answerRaw) }} />
+                                         <span className="text-xs font-mono text-emerald-200">{String(answerRaw)}</span>
+                                       </div>
+                                  }
+                                </div>
+                             )}
+
+                             {(inputType !== 'file_upload' && inputType !== 'color_picker') && (
+                               <p className="text-sm text-emerald-100 whitespace-pre-wrap font-medium">
+                                 {typeof answerRaw === 'object' ? JSON.stringify(answerRaw, null, 2) : String(answerRaw)}
+                               </p>
+                             )}
+                           </div>
+                           <span className="text-[10px] text-zinc-500 font-mono mt-1 mr-1">Input Type: {inputType}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+           </div>
+        </TabsContent>
+
+        {/* TAB 4: JSON RAW */}
+        <TabsContent value="json" className="focus:outline-none animate-in fade-in duration-500">
+           <Card className="bg-zinc-950 border-white/10">
+             <CardHeader className="bg-black/50 border-b border-white/5 rounded-t-xl">
+               <CardTitle className="text-sm font-mono text-amber-500 flex items-center gap-2">
+                 <Code className="w-4 h-4" /> summary_data.json
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="p-0">
+                <div className="overflow-x-auto p-6 max-h-[70vh] custom-scrollbar">
+                   <pre className="text-xs font-mono text-zinc-300 leading-relaxed">
+                     {JSON.stringify(summaryData, null, 2)}
+                   </pre>
+                </div>
+             </CardContent>
+           </Card>
+        </TabsContent>
+
+      </Tabs>
     </div>
   );
 }
 
-// ── Skeleton while SessionContent loads ───────────────────────────
 function SessionDetailsSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
-      {/* Header skeleton */}
-      <div className="space-y-3">
-        <div className="h-5 w-32 bg-zinc-800/60 rounded-lg" />
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-64 bg-zinc-800/60 rounded-lg" />
-          <div className="h-6 w-16 bg-cyan-900/30 rounded-full" />
-        </div>
-        <div className="h-4 w-48 bg-zinc-800/40 rounded" />
+      <div className="h-32 bg-zinc-900 border border-white/5 rounded-2xl" />
+      <div className="flex gap-2">
+        <div className="w-32 h-10 bg-zinc-900 rounded-xl" />
+        <div className="w-32 h-10 bg-zinc-900 rounded-xl" />
+        <div className="w-32 h-10 bg-zinc-900 rounded-xl" />
       </div>
-
-      {/* Metrics skeleton */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-zinc-900/50 border border-white/10 rounded-xl p-4">
-            <div className="h-3 w-20 bg-zinc-800/60 rounded mb-3" />
-            <div className="h-8 w-16 bg-zinc-800/40 rounded-lg" />
-          </div>
-        ))}
-      </div>
-
-      {/* Content skeleton */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-zinc-900/40 border border-white/5 rounded-2xl p-5 space-y-3">
-              <div className="h-4 w-3/4 bg-zinc-800/60 rounded" />
-              <div className="h-16 bg-zinc-800/30 rounded-xl" />
-            </div>
-          ))}
-        </div>
-        <div className="bg-zinc-900/50 border border-white/10 rounded-xl h-64" />
-      </div>
+      <div className="h-96 bg-zinc-900 border border-white/5 rounded-2xl" />
     </div>
   );
 }
 
-// ── Page shell — back button renders instantly, content streams in ─
 export default async function SessionDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Static back button — renders immediately */}
-      <Link href="/dashboard">
-        <Button variant="ghost" className="w-fit text-zinc-400 hover:text-white -ml-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar para Sessões
-        </Button>
+    <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto pb-20">
+      {/* Back navigation */}
+      <Link href="/dashboard" className="inline-block group mb-2">
+        <div className="flex items-center text-sm font-medium text-zinc-400 group-hover:text-cyan-400 transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5">
+          <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Voltar para Meus Briefings
+        </div>
       </Link>
 
-      {/* Data streams in with skeleton fallback */}
       <Suspense fallback={<SessionDetailsSkeleton />}>
         <SessionContent id={id} />
       </Suspense>

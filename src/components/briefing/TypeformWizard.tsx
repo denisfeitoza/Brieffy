@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AILoadingSplash } from "./AILoadingSplash";
 import { Button } from "@/components/ui/button";
 
-import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
@@ -219,7 +220,14 @@ export function TypeformWizard() {
     detectedSignals,
     engagementLevel,
     isOwner,
+    isOnboarding,
   } = useBriefing();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/dashboard/login';
+  };
 
   const t = I18N[chosenLanguage] || I18N.pt;
 
@@ -806,8 +814,8 @@ export function TypeformWizard() {
           </div>
         </div>
 
-        {/* Right side: Packages and Progress */}
-        <div className="flex items-center gap-4">
+        {/* Right side: Packages, Progress and Logout */}
+        <div className="flex items-center gap-3">
           {/* Active AI Packages — grouped by tier, humanized for client */}
           {selectedPackageDetails && selectedPackageDetails.length > 0 && (() => {
             const TIER_LABELS: Record<string, string> = {
@@ -821,7 +829,7 @@ export function TypeformWizard() {
             )] as string[];
             const tierLabels = activeTiers.map(t => TIER_LABELS[t] || t);
             return (
-              <div className="hidden md:flex items-center gap-2 mr-2">
+              <div className="hidden md:flex items-center gap-2">
                 <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                   <Sparkles className="w-3 h-3" />
                   {tierLabels.length > 0 ? tierLabels.join(' · ') : `${selectedPackageDetails.length} especialidades`}
@@ -839,6 +847,19 @@ export function TypeformWizard() {
                return Math.max(Math.round(diluted), currentStepIndex > 0 ? 3 : 0);
              })()}%
           </div>
+
+          {/* Logout — only visible during onboarding */}
+          {isOnboarding && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              title="Sair da conta"
+              className="shrink-0 rounded-full w-9 h-9 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors border border-neutral-800"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </header>
 
