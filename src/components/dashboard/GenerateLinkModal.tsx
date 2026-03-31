@@ -60,7 +60,6 @@ const DEPT_LABELS: Record<string, string> = {
 };
 
 interface CategoryPackage {
-  id: string;
   slug: string;
   name: string;
   description: string;
@@ -218,7 +217,7 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
           session_name: sessionName.trim(),
           initial_context: initialContext.trim() || null,
           selected_packages: selectedSlugs,
-          edit_passphrase: editPassphrase.trim() || undefined,
+          edit_passphrase: editPassphrase.trim() || null,
           status: 'pending',
           user_id: user?.id || null,
         }])
@@ -239,7 +238,10 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
   };
 
   const copyToClipboard = () => {
-    const text = `🔗 Link do Briefing:\n${generatedLink}\n\n🔑 Palavra-chave: ${editPassphrase}`;
+    const text = `🔗 Link do Briefing:
+${generatedLink}
+
+🔑 Palavra-chave: ${editPassphrase}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);

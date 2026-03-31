@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { ScrollConfirmWrapper } from "@/components/briefing/ScrollConfirmWrapper";
 import { TextAudioInput } from "./TextAudioInput";
+import type { TextAudioInputHandle } from "./TextAudioInput";
 import { BottomSheetOptions } from "./BottomSheetOptions";
-import { parseOption } from "./constants";
+import { parseOption, isOtherOption } from "./constants";
 import type { Message } from "@/lib/types";
 
 const BOTTOM_SHEET_THRESHOLD = 5;
@@ -39,6 +40,8 @@ export function SingleChoiceInput({
   t,
 }: SingleChoiceInputProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [highlightInput, setHighlightInput] = useState(false);
+  const textInputRef = useRef<TextAudioInputHandle>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -83,6 +86,36 @@ export function SingleChoiceInput({
 
   const useBottomSheet = isMobile && options.length > BOTTOM_SHEET_THRESHOLD && !isFontSelection;
 
+  // Handler that intercepts "Other" options and redirects to text input
+  const handleOptionClick = (optText: string) => {
+    if (isOtherOption(optText)) {
+      // Redirect to text/voice input instead of submitting
+      setHighlightInput(true);
+      setTimeout(() => setHighlightInput(false), 2000);
+      textInputRef.current?.scrollIntoView();
+      return;
+    }
+    doSubmit(optText);
+  };
+
+  // Handler for BottomSheet "Other" option — close sheet then redirect
+  const handleBottomSheetSelect = (optText: string) => {
+    if (isOtherOption(optText)) {
+      setHighlightInput(true);
+      setTimeout(() => setHighlightInput(false), 2000);
+      // Small delay to allow bottom sheet close animation
+      setTimeout(() => textInputRef.current?.scrollIntoView(), 350);
+      return;
+    }
+    doSubmit(optText);
+  };
+
+  const specifyLabel = voiceLanguage === "pt"
+    ? "Especifique abaixo o que deseja:"
+    : voiceLanguage === "es"
+    ? "Especifique a continuación lo que desea:"
+    : "Specify below what you want:";
+
   if (isFontSelection) {
     return (
       <div className="flex flex-col gap-6 w-full mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -107,7 +140,7 @@ export function SingleChoiceInput({
               return (
                 <button
                   key={optKey}
-                  onClick={() => doSubmit(optText)}
+                  onClick={() => handleOptionClick(optText)}
                   disabled={isLoading || isSubmittingLocal}
                   className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border transition-all text-center min-h-[160px] md:min-h-[200px] group cursor-pointer ${
                     isNoneOption
@@ -154,7 +187,13 @@ export function SingleChoiceInput({
             </div>
           )}
         </div>
+        {highlightInput && (
+          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300">
+            ↓ {specifyLabel}
+          </p>
+        )}
         <TextAudioInput
+          ref={textInputRef}
           inputText={inputText}
           setInputText={setInputText}
           onSubmit={handleLocalSend}
@@ -176,11 +215,17 @@ export function SingleChoiceInput({
         </p>
         <BottomSheetOptions
           options={options.map((opt, idx) => parseOption(opt, idx).text)}
-          onSelect={(val) => doSubmit(val)}
+          onSelect={handleBottomSheetSelect}
           isDisabled={isLoading || isSubmittingLocal}
           label={t.viewOptions}
         />
+        {highlightInput && (
+          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300">
+            ↓ {specifyLabel}
+          </p>
+        )}
         <TextAudioInput
+          ref={textInputRef}
           inputText={inputText}
           setInputText={setInputText}
           onSubmit={handleLocalSend}
@@ -207,7 +252,7 @@ export function SingleChoiceInput({
               key={optKey}
               variant="outline"
               size="lg"
-              onClick={() => doSubmit(optText)}
+              onClick={() => handleOptionClick(optText)}
               disabled={isLoading || isSubmittingLocal}
               className="rounded-full bg-transparent border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900 text-neutral-300 min-h-[48px] h-12 md:h-14 md:px-6 font-medium tracking-wide transition-all active:scale-[0.97]"
             >
@@ -228,7 +273,13 @@ export function SingleChoiceInput({
           </Button>
         )}
       </div>
+      {highlightInput && (
+        <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300">
+          ↓ {specifyLabel}
+        </p>
+      )}
       <TextAudioInput
+        ref={textInputRef}
         inputText={inputText}
         setInputText={setInputText}
         onSubmit={handleLocalSend}
@@ -239,3 +290,4 @@ export function SingleChoiceInput({
     </div>
   );
 }
+

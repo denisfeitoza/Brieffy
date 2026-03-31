@@ -1,12 +1,14 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRight, RefreshCw, Plus } from "lucide-react";
 import { ScrollConfirmWrapper } from "@/components/briefing/ScrollConfirmWrapper";
 import { TextAudioInput } from "./TextAudioInput";
+import type { TextAudioInputHandle } from "./TextAudioInput";
 import { CustomTextPills } from "./shared/CustomTextPills";
-import { parseOption } from "./constants";
+import { parseOption, isOtherOption } from "./constants";
 import type { Message } from "@/lib/types";
 
 interface MultipleChoiceInputProps {
@@ -39,9 +41,32 @@ export function MultipleChoiceInput({
   isFontSelection,
 }: MultipleChoiceInputProps) {
   const options = activeMessage.options || [];
+  const [highlightInput, setHighlightInput] = useState(false);
+  const scrollTargetRef = useRef<HTMLDivElement>(null);
+  const textInputRef = useRef<TextAudioInputHandle>(null);
 
   const optionTitles = options.map((opt) => parseOption(opt, 0).text);
   const customTexts = selectedMultiples.filter((item) => !optionTitles.includes(item));
+
+  const specifyLabel = voiceLanguage === "pt"
+    ? "Especifique abaixo o que deseja:"
+    : voiceLanguage === "es"
+    ? "Especifique a continuación lo que desea:"
+    : "Specify below what you want:";
+
+  const handleCheckChange = (optText: string, checked: boolean | string) => {
+    if (checked) {
+      setSelectedMultiples([...selectedMultiples, optText]);
+      // If it's an "Other" option, redirect to text input
+      if (isOtherOption(optText)) {
+        setHighlightInput(true);
+        setTimeout(() => setHighlightInput(false), 2000);
+        setTimeout(() => scrollTargetRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      }
+    } else {
+      setSelectedMultiples(selectedMultiples.filter((item) => item !== optText));
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full mt-4">
@@ -61,13 +86,7 @@ export function MultipleChoiceInput({
               <Checkbox
                 checked={isSelected}
                 className="w-5 h-5 shrink-0"
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setSelectedMultiples([...selectedMultiples, optText]);
-                  } else {
-                    setSelectedMultiples(selectedMultiples.filter((item) => item !== optText));
-                  }
-                }}
+                onCheckedChange={(checked) => handleCheckChange(optText, checked)}
               />
               <span
                 className="text-white font-medium"
@@ -90,7 +109,12 @@ export function MultipleChoiceInput({
         })}
       </div>
 
-      <div className="w-full opacity-80 hover:opacity-100 transition-opacity mt-4">
+      <div ref={scrollTargetRef} className={`w-full transition-all mt-4 ${highlightInput ? 'opacity-100 ring-2 ring-indigo-500/50 rounded-2xl p-2' : 'opacity-80 hover:opacity-100'}`}>
+        {highlightInput && (
+          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300 mb-2">
+            ↓ {specifyLabel}
+          </p>
+        )}
         <p className="text-sm text-center text-neutral-500 mb-2">
           {voiceLanguage === "pt"
             ? "Adicione detalhes via texto ou áudio (opcional):"
@@ -105,6 +129,7 @@ export function MultipleChoiceInput({
           }
         />
         <TextAudioInput
+          ref={textInputRef}
           inputText={inputText}
           setInputText={setInputText}
           onSubmit={handleLocalSend}
@@ -150,3 +175,4 @@ export function MultipleChoiceInput({
     </div>
   );
 }
+

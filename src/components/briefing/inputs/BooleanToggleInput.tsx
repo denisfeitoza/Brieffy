@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion } from "framer-motion";
+import { Check, X } from "lucide-react";
 import { TextAudioInput } from "./TextAudioInput";
 
 interface DraggableToggleProps {
@@ -11,10 +12,7 @@ interface DraggableToggleProps {
   initialAnswer?: string | null;
 }
 
-function DraggableToggle({ onSelect, disabled, t, initialAnswer }: DraggableToggleProps) {
-  const knobWidth = 140;
-  const maxDrag = (320 - knobWidth) / 2 - 8;
-
+function BooleanButtons({ onSelect, disabled, t, initialAnswer }: DraggableToggleProps) {
   const normalize = (val?: string | null) => val?.trim().toLowerCase();
 
   const resolveInitial = (val?: string | null): string | null => {
@@ -24,69 +22,71 @@ function DraggableToggle({ onSelect, disabled, t, initialAnswer }: DraggableTogg
     return null;
   };
 
-  const resolvedInitial = resolveInitial(initialAnswer);
-  const initialX = resolvedInitial === t.yes ? -maxDrag : resolvedInitial === t.no ? maxDrag : 0;
+  const [selected, setSelected] = useState<string | null>(resolveInitial(initialAnswer));
 
-  const [answered, setAnswered] = useState<string | null>(resolvedInitial);
-  const x = useMotionValue(initialX);
-
-  // Sync when navigating to a different question (initialAnswer changes)
   useEffect(() => {
     const resolved = resolveInitial(initialAnswer);
-    setAnswered(resolved);
-    const target = resolved === t.yes ? -maxDrag : resolved === t.no ? maxDrag : 0;
-    x.set(target);
+    setSelected(resolved);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAnswer]);
 
   const handleSelect = (val: string) => {
     if (disabled) return;
-    setAnswered(val);
-    const target = val === t.yes ? -maxDrag : maxDrag;
-    animate(x, target, { type: "spring", stiffness: 300, damping: 20 });
-    setTimeout(() => onSelect(val), 350);
+    setSelected(val);
+    setTimeout(() => onSelect(val), 200);
   };
 
-  const background = useTransform(x, [-maxDrag, 0, maxDrag], [
-    "rgba(34, 197, 94, 0.15)",
-    "rgba(38, 38, 38, 0.4)",
-    "rgba(239, 68, 68, 0.15)",
-  ]);
-  const borderColor = useTransform(x, [-maxDrag, 0, maxDrag], [
-    "rgba(34, 197, 94, 0.4)",
-    "rgba(64, 64, 64, 0.6)",
-    "rgba(239, 68, 68, 0.4)",
-  ]);
+  const isYes = selected === t.yes;
+  const isNo = selected === t.no;
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* Mobile fix: w-full max-w-[320px] instead of fixed 320px */}
-      <motion.div
-        className="relative flex items-center justify-center h-20 rounded-[2.5rem] overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] backdrop-blur-md w-full"
-        style={{ maxWidth: 320, backgroundColor: background, borderColor, borderWidth: 1 }}
-        onPointerDownCapture={(e) => e.stopPropagation()}
+    <div
+      className="flex gap-4 w-full max-w-sm"
+      onPointerDownCapture={(e) => e.stopPropagation()}
+    >
+      {/* SIM button */}
+      <motion.button
+        type="button"
+        disabled={disabled}
+        onClick={() => handleSelect(t.yes)}
+        whileHover={!disabled ? { scale: 1.03 } : {}}
+        whileTap={!disabled ? { scale: 0.97 } : {}}
+        className={`
+          flex-1 flex flex-col items-center justify-center gap-2
+          h-28 rounded-2xl border-2 font-bold text-xl uppercase tracking-widest
+          transition-all duration-200 cursor-pointer select-none
+          ${isYes
+            ? "bg-green-500 border-green-400 text-white shadow-[0_0_24px_rgba(34,197,94,0.4)]"
+            : "bg-neutral-900 border-neutral-700 text-neutral-300 hover:border-green-500/60 hover:bg-green-950/30 hover:text-green-300"
+          }
+          ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+        `}
       >
-        <div className="absolute inset-0 flex z-20">
-          <div className="flex-1 flex items-center justify-center cursor-pointer" onClick={() => handleSelect(t.yes)}>
-            <span className={`font-bold text-lg uppercase tracking-widest transition-colors ${answered === t.yes ? "text-transparent" : "text-white/40 hover:text-white/80"}`}>
-              {t.yes}
-            </span>
-          </div>
-          <div className="flex-1 flex items-center justify-center cursor-pointer" onClick={() => handleSelect(t.no)}>
-            <span className={`font-bold text-lg uppercase tracking-widest transition-colors ${answered === t.no ? "text-transparent" : "text-white/40 hover:text-white/80"}`}>
-              {t.no}
-            </span>
-          </div>
-        </div>
-        {/* Knob — driven solely by the MotionValue `x` via style to avoid animate/style conflict */}
-        <motion.div
-          className="absolute h-16 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15),inset_0_-2px_5px_rgba(0,0,0,0.1)] flex items-center justify-center font-bold text-black uppercase tracking-wider z-10 pointer-events-none"
-          style={{ width: knobWidth, x, opacity: answered ? 1 : 0 }}
-          initial={false}
-        >
-          {answered === t.yes ? t.yes : answered === t.no ? t.no : ""}
-        </motion.div>
-      </motion.div>
+        <Check className={`w-7 h-7 ${isYes ? "text-white" : "text-neutral-500"}`} />
+        {t.yes}
+      </motion.button>
+
+      {/* NÃO button */}
+      <motion.button
+        type="button"
+        disabled={disabled}
+        onClick={() => handleSelect(t.no)}
+        whileHover={!disabled ? { scale: 1.03 } : {}}
+        whileTap={!disabled ? { scale: 0.97 } : {}}
+        className={`
+          flex-1 flex flex-col items-center justify-center gap-2
+          h-28 rounded-2xl border-2 font-bold text-xl uppercase tracking-widest
+          transition-all duration-200 cursor-pointer select-none
+          ${isNo
+            ? "bg-red-500 border-red-400 text-white shadow-[0_0_24px_rgba(239,68,68,0.4)]"
+            : "bg-neutral-900 border-neutral-700 text-neutral-300 hover:border-red-500/60 hover:bg-red-950/30 hover:text-red-300"
+          }
+          ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+        `}
+      >
+        <X className={`w-7 h-7 ${isNo ? "text-white" : "text-neutral-500"}`} />
+        {t.no}
+      </motion.button>
     </div>
   );
 }
@@ -115,14 +115,14 @@ export function BooleanToggleInput({
   t,
 }: BooleanToggleInputProps) {
   return (
-    <div className="flex flex-col gap-6 w-full items-center justify-center my-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <DraggableToggle
+    <div className="flex flex-col gap-6 w-full items-center justify-center my-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <BooleanButtons
         t={t}
         onSelect={onSelect}
         disabled={isLoading || isSubmittingLocal}
         initialAnswer={initialAnswer}
       />
-      <div className="w-full max-w-lg mt-4 opacity-70 hover:opacity-100 transition-opacity">
+      <div className="w-full max-w-lg opacity-70 hover:opacity-100 transition-opacity">
         <p className="text-sm text-center text-neutral-500 mb-2">{t.moreDetails}</p>
         <TextAudioInput
           inputText={inputText}

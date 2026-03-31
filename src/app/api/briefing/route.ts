@@ -525,11 +525,22 @@ ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${p
 
 <UI_Components_Rules>
   You MUST aggressively vary the questionType throughout the ENTIRE briefing. Your goal is an interactive, tactile experience. DO NOT default to "text".
+
+  ═══ UNIVERSAL "OTHER" OPTION RULE ═══
+  For ALL choice-based question types (multiple_choice, single_choice, card_selector), the LAST option MUST ALWAYS be an "Other" escape hatch.
+  - In Portuguese: "Outro" or "Outra" (match gender context)
+  - In English: "Other"
+  - In Spanish: "Otro" or "Otra" (match gender context)
+  This option allows the user to type a custom answer. It is MANDATORY and counts as one of the 6 default options.
+  NEVER omit the "Other" option. NEVER place it anywhere except as the LAST option.
+  For card_selector, the "Other" card should have title "Outro" (or language equivalent) and description explaining the user can describe their own option.
+  ═══ END UNIVERSAL "OTHER" OPTION RULE ═══
+
   - text: Use sparingly, only for open-ended names/descriptions (e.g. core differences, meanings).
-  - multiple_choice: Multi-select categories (e.g. communication_channels). Send options array of strings. ALWAYS default to EXACTLY 6 options (minimum 4, maximum 8).
-  - single_choice: Exclusive choices. CRITICAL RULE FOR TYPOGRAPHY/FONTS: When asking about brand typography, you MUST provide EXACTLY 6 options using REAL Google Font names in format "FontName - TwoWordDescription". Examples: "Inter - Moderna Neutra", "Playfair Display - Elegante Classica", "Outfit - Geometrica Tech", "Merriweather - Tradicional Confiavel", "Space Grotesk - Futurista Limpa". The 6th option MUST ALWAYS be "Nenhuma dessas - Padrao do Sistema". NEVER use generic categories — use REAL font names. Include the company/brand name in the question text so the card preview showcases it.
-  - boolean_toggle: Use for Yes/No questions or simple binary exclusive questions. Extremely tactile UI.
-  - card_selector: Use for strategic routes or descriptive personas. Send options as array of objects: { title: string, description: string }. ALWAYS default to generating exactly 6 cards.
+  - multiple_choice: Multi-select categories (e.g. communication_channels). Send options array of strings. ALWAYS default to EXACTLY 6 options (minimum 4, maximum 8). The 6th (last) option MUST ALWAYS be "Outro" (or language equivalent). So you generate 5 real options + 1 "Outro" = 6 total.
+  - single_choice: Exclusive choices. ALWAYS default to EXACTLY 6 options. The 6th (last) option MUST ALWAYS be "Outro" (or language equivalent). So you generate 5 real options + 1 "Outro" = 6 total. CRITICAL RULE FOR TYPOGRAPHY/FONTS: When asking about brand typography, you MUST provide EXACTLY 6 options using REAL Google Font names in format "FontName - TwoWordDescription". Examples: "Inter - Moderna Neutra", "Playfair Display - Elegante Classica", "Outfit - Geometrica Tech", "Merriweather - Tradicional Confiavel", "Space Grotesk - Futurista Limpa". The 6th option MUST ALWAYS be "Nenhuma dessas - Padrao do Sistema". NEVER use generic categories — use REAL font names. Include the company/brand name in the question text so the card preview showcases it.
+  - boolean_toggle: Use for Yes/No questions or simple binary exclusive questions. Extremely tactile UI. (No "Other" option needed here — binary only.)
+  - card_selector: Use for strategic routes or descriptive personas. Send options as array of objects: { title: string, description: string }. ALWAYS default to generating exactly 6 cards. The 6th (last) card MUST ALWAYS be the "Outro" card: { title: "Outro", description: "Descreva sua própria opção" } (adapt to session language). So you generate 5 real cards + 1 "Outro" card = 6 total.
   - slider: Use for measurable things on a single 1-10 scale (e.g. company_age, maturity). Send minOption and maxOption.
   - multi_slider: Use for PROFILE/DNA questions requiring multiple dimensions simultaneously. Send options as array of objects: [{"label":"Dimension Name","min":1,"max":5,"minLabel":"Low Label","maxLabel":"High Label"}]. CRITICAL: The scale MUST STRICTLY be min:1 and max:5. NEVER return a scale of 1-10. Always output 3-5 slider dimensions per question.
   - color_picker: Use ONLY when specifically gathering brand color and visual palette vibes. The UI provides an advanced wizard automatically.
@@ -723,7 +734,7 @@ function mockEngine(answer: string, state: Record<string, unknown>, history: { r
         { title: "B2B2C", description: "Vendemos para empresas que revendem ao consumidor" },
         { title: "D2C", description: "Vendas diretas do fabricante ao consumidor sem intermediários" },
         { title: "B2G / Governo", description: "Fornecemos para órgãos públicos ou licitações" },
-        { title: "Misto (B2B + B2C)", description: "Atendemos tanto empresas quanto consumidores finais de forma equilibrada" }
+        { title: "Outro", description: "Descreva sua própria opção" }
       ],
       allowMoreOptions: false,
     };
@@ -747,7 +758,7 @@ function mockEngine(answer: string, state: Record<string, unknown>, history: { r
     nextQuestion = {
       text: "Se sua empresa fosse uma pessoa, qual seria a personalidade?",
       questionType: "multiple_choice",
-      options: ["Inovadora", "Determinada", "Forte", "Elegante", "Moderna", "Profissional", "Ousada", "Confiável", "Acolhedora", "Sofisticada"],
+      options: ["Inovadora", "Determinada", "Elegante", "Moderna", "Profissional", "Outro"],
     };
   } else if (step === 6) {
     // Seção 4: Identity — Tom de Voz
@@ -761,7 +772,7 @@ function mockEngine(answer: string, state: Record<string, unknown>, history: { r
         { title: "Inspiracional e Emocional", description: "Conta histórias, provoca sentimentos" },
         { title: "Direta e Objetiva", description: "Vai direto ao ponto, foco em resultado" },
         { title: "Educativa e Didática", description: "Ensina, guia e compartilha conhecimento valioso" },
-        { title: "Irreverente e Ousada", description: "Provocativa, inovadora e quebra padrões e convenções" },
+        { title: "Outro", description: "Descreva sua própria opção" },
       ],
       allowMoreOptions: false,
     };

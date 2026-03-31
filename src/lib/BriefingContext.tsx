@@ -142,6 +142,7 @@ export function BriefingProvider({
     : initialBase;
 
   const [briefingState, setBriefingState] = useState<BriefingState>(mergedInitialState);
+  const briefingStateRef = React.useRef<BriefingState>(mergedInitialState);
 
   // Use existing session ID from props (e.g., /b/{id} routes)
   // For new sessions (home page), we lazily create on first submitAnswer
@@ -334,7 +335,11 @@ export function BriefingProvider({
   }, [isResume, hasRequestedResumeContinuation]);
 
   const updateBriefingState = (updates: Partial<BriefingState>) => {
-    setBriefingState((prev) => ({ ...prev, ...updates }));
+    setBriefingState((prev) => {
+      const next = { ...prev, ...updates };
+      briefingStateRef.current = next;
+      return next;
+    });
   };
 
   const goBack = () => {
@@ -391,13 +396,13 @@ export function BriefingProvider({
     // Lazily create session on first interaction (fixes session leak bug)
     const activeSessionId = await ensureSession();
     
-    // Log Interaction to Database (await to ensure interactionId is ready for inference update)
+    // Log Interaction to Database — UPSERT so re-answering a step updates the row
     let interactionId: string | null = null;
     if (activeSessionId) {
       try {
         const { data: intData, error: intError } = await supabase
           .from('briefing_interactions')
-          .insert([{
+          .upsert({
             session_id: activeSessionId,
             step_order: currentStepIndex,
             question_type: currentMsgToLog.questionType || 'text',
@@ -405,12 +410,24 @@ export function BriefingProvider({
             options_offered: currentMsgToLog.options ? currentMsgToLog.options : null,
             user_answer: answer,
             is_depth_question: currentMsgToLog.isDepthQuestion || false,
-          }])
+          }, { onConflict: 'session_id,step_order' })
           .select('id')
           .single();
         
         if (intError) console.error("Erro ao salvar interação no Supabase:", intError);
         else if (intData) interactionId = intData.id;
+
+        // When re-answering a past step (went back), remove stale future interactions
+        // because the AI will generate new questions from this point forward
+        if (currentStepIndex < messages.length - 1) {
+          supabase.from('briefing_interactions')
+            .delete()
+            .eq('session_id', activeSessionId)
+            .gt('step_order', currentStepIndex)
+            .then(({ error }) => {
+              if (error) console.error('Erro ao limpar interações futuras:', error);
+            });
+        }
       } catch (dbErr) {
         console.error("Erro ao inserir interação:", dbErr);
       }
@@ -456,6 +473,23 @@ export function BriefingProvider({
       
       if (data.updates) {
         updateBriefingState(data.updates);
+      }
+
+      // Persist company_info + language on EVERY step even when basalCoverage is absent
+      // (ensures progress is saved if the API doesn't return basalCoverage)
+      if (activeSessionId && !data.basalCoverage) {
+        const mergedState = data.updates
+          ? { ...briefingStateRef.current, ...data.updates }
+          : briefingStateRef.current;
+        supabase.from('briefing_sessions').update({
+          company_info: mergedState,
+          chosen_language: activeLanguage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', activeSessionId)
+        .then(({error}) => {
+          if (error) console.error('Erro ao salvar progresso (sem basal):', error);
+        });
       }
 
       // ================================================================
@@ -531,16 +565,23 @@ export function BriefingProvider({
           basalFieldsMissing: data.basalFieldsMissing || [],
         });
 
-        // Persist basal coverage on each step (async, non-blocking)
+        // Persist basal coverage + company_info + language on each step (async, non-blocking)
+        // This ensures the client can leave and return with full state restored.
         if (activeSessionId) {
+          const mergedState = data.updates
+            ? { ...briefingStateRef.current, ...data.updates }
+            : briefingStateRef.current;
           supabase.from('briefing_sessions').update({
             basal_coverage: data.basalCoverage,
             basal_fields_collected: data.basalFieldsCollected || [],
             current_section: data.currentSection || 'company',
+            company_info: mergedState,
+            chosen_language: activeLanguage,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', activeSessionId)
           .then(({error}) => {
-            if (error) console.error('Erro ao salvar basalCoverage:', error);
+            if (error) console.error('Erro ao salvar progresso da sessão:', error);
           });
         }
       } else if (isOnboarding) {
@@ -776,7 +817,7 @@ export function BriefingProvider({
           document_content: data.document,
           edit_token: newToken,
           edit_passphrase: currentPassphrase,
-          detected_signals: detectedSignals,
+          detected_signals: detectedSignalsRef.current,
           updated_at: new Date().toISOString()
         })
         .eq('id', docSessionId)

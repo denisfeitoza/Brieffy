@@ -151,3 +151,27 @@ export function parseOption(opt: unknown, idx: number): { text: string; key: str
   const key = optObj ? String(optObj.id || text || idx) : String(opt);
   return { text, key };
 }
+
+/**
+ * Detect if an option text represents an "Other" / "Outro" choice.
+ * Matches case-insensitively against PT, EN, ES variants,
+ * including with common prefixes/suffixes like emojis or punctuation.
+ */
+const OTHER_PATTERNS = [
+  // Portuguese
+  /^outro$/i, /^outra$/i, /^outros$/i, /^outras$/i,
+  /^outro[:\s…]/i, /^outra[:\s…]/i,
+  // English
+  /^other$/i, /^others$/i, /^other[:\s…]/i,
+  // Spanish
+  /^otro$/i, /^otra$/i, /^otros$/i, /^otras$/i,
+  /^otro[:\s…]/i, /^otra[:\s…]/i,
+  // With common emoji prefixes
+  /^.{0,3}\s*outro$/i, /^.{0,3}\s*outra$/i,
+  /^.{0,3}\s*other$/i, /^.{0,3}\s*otro$/i, /^.{0,3}\s*otra$/i,
+];
+
+export function isOtherOption(text: string): boolean {
+  const trimmed = text.trim();
+  return OTHER_PATTERNS.some((p) => p.test(trimmed));
+}

@@ -22,6 +22,8 @@ interface AILoadingSplashProps {
     tagline?: string;
   };
   language?: string;
+  /** Number of selected skill packages — influences progress bar duration */
+  skillCount?: number;
 }
 
 // ─── i18n messages ──────────────────────────────────────
@@ -271,7 +273,11 @@ const TypewriterText = memo(function TypewriterText({ text, className }: { text:
 export const AILoadingSplash = memo(function AILoadingSplash({
   branding,
   language = "pt",
+  skillCount = 0,
 }: AILoadingSplashProps) {
+  // Progress bar duration scales with the number of skills selected.
+  // Base: 3.8s (no skills). Each skill adds 0.8s. Capped at 8s.
+  const progressDuration = Math.min(3.8 + skillCount * 0.8, 8);
   const t = SPLASH_I18N[language] || SPLASH_I18N.pt;
   const brandColor = branding.brand_color || "#6366f1";
   const accentColor = branding.brand_accent || "#06b6d4";
@@ -619,7 +625,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
             }}
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
-            transition={{ duration: 3.8, ease: "easeInOut" }}
+            transition={{ duration: progressDuration, ease: [0.25, 0.1, 0.25, 1] }}
           />
         </div>
 

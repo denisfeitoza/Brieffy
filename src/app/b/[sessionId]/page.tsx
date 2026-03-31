@@ -7,7 +7,25 @@ import type { BrandingInfo } from "@/lib/types";
 export const dynamic = 'force-dynamic';
 
 export default async function FormPage({ params }: { params: Promise<{ sessionId: string }> }) {
-  const { sessionId } = await params;
+  const { sessionId: rawSessionId } = await params;
+
+  // Sanitize sessionId: messaging apps (WhatsApp, email, SMS) often append
+  // trailing `%` or other characters to shared URLs, producing malformed
+  // request paths like `/b/uuid%`. Strip everything that isn't a valid UUID char.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(rawSessionId);
+  } catch {
+    // A bare `%` without two hex digits throws URIError — fallback to raw string
+    decoded = rawSessionId;
+  }
+  const sessionId = decoded.replace(/[^a-f0-9-]/gi, '');
+
+  // If after sanitization the ID is empty or invalid, bail to 404
+  if (!sessionId || sessionId.length < 32) {
+    notFound();
+  }
+
   let session;
   let template;
   let branding: BrandingInfo | undefined;
@@ -55,21 +73,26 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     ? session.basal_coverage
     : undefined;
 
-  // Detect language from the first interaction (if any)
-  const savedLanguage = isInProgress && savedInteractions.length > 0
-    ? (() => {
-        const firstAnswer = savedInteractions[0]?.user_answer;
-        if (typeof firstAnswer === 'string') {
-          const langMap: Record<string, string> = {
-            '🇧🇷 Português': 'pt',
-            '🇺🇸 English': 'en',
-            '🇪🇸 Español': 'es',
-          };
-          return langMap[firstAnswer.trim()] || 'pt';
-        }
-        return 'pt';
-      })()
-    : 'pt';
+  // Detect language: prefer DB column (persisted each step), fallback to first interaction
+  const savedLanguage = (() => {
+    // Best source: persisted chosen_language column (saved on every step)
+    if (isInProgress && session.chosen_language) {
+      return session.chosen_language as string;
+    }
+    // Fallback: infer from the first interaction answer
+    if (isInProgress && savedInteractions.length > 0) {
+      const firstAnswer = savedInteractions[0]?.user_answer;
+      if (typeof firstAnswer === 'string') {
+        const langMap: Record<string, string> = {
+          '🇧🇷 Português': 'pt',
+          '🇺🇸 English': 'en',
+          '🇪🇸 Español': 'es',
+        };
+        return langMap[firstAnswer.trim()] || 'pt';
+      }
+    }
+    return 'pt';
+  })();
 
   return (
     <BriefingProvider 

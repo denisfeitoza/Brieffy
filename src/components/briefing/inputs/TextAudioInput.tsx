@@ -1,10 +1,15 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useImperativeHandle, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, ArrowRight, RefreshCw } from "lucide-react";
 import { useAudioRecorder } from "./shared/useAudioRecorder";
+
+export interface TextAudioInputHandle {
+  focus: () => void;
+  scrollIntoView: () => void;
+}
 
 interface TextAudioInputProps {
   inputText: string;
@@ -21,7 +26,7 @@ interface TextAudioInputProps {
   placeholderOverride?: string;
 }
 
-export function TextAudioInput({
+export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputProps>(function TextAudioInput({
   inputText,
   setInputText,
   onSubmit,
@@ -34,8 +39,20 @@ export function TextAudioInput({
   hasUserAnswer = false,
   voiceLanguage,
   placeholderOverride,
-}: TextAudioInputProps) {
+}, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current?.focus({ preventScroll: false });
+    },
+    scrollIntoView: () => {
+      wrapperRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Small delay to ensure scroll completes before focus
+      setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 400);
+    },
+  }));
 
   const { isRecording, isTranscribing, startRecording, stopRecording } = useAudioRecorder({
     voiceLanguage,
@@ -65,7 +82,7 @@ export function TextAudioInput({
     : "Or type your answer freely...";
 
   return (
-    <div className="relative group w-full mt-8">
+    <div ref={wrapperRef} className="relative group w-full mt-8">
       <Input
         ref={inputRef}
         value={inputText}
@@ -138,4 +155,5 @@ export function TextAudioInput({
       </div>
     </div>
   );
-}
+});
+

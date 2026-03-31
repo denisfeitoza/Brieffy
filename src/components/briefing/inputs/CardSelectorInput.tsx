@@ -1,11 +1,12 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw, Plus } from "lucide-react";
 import { ScrollConfirmWrapper } from "@/components/briefing/ScrollConfirmWrapper";
 import { TextAudioInput } from "./TextAudioInput";
 import { CustomTextPills } from "./shared/CustomTextPills";
-import { parseOption } from "./constants";
+import { parseOption, isOtherOption } from "./constants";
 import type { Message } from "@/lib/types";
 
 interface CardSelectorInputProps {
@@ -44,6 +45,30 @@ export function CardSelectorInput({
   const options = activeMessage.options || [];
   const optionTitles = options.map((opt) => parseOption(opt, 0).text);
   const customTexts = selectedMultiples.filter((item) => !optionTitles.includes(item));
+  const [highlightInput, setHighlightInput] = useState(false);
+  const scrollTargetRef = useRef<HTMLDivElement>(null);
+
+  const specifyLabel = voiceLanguage === "pt"
+    ? "Especifique abaixo o que deseja:"
+    : voiceLanguage === "es"
+    ? "Especifique a continuación lo que desea:"
+    : "Specify below what you want:";
+
+
+  const handleCardClick = (title: string) => {
+    const isSelected = selectedMultiples.includes(title);
+    if (isSelected) {
+      setSelectedMultiples(selectedMultiples.filter((t) => t !== title));
+    } else {
+      setSelectedMultiples([...selectedMultiples, title]);
+      // If it's an "Other" option, redirect to text input
+      if (isOtherOption(title)) {
+        setHighlightInput(true);
+        setTimeout(() => setHighlightInput(false), 2000);
+        setTimeout(() => scrollTargetRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8 w-full mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -59,13 +84,7 @@ export function CardSelectorInput({
           return (
             <button
               key={idx}
-              onClick={() => {
-                if (isSelected) {
-                  setSelectedMultiples(selectedMultiples.filter((t) => t !== title));
-                } else {
-                  setSelectedMultiples([...selectedMultiples, title]);
-                }
-              }}
+              onClick={() => handleCardClick(title)}
               disabled={isLoading || isSubmittingLocal}
               className={`group flex flex-col items-start text-left p-4 md:p-8 rounded-3xl bg-neutral-900/40 border transition-all min-h-[120px] md:min-h-auto active:scale-[0.98] ${
                 isSelected
@@ -127,7 +146,12 @@ export function CardSelectorInput({
         </div>
       )}
 
-      <div className="w-full opacity-80 hover:opacity-100 transition-opacity mt-4">
+      <div ref={scrollTargetRef} className={`w-full transition-all mt-4 ${highlightInput ? 'opacity-100 ring-2 ring-indigo-500/50 rounded-2xl p-2' : 'opacity-80 hover:opacity-100'}`}>
+        {highlightInput && (
+          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300 mb-2">
+            ↓ {specifyLabel}
+          </p>
+        )}
         <p className="text-sm text-center text-neutral-500 mb-2">{t.addDetails}</p>
         <CustomTextPills
           customTexts={customTexts}
@@ -175,3 +199,4 @@ export function CardSelectorInput({
     </div>
   );
 }
+

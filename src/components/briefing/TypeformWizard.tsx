@@ -178,13 +178,15 @@ export function TypeformWizard() {
 
   useEffect(() => {
     if (!showSplash) return;
-    // Auto-dismiss splash after ~4 seconds
+    // Splash duration scales with skill count: base 4s + 0.6s per skill, capped at 8s
+    const splashDuration = Math.min(4000 + (selectedPackageDetails?.length || 0) * 600, 8000);
+    // Auto-dismiss splash after dynamic duration
     splashTimerRef.current = setTimeout(() => {
       setShowSplash(false);
       setJustExitedSplash(true);
       // Reset after entrance animation completes
       setTimeout(() => setJustExitedSplash(false), 800);
-    }, 4000);
+    }, splashDuration);
     return () => {
       if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
     };
@@ -689,6 +691,7 @@ export function TypeformWizard() {
             tagline: branding.tagline,
           }}
           language={chosenLanguage}
+          skillCount={selectedPackageDetails?.length || 0}
         />
       </AnimatePresence>
     );
@@ -768,25 +771,43 @@ export function TypeformWizard() {
 
           {/* Progresso Simplificado */}
           <div className="text-sm font-medium text-neutral-500 flex items-center gap-2 bg-neutral-900 px-4 py-1.5 rounded-full border border-neutral-800">
-             {Math.max(Math.round(basalInfo.basalCoverage * 100), currentStepIndex > 0 ? 5 : 0)}%
+             {(() => {
+               const skillDilution = 1 / (1 + (selectedPackageDetails?.length || 0) * 0.22);
+               const rawPct = basalInfo.basalCoverage * 100;
+               const diluted = rawPct >= 100 ? 100 : Math.min(rawPct * skillDilution, 95);
+               return Math.max(Math.round(diluted), currentStepIndex > 0 ? 3 : 0);
+             })()}%
           </div>
         </div>
       </header>
 
-      {/* Progress Bar — based on basalCoverage, using brand colors for consistency */}
-      <div className="h-1 bg-neutral-900/50 w-full shrink-0 overflow-hidden">
-        <motion.div
-          className="h-full rounded-r-full"
-          style={{
-            background: `linear-gradient(90deg, ${activeColor}, ${branding.brand_accent || '#06b6d4'}, ${activeColor})`,
-          }}
-          initial={false}
-          animate={{ 
-            width: `${Math.max(basalInfo.basalCoverage * 100, 5)}%` 
-          }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        />
-      </div>
+      {/* Progress Bar — diluted by skill count so it doesn't rush to 100% early */}
+      {(() => {
+        // With more skills, the briefing is longer, so we dilute the visual progress.
+        // skillDilution compresses the basalCoverage so the bar fills slower.
+        // 0 skills → 1.0 (no dilution), 1 skill → 0.82, 3 skills → 0.57, 5 skills → 0.45
+        const skillDilution = 1 / (1 + (selectedPackageDetails?.length || 0) * 0.22);
+        const rawProgress = basalInfo.basalCoverage * 100;
+        // Apply dilution but keep a minimum of 5% and never exceed 95% until truly done
+        const dilutedProgress = rawProgress >= 100 ? 100 : Math.min(rawProgress * skillDilution, 95);
+        const displayProgress = Math.max(dilutedProgress, currentStepIndex > 0 ? 3 : 0);
+
+        return (
+          <div className="h-1 bg-neutral-900/50 w-full shrink-0 overflow-hidden">
+            <motion.div
+              className="h-full rounded-r-full"
+              style={{
+                background: `linear-gradient(90deg, ${activeColor}, ${branding.brand_accent || '#06b6d4'}, ${activeColor})`,
+              }}
+              initial={false}
+              animate={{ 
+                width: `${displayProgress}%` 
+              }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </div>
+        );
+      })()}
 
       {/* Main Content Area: Centered, Large Text */}
       <main ref={mainRef} className="flex-1 w-full overflow-y-auto overflow-x-hidden">

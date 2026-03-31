@@ -116,7 +116,7 @@ export async function getInteractionsBySession(sessionId: string) {
     .from('briefing_interactions')
     .select('*')
     .eq('session_id', sessionId)
-    .order('created_at', { ascending: true });
+    .order('step_order', { ascending: true });
 
   if (error) {
     console.error(`Error fetching interactions for session ${sessionId}:`, error);
@@ -445,7 +445,7 @@ export async function getAdminExtendedStats() {
 
   const { data: profiles } = await supabase
     .from('briefing_profiles')
-    .select('id, is_admin, is_onboarded, created_at, plan')
+    .select('id, is_admin, is_onboarded, created_at')
     .order('created_at', { ascending: true });
 
   const { data: recentSessionsRaw } = await supabase
@@ -473,13 +473,10 @@ export async function getAdminExtendedStats() {
   const onboardedCount = nonAdmin.filter(p => p.is_onboarded).length;
   const onboardingRate = nonAdmin.length > 0 ? Math.round((onboardedCount / nonAdmin.length) * 100) : 0;
 
-  // Plan distribution
-  const planDist: Record<string, number> = {};
-  nonAdmin.forEach(p => {
-    const plan = (p.plan as string) || 'free';
-    planDist[plan] = (planDist[plan] || 0) + 1;
-  });
-  const planDistribution = Object.entries(planDist).map(([plan, count]) => ({ plan, count }));
+  // Plan distribution (column not yet in DB — default all to 'free')
+  const planDistribution = nonAdmin.length > 0
+    ? [{ plan: 'free', count: nonAdmin.length }]
+    : [];
 
   // Avg cost per finished briefing
   const totalCostUSD = (usageLogs || []).reduce((sum, l) => sum + (Number(l.estimated_cost_usd) || 0), 0);
