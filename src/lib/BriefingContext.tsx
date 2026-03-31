@@ -683,24 +683,15 @@ export function BriefingProvider({
       }
     } catch (error) {
       console.error(error);
-      const currentQ = messages[currentStepIndex];
-      const fallbackMessage = activeLanguage === 'en' 
-        ? `Oops! We had an issue analyzing your answer. Could you try again?\n\n**Original question:** ${currentQ.content}`
-        : activeLanguage === 'es'
-          ? `¡Vaya! Tuvimos un problema al analizar tu respuesta. ¿Puedes intentarlo de nuevo?\n\n**Pregunta original:** ${currentQ.content}`
-          : `Ops! Tivemos um problema para analisar sua resposta. Pode tentar novamente?\n\n**Pergunta original:** ${currentQ.content}`;
-
-      addMessage({
-        role: "assistant",
-        content: fallbackMessage,
-        type: "question",
-        questionType: currentQ.questionType,
-        options: currentQ.options,
-        allowMoreOptions: currentQ.allowMoreOptions,
-        minOption: currentQ.minOption,
-        maxOption: currentQ.maxOption,
+      // Instead of adding an error message as a new "question" (which pollutes
+      // conversation history and gets persisted to Supabase), we clear the current
+      // step's answer so the user can simply re-submit on the SAME question.
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[currentStepIndex] = { ...newMessages[currentStepIndex], userAnswer: undefined };
+        return newMessages;
       });
-      setCurrentStepIndex((prev) => prev + 1);
+      // No setCurrentStepIndex increment — user stays on the same step
     } finally {
       setIsLoading(false);
     }

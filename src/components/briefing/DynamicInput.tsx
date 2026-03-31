@@ -76,6 +76,7 @@ interface DynamicInputProps {
   isGeneratingMore: boolean;
   voiceLanguage?: string;
   messages?: Message[];
+  isDiscoveryPhase?: boolean;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -92,6 +93,7 @@ export function DynamicInput({
   isGeneratingMore,
   voiceLanguage = "pt",
   messages = [],
+  isDiscoveryPhase = false,
 }: DynamicInputProps) {
   const t = I18N[voiceLanguage] || I18N["pt"];
   const { isOnboarding } = useBriefing();
@@ -286,6 +288,7 @@ export function DynamicInput({
             isSubmittingLocal={isSubmittingLocal}
             hasUserAnswer={Boolean(activeMessage.userAnswer)}
             voiceLanguage={voiceLanguage}
+            isDiscoveryPhase={isDiscoveryPhase}
           />
           <div className="text-neutral-600 font-inter text-sm hidden sm:flex gap-4 mt-2 px-2 items-center justify-center w-full">
             <span>

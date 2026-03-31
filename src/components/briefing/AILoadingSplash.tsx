@@ -30,17 +30,17 @@ interface AILoadingSplashProps {
 const SPLASH_I18N: Record<string, { generating: string; subtitle: string; footer: string }> = {
   pt: {
     generating: "Gerando seu briefing personalizado",
-    subtitle: "Inteligência artificial preparando perguntas sob medida para você",
+    subtitle: "Vamos começar com uma conversa aberta sobre você e seu negócio — depois aprofundamos juntos",
     footer: "Com a Brief.i, responda briefings mais rápido e de forma inteligente. Aprendemos com suas respostas para gerar as próximas com base nelas.",
   },
   en: {
     generating: "Generating your personalized briefing",
-    subtitle: "AI preparing tailor-made questions just for you",
+    subtitle: "We'll start with an open conversation about you and your business — then dive deeper together",
     footer: "With Brief.i, answer briefings faster and smarter. We learn from your responses to generate even better ones next time.",
   },
   es: {
     generating: "Generando su briefing personalizado",
-    subtitle: "Inteligencia artificial preparando preguntas a su medida",
+    subtitle: "Comenzaremos con una conversación abierta sobre usted y su negocio — después profundizamos juntos",
     footer: "Con Brief.i, responda briefings más rápido e inteligente. Aprendemos de sus respuestas para generar las próximas basándonos en ellas.",
   },
 };

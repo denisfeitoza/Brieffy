@@ -267,6 +267,9 @@ export function TypeformWizard() {
                       (branding.company_name && branding.company_name !== 'Smart Briefing' ? branding.company_name : '');
   const activeCompanyName = dynamicName || 'Sua Empresa';
 
+  // Discovery phase detection: steps 1-3 after language selection (step 0)
+  const isDiscoveryPhase = currentStepIndex >= 1 && currentStepIndex <= 3;
+
   // Focus input on step change se for open text question foi movido para o DynamicInput para ter controle melhor (com preventScroll)
   // Aqui vamos rolar a view container para o topo quando a pergunta muda
   useEffect(() => {
@@ -834,6 +837,21 @@ export function TypeformWizard() {
                   }
                 }}
               >
+                {/* Discovery Phase Badge — warm invitation to speak freely */}
+                {isDiscoveryPhase && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/15 text-indigo-300/90 text-sm font-medium w-fit mb-3"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-indigo-400/60 animate-pulse" />
+                    {chosenLanguage === 'en' ? 'Speak freely — the more details, the better the result'
+                      : chosenLanguage === 'es' ? 'Habla libremente — cuantos más detalles, mejor el resultado'
+                      : 'Fale livremente — quanto mais detalhes, melhor o resultado'}
+                  </motion.div>
+                )}
+
                 {/* Depth Question Badge */}
                 {activeMessage.isDepthQuestion && (
                   <motion.div
@@ -842,11 +860,11 @@ export function TypeformWizard() {
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-semibold w-fit mb-2"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                    {chosenLanguage === 'en' ? '🔍 Going deeper...' : chosenLanguage === 'es' ? '🔍 Profundizando...' : '🔍 Aprofundando...'}
+                    {chosenLanguage === 'en' ? 'Going deeper...' : chosenLanguage === 'es' ? 'Profundizando...' : 'Aprofundando...'}
                   </motion.div>
                 )}
 
-                {/* Micro-feedback — subtle strategic insight from the AI */}
+                {/* Micro-feedback — subtle strategic insight from the AI (no emojis) */}
                 {activeMessage.microFeedback && (
                   <motion.div
                     initial={{ opacity: 0, y: 12, scale: 0.95 }}
@@ -854,7 +872,7 @@ export function TypeformWizard() {
                     transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                     className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm w-fit mb-5 max-w-md"
                   >
-                    <span className="text-base leading-none mt-0.5">💡</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
                     <span className="text-[13px] text-zinc-400 leading-relaxed font-medium">{activeMessage.microFeedback}</span>
                   </motion.div>
                 )}
@@ -897,9 +915,10 @@ export function TypeformWizard() {
                   isGeneratingMore={isGeneratingMore}
                   voiceLanguage={chosenLanguage}
                   messages={messages}
+                  isDiscoveryPhase={isDiscoveryPhase}
                 />
 
-                {currentStepIndex > 0 && (
+                {currentStepIndex > 0 && !isDiscoveryPhase && (
                   <div className="flex flex-col sm:flex-row items-center justify-center md:justify-between gap-2 pt-4 opacity-70 hover:opacity-100 transition-opacity">
                     <Button 
                       variant="ghost" 

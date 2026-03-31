@@ -24,6 +24,7 @@ interface TextAudioInputProps {
   hasUserAnswer?: boolean;
   voiceLanguage: string;
   placeholderOverride?: string;
+  isDiscoveryPhase?: boolean;
 }
 
 export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputProps>(function TextAudioInput({
@@ -39,6 +40,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
   hasUserAnswer = false,
   voiceLanguage,
   placeholderOverride,
+  isDiscoveryPhase = false,
 }, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -69,6 +71,12 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
       : voiceLanguage === "es"
       ? "Transcribiendo audio..."
       : "Transcribing audio..."
+    : isDiscoveryPhase
+    ? voiceLanguage === "pt"
+      ? "Escreva ou grave um áudio — sem pressa, conte tudo..."
+      : voiceLanguage === "es"
+      ? "Escriba o grabe un audio — sin prisa, cuéntelo todo..."
+      : "Write or record audio — take your time, tell me everything..."
     : isAddAction
     ? voiceLanguage === "pt"
       ? "Adicione um comentário extra ou opção..."
@@ -82,7 +90,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
     : "Or type your answer freely...";
 
   return (
-    <div ref={wrapperRef} className="relative group w-full mt-8">
+    <div ref={wrapperRef} className={`relative group w-full ${isDiscoveryPhase ? 'mt-6' : 'mt-8'}`}>
       <Input
         ref={inputRef}
         value={inputText}
@@ -96,7 +104,11 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         }}
         disabled={isLoading || isSubmittingLocal || isTranscribing}
         placeholder={placeholder}
-        className="h-14 md:h-16 w-full bg-neutral-900/50 border-neutral-800 rounded-2xl pl-6 pr-32 text-base md:text-lg text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all font-inter"
+        className={`w-full bg-neutral-900/50 border-neutral-800 rounded-2xl pl-6 pr-32 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all font-inter ${
+          isDiscoveryPhase
+            ? 'h-20 md:h-24 text-lg md:text-xl border-indigo-500/20'
+            : 'h-14 md:h-16 text-base md:text-lg'
+        }`}
         spellCheck="false"
         autoComplete="off"
         autoCorrect="off"
@@ -113,17 +125,21 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
           <Button
             size="icon"
             variant="ghost"
-            className={`h-12 w-12 rounded-xl transition-all ${
+            className={`rounded-xl transition-all ${
+              isDiscoveryPhase ? 'h-14 w-14' : 'h-12 w-12'
+            } ${
               isRecording
                 ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
+                : isDiscoveryPhase
+                ? "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 bg-indigo-500/5 border border-indigo-500/20"
                 : "text-neutral-400 hover:text-white hover:bg-neutral-800"
             }`}
             onClick={() => (isRecording ? stopRecording() : startRecording())}
             style={!isRecording ? {
-              animation: 'mic-glow 3s ease-in-out 1.5s 2',
+              animation: isDiscoveryPhase ? 'mic-glow 2s ease-in-out 1s infinite' : 'mic-glow 3s ease-in-out 1.5s 2',
             } : undefined}
           >
-            <Mic className="w-5 h-5" />
+            <Mic className={isDiscoveryPhase ? 'w-6 h-6' : 'w-5 h-5'} />
           </Button>
         )}
 

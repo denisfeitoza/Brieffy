@@ -225,6 +225,52 @@ ${packageData.prompt}
 </ActiveSkillPackages>` : ''}
 
 <EngineBehaviors>
+  <Module name="DISCOVERY_FIRST">
+    THIS MODULE HAS THE HIGHEST PRIORITY. It defines the macro-flow of the entire briefing.
+    
+    The briefing follows 3 MACRO-PHASES, determined by the number of questions the user has answered (count from history, excluding the language selection at step 0):
+    
+    ═══ MACRO-PHASE 0 — DISCOVERY (questions 1-3 after language selection) ═══
+    PURPOSE: Let the client speak FREELY. This is the "dump" phase — they tell you everything in their own words.
+    
+    ABSOLUTE RULES FOR DISCOVERY:
+    1. questionType MUST be "text" — NO exceptions. No choices, no cards, no toggles, no sliders.
+    2. Questions must be WIDE OPEN and exploratory — encourage the client to talk as much as possible.
+    3. Use the FULL session context (active packages, template, initial context, agency profile) to craft questions that are relevant but still open-ended.
+    4. DO NOT suggest answers or options. Let the client articulate freely.
+    5. Tone: Extremely warm, conversational, like a friend asking "tell me everything".
+    6. The 3 discovery questions should flow like a real conversation:
+       - Question 1: About the BUSINESS itself — what they do, who they are, their story
+       - Question 2: About the CHALLENGE or MOTIVATION — what brought them here, what they need
+       - Question 3: About the VISION — what success looks like, where they want to go
+    7. After each discovery answer, run the Intent Engine at MAXIMUM power — extract every possible inference.
+    8. micro_feedback MUST be null during DISCOVERY.
+    9. DO NOT use the "Other" option rule — there are no options, only text.
+    
+    ═══ MACRO-PHASE 1 — CONFIRMATION (questions 4-8 after language selection) ═══
+    PURPOSE: Now you have a rich "dump" from the client. CONFIRM what you inferred and discover what was left hidden.
+    
+    RULES FOR CONFIRMATION:
+    1. ALWAYS reference what the client said in Discovery: "You mentioned X — ...", "Based on what you shared about Y..."
+    2. Use CLOSED question types to confirm: boolean_toggle, single_choice, card_selector
+    3. Confirm HIGH-CONFIDENCE inferences (>=0.7) with boolean_toggle: "Your audience seems to be [X]. Is that right?"
+    4. Explore GAPS with card_selector or single_choice: show options derived from what they said
+    5. Discover HIDDEN aspects that were not explicitly mentioned but are important for the active packages
+    6. micro_feedback frequency: LOW (max 1 every 3 questions). NEVER use emojis in micro_feedback. Keep it analytical.
+    7. Vary question types but lean toward tactile/fast interactions
+    
+    ═══ MACRO-PHASE 2 — DEEP DIVE (questions 9+ after language selection) ═══
+    PURPOSE: Standard briefing flow with full variety of question types. Deep exploration per active packages.
+    
+    RULES FOR DEEP DIVE:
+    1. Full variety of questionType is now allowed: text, single_choice, multiple_choice, card_selector, boolean_toggle, slider, multi_slider, color_picker
+    2. micro_feedback frequency: MODERATE (max 1 every 3-4 questions). NEVER use emojis.
+    3. Follow PACKAGE_ORCHESTRATION sequencing for remaining topics
+    4. All other modules operate at full capacity
+    
+    PHASE DETECTION: Count the number of user answers in history (messages where the user actually responded, excluding step 0 language selection). If count <= 3 → DISCOVERY. If count <= 8 → CONFIRMATION. Otherwise → DEEP DIVE.
+  </Module>
+
   <Module name="CONSULTANT_PERSONA">
     You are NOT an interviewer. You are a STRATEGIC CONSULTANT having a discovery conversation.
     
@@ -241,32 +287,48 @@ ${packageData.prompt}
       * Technology/AI → Innovation-focused, systematic, future-leaning
     - NEVER use generic praise ("Great answer!"). Instead, offer SPECIFIC observations via micro_feedback.
     - If the user gives a short/vague answer, DON'T push hard. Acknowledge it and extract what you can.
+    
+    DISCOVERY PHASE ADAPTATION:
+    - During DISCOVERY (questions 1-3): Be EXTRA warm and inviting. Use phrases like:
+      * "Tell me everything, in your own words..."
+      * "There is no wrong answer — I want to understand your world first..."
+      * "Take your time — the more you share, the better I can help..."
+    - Frame discovery questions as genuine curiosity, not as form fields to fill
+    - NEVER rush through Discovery — these 3 questions set the entire foundation
   </Module>
 
   <Module name="BRIEFING_METHODOLOGY">
-    Follow this discovery framework (inspired by IDEO + McKinsey + Brand Strategy):
+    Follow this discovery-first framework:
     
-    PHASE 1 — IMMERSION (steps 1-3): Understand the client world
-    → Focus: Company identity, market context, founder relationship
-    → Tone: Curious, warm, non-judgmental
+    MACRO-PHASE 0 — DISCOVERY (questions 1-3): Free expression
+    → Focus: Let the client express themselves without constraints
+    → questionType: ONLY "text"
+    → Tone: Warm, curious, inviting, non-judgmental
+    → Goal: Extract maximum context from free-form answers
     
-    PHASE 2 — DEFINITION (steps 4-7): Define who they are and who they serve
-    → Focus: Audience, positioning, competitive landscape, brand personality
-    → Tone: Analytical, probing, hypothesis-testing
+    MACRO-PHASE 1 — CONFIRMATION (questions 4-8): Validate and close gaps
+    → Focus: Confirm inferences, discover hidden aspects, close open points
+    → questionType: Prefer closed types (boolean_toggle, single_choice, card_selector)
+    → Tone: Analytical, referencing what was said, building on context
+    → Goal: Solidify the foundation with targeted questions
     
-    PHASE 3 — VALIDATION (steps 8-10): Test hypotheses and resolve tensions
-    → Focus: Contradictions found, strategic gaps, ambition alignment
-    → Tone: Challenging (gently), validating, pushing for clarity
+    MACRO-PHASE 2 — DEEP DIVE (questions 9+): Full exploration
+    → Focus: Package-specific deep questions, visual identity, strategy
+    → questionType: Full variety
+    → Tone: Collaborative, creative, forward-looking
+    → Goal: Complete the briefing with depth and precision
     
-    PHASE 4 — CONSTRUCTION (steps 11+): Build the strategic vision
-    → Focus: Visual direction, tone of voice, actionable next steps
-    → Tone: Creative, collaborative, forward-looking
-    
-    Determine the current phase from the history length and adapt accordingly.
+    Determine the current macro-phase from the history length and adapt accordingly.
   </Module>
 
   <Module name="RHYTHM_CONTROL">
     Maintain conversational rhythm to prevent monotony and fatigue:
+    
+    EXCEPTION FOR DISCOVERY PHASE (questions 1-3):
+    - During DISCOVERY, questionType MUST be "text" for ALL 3 questions. The rhythm rule about varying types does NOT apply here.
+    - This is intentional — the client needs uninterrupted free expression.
+    
+    FOR CONFIRMATION AND DEEP DIVE (questions 4+):
     1. NEVER use the same questionType more than 2 times consecutively.
     2. After 3 factual questions (text) → insert 1 reflective question (card_selector or boolean_toggle)
     3. After a heavy question (long text expected) → follow with a light/tactile question (slider, boolean_toggle, single_choice)
@@ -279,11 +341,15 @@ ${packageData.prompt}
     Generate a BRIEF strategic micro-insight ONLY when the answer reveals something genuinely surprising, contradictory, or strategically important.
     Output in the "micro_feedback" JSON field.
     
+    PHASE-SPECIFIC RULES:
+    - DISCOVERY phase (questions 1-3): micro_feedback MUST ALWAYS be null. No exceptions.
+    - CONFIRMATION phase (questions 4-8): micro_feedback allowed but at LOW frequency — max 1 every 3 questions.
+    - DEEP DIVE phase (questions 9+): micro_feedback at MODERATE frequency — max 1 every 3-4 questions.
+    
     FREQUENCY RULES — THIS IS CRITICAL:
-    - Return null for MOST answers (at least 60-70% of the time)
+    - Return null for MOST answers (at least 70-80% of the time)
     - Only generate when the insight would make a senior consultant pause and say "interesting..."
     - NEVER generate on 2 consecutive turns — if you generated one last turn, this turn MUST be null
-    - NEVER generate on the first 2 questions of the session (language + introductory)
     - Ideal frequency: roughly 1 insight every 3-4 questions
     
     QUALITY RULES:
@@ -291,11 +357,13 @@ ${packageData.prompt}
     - Must FEEL like a consultant sharing a strategic observation, not validation
     - Must reveal a TENSION, OPPORTUNITY, or PATTERN the client might not have noticed themselves
     - Maximum 20 words. Translate to the session language.
+    - NEVER use emojis in micro_feedback. Keep it purely analytical and text-based.
     - If you have to think about whether it's worth showing → return null
     - GOOD: "Esse foco em premium com público amplo cria uma tensão estratégica interessante."
     - GOOD: "A distância entre sua percepção e o mercado pode ser uma oportunidade."
     - BAD: "Great answer!" / "Thanks for sharing." / "That's a good point."
     - BAD: Anything that just restates or summarizes what the user said
+    - BAD: Any text containing emojis (💡 🎯 ✨ etc.) — NEVER USE EMOJIS
   </Module>
 
   <Module name="ENGAGEMENT_MONITOR">
@@ -509,10 +577,11 @@ ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${p
     - Example: "Focando na campanha de lançamento — qual o canal principal e qual o objetivo central? Me dê os dois em uma frase."
     - Prefer multi_slider or card_selector to consolidate multiple dimensions in one tactile interaction
 
-    WELCOME CONTEXT — On the VERY FIRST question (step 0), after language detection, include:
-    - A brief, human-readable description of what this briefing will explore
-    - Never list package names — describe the themes: "Vamos explorar sua marca, estratégia de mercado e planos de execução..."
-    - Make it sound like a CONVERSATION, not a form
+    WELCOME CONTEXT — On the VERY FIRST question after language detection (Discovery Question 1), include:
+    - A brief, warm invitation to share freely — this is a CONVERSATION, not a form
+    - Mention the themes the briefing will explore (based on active packages) without listing technical package names
+    - Example: "Vamos começar com uma conversa aberta sobre seu negócio. Me conte tudo — depois vamos aprofundar juntos os detalhes."
+    - Make the client feel comfortable to speak at length, by text or voice
 
     CLIENT EXPERIENCE PRINCIPLES:
     - The client should feel SEEN and UNDERSTOOD throughout
@@ -570,117 +639,192 @@ active_listening rules:
 </OutputFormat>`;
 
 
-    // Chamada para o provider configurado (Groq, OpenRouter, etc.)
+    // Chamada para o provider configurado (Groq, OpenRouter, etc.) — WITH RETRY
     const startTime = Date.now();
     console.log(`[AI] Using ${llmConfig.provider} / ${llmConfig.model}`);
-    const res = await fetch(llmConfig.baseUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${llmConfig.apiKey}`,
-        ...llmConfig.headers,
-      },
-      body: JSON.stringify({
-        model: llmConfig.model,
-        response_format: { type: "json_object" },
-        temperature: llmConfig.temperature,
-        max_tokens: llmConfig.maxTokens,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...history.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })),
-          { role: "user", content: typeof answer === 'string' ? answer : JSON.stringify(answer) }
-        ],
-      }),
-    });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`[${llmConfig.provider.toUpperCase()}] Error:`, errorText);
-      throw new Error(`${llmConfig.provider} API falhou: ${res.status} - ${errorText}`);
-    }
+    const llmMessages = [
+      { role: "system", content: systemPrompt },
+      ...history.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })),
+      { role: "user", content: typeof answer === 'string' ? answer : JSON.stringify(answer) }
+    ];
 
-    const data = await res.json();
-    const content = data.choices[0].message.content;
-    const usage = data.usage;
-    
-    console.log(`[AI] Response in ${Date.now() - startTime}ms`);
+    const MAX_RETRIES = 2;
+    let lastError: Error | null = null;
 
-    // ================================================================
-    // ASYNC LOGGING — Save token usage and estimated cost to db
-    // ================================================================
-    if (usage) {
-      // Import missing estimateCost from aiConfig if not already
-      const { estimateCost } = await import('@/lib/aiConfig');
-      const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        // On retry, bump temperature slightly to help escape JSON generation ruts
+        const attemptTemperature = attempt > 0
+          ? Math.min(llmConfig.temperature + 0.15, 0.7)
+          : llmConfig.temperature;
 
-      // We get user_id from the server-side auth session (if logged in)
-      const { sessionId } = body;
+        if (attempt > 0) {
+          console.warn(`[AI] Retry attempt ${attempt + 1}/${MAX_RETRIES} with temperature=${attemptTemperature}`);
+        }
 
-      getSupabaseServer().from('api_usage').insert({
-        user_id: user?.id || null,
-        session_id: sessionId || null,
-        provider: llmConfig.provider,
-        model: llmConfig.model,
-        prompt_tokens: usage.prompt_tokens || 0,
-        completion_tokens: usage.completion_tokens || 0,
-        estimated_cost_usd: cost
-      }).then(({ error }: { error: { message: string } | null }) => {
-        if (error) console.error("[API_USAGE] Failed to log usage:", error);
-      });
-    }
-    
-    try {
-      const parsed = JSON.parse(content);
+        const res = await fetch(llmConfig.baseUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${llmConfig.apiKey}`,
+            ...llmConfig.headers,
+          },
+          body: JSON.stringify({
+            model: llmConfig.model,
+            response_format: { type: "json_object" },
+            temperature: attemptTemperature,
+            max_tokens: llmConfig.maxTokens,
+            messages: llmMessages,
+          }),
+        });
 
-      // ================================================================
-      // INFERENCE AUTO-MERGE — High confidence inferences → updates
-      // This prevents redundant questions about inferred data
-      // ================================================================
-      if (parsed.inferences?.extracted?.length) {
-        const highConfidence = parsed.inferences.extracted.filter(
-          (inf: { confidence: number; field: string; value: string }) => inf.confidence >= 0.7 && inf.field && inf.value
-        );
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error(`[${llmConfig.provider.toUpperCase()}] Error (attempt ${attempt + 1}):`, errorText);
 
-        if (highConfidence.length > 0) {
-          if (!parsed.updates) parsed.updates = {};
-          for (const inf of highConfidence) {
-            // Only auto-fill if the field isn't already explicitly set
-            if (!parsed.updates[inf.field] && !currentState[inf.field]) {
-              parsed.updates[inf.field] = inf.value;
+          // Retryable: Groq json_validate_failed (400), rate limit (429), server error (5xx)
+          const isRetryable = res.status === 400 && errorText.includes('json_validate_failed')
+            || res.status === 429
+            || res.status >= 500;
+
+          if (isRetryable && attempt < MAX_RETRIES - 1) {
+            lastError = new Error(`${llmConfig.provider} API falhou: ${res.status}`);
+            // Brief backoff before retry (300ms * attempt)
+            await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+            continue;
+          }
+
+          throw new Error(`${llmConfig.provider} API falhou: ${res.status} - ${errorText}`);
+        }
+
+        const data = await res.json();
+        const content = data.choices[0].message.content;
+        const usage = data.usage;
+
+        console.log(`[AI] Response in ${Date.now() - startTime}ms (attempt ${attempt + 1})`);
+
+        // ================================================================
+        // ASYNC LOGGING — Save token usage and estimated cost to db
+        // ================================================================
+        if (usage) {
+          const { estimateCost } = await import('@/lib/aiConfig');
+          const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
+          const { sessionId } = body;
+
+          getSupabaseServer().from('api_usage').insert({
+            user_id: user?.id || null,
+            session_id: sessionId || null,
+            provider: llmConfig.provider,
+            model: llmConfig.model,
+            prompt_tokens: usage.prompt_tokens || 0,
+            completion_tokens: usage.completion_tokens || 0,
+            estimated_cost_usd: cost
+          }).then(({ error }: { error: { message: string } | null }) => {
+            if (error) console.error("[API_USAGE] Failed to log usage:", error);
+          });
+        }
+
+        try {
+          const parsed = JSON.parse(content);
+
+          // ================================================================
+          // INFERENCE AUTO-MERGE — High confidence inferences → updates
+          // ================================================================
+          if (parsed.inferences?.extracted?.length) {
+            const highConfidence = parsed.inferences.extracted.filter(
+              (inf: { confidence: number; field: string; value: string }) => inf.confidence >= 0.7 && inf.field && inf.value
+            );
+
+            if (highConfidence.length > 0) {
+              if (!parsed.updates) parsed.updates = {};
+              for (const inf of highConfidence) {
+                if (!parsed.updates[inf.field] && !currentState[inf.field]) {
+                  parsed.updates[inf.field] = inf.value;
+                }
+              }
+              console.log(`[AI] Auto-merged ${highConfidence.length} inferences:`,
+                highConfidence.map((i: { confidence: number; field: string; value: string }) => `${i.field}=${i.value} (${Math.round(i.confidence * 100)}%)`).join(', ')
+              );
+            }
+
+            if (parsed.inferences.depth_decision) {
+              console.log(`[AI] Depth decision: ${parsed.inferences.depth_decision}` +
+                (parsed.inferences.skipped_topics?.length ? ` | Skipped: ${parsed.inferences.skipped_topics.join(', ')}` : '')
+              );
             }
           }
-          console.log(`[AI] Auto-merged ${highConfidence.length} inferences:`, 
-            highConfidence.map((i: { confidence: number; field: string; value: string }) => `${i.field}=${i.value} (${Math.round(i.confidence * 100)}%)`).join(', ')
-          );
-        }
 
-        // Log depth decision for observability
-        if (parsed.inferences.depth_decision) {
-          console.log(`[AI] Depth decision: ${parsed.inferences.depth_decision}` + 
-            (parsed.inferences.skipped_topics?.length ? ` | Skipped: ${parsed.inferences.skipped_topics.join(', ')}` : '')
-          );
-        }
-      }
-
-      // Safety auto-fill for UI components (only when there IS a next question)
-      if (parsed.nextQuestion) {
-        if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
-            parsed.nextQuestion.options = [
+          // Safety auto-fill for UI components
+          if (parsed.nextQuestion) {
+            if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
+              parsed.nextQuestion.options = [
                 { label: "Formalidade", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },
                 { label: "Ousadia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
                 { label: "Comunicação", min: 1, max: 5, minLabel: "Direta/Técnica", maxLabel: "Emocional" }
-            ];
-        }
-      } else if (!parsed.isFinished) {
-        // AI returned no nextQuestion but didn't mark as finished — force safe fallback
-        console.warn("[Briefing] AI returned null nextQuestion without isFinished=true. Forcing text fallback.");
-        parsed.nextQuestion = { text: "Conte mais detalhes...", questionType: "text", options: [] };
-      }
+              ];
+            }
+          } else if (!parsed.isFinished) {
+            console.warn("[Briefing] AI returned null nextQuestion without isFinished=true. Forcing text fallback.");
+            parsed.nextQuestion = { text: "Conte mais detalhes...", questionType: "text", options: [] };
+          }
 
-      return NextResponse.json(parsed);
-    } catch(e) {
-      console.error("Falha ao fazer parse do JSON do LLM:", content);
-      throw new Error("Invalid output format from LLM");
+          return NextResponse.json(parsed);
+        } catch (e) {
+          console.error("Falha ao fazer parse do JSON do LLM:", content);
+          // JSON parse failure is retryable
+          if (attempt < MAX_RETRIES - 1) {
+            lastError = new Error("Invalid output format from LLM");
+            await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+            continue;
+          }
+          throw new Error("Invalid output format from LLM");
+        }
+
+      } catch (attemptError) {
+        lastError = attemptError instanceof Error ? attemptError : new Error(String(attemptError));
+        if (attempt < MAX_RETRIES - 1) continue;
+      }
     }
+
+    // ================================================================
+    // ALL RETRIES EXHAUSTED — Return graceful fallback instead of 500
+    // This prevents the frontend from creating an error-message loop
+    // where the error message itself becomes a "question" in the
+    // conversation history, polluting context for subsequent AI calls.
+    // ================================================================
+    console.error("[Briefing] All retries exhausted. Returning graceful fallback.", lastError);
+
+    const langMap2: Record<string, { fallbackQ: string }> = {
+      'en': { fallbackQ: "Could you elaborate a bit more on that?" },
+      'es': { fallbackQ: "¿Podrías elaborar un poco más sobre eso?" },
+      'pt': { fallbackQ: "Pode elaborar um pouco mais sobre isso?" },
+    };
+    const fallbackLang = langMap2[chosenLanguage || 'pt'] || langMap2['pt'];
+
+    return NextResponse.json({
+      updates: {},
+      inferences: { extracted: [], skipped_topics: [], depth_decision: "move_on" },
+      basalCoverage: Object.keys(currentState || {}).length / Math.max(UNIVERSAL_BASAL_FIELDS.length, 1),
+      currentSection: "company",
+      basalFieldsCollected: Object.keys(currentState || {}).filter(k => UNIVERSAL_BASAL_FIELDS.includes(k)),
+      basalFieldsMissing: UNIVERSAL_BASAL_FIELDS.filter(f => !currentState?.[f]),
+      plannedNextQuestions: [],
+      nextQuestion: {
+        text: fallbackLang.fallbackQ,
+        questionType: "text",
+        options: [],
+        allowMoreOptions: false,
+      },
+      isFinished: false,
+      assets: null,
+      micro_feedback: null,
+      engagement_level: "medium",
+      active_listening: { signals: [], depth_question: null },
+      pre_finalization_review: false,
+      session_quality_score: null,
+      engagement_summary: null,
+      data_completeness: null,
+    });
 
   } catch (error) {
     console.error("Briefing API Route Error:", error);
@@ -715,66 +859,62 @@ function mockEngine(answer: string, state: Record<string, unknown>, history: { r
   // Lógica simples (Fake AI) — agora seguindo o pipeline de seções
   const step = history?.length || 0;
 
+  // ═══ DISCOVERY-FIRST MOCK ═══
+  // Steps 1-3: Open text questions (Discovery)
+  // Steps 4-6: Confirmation with structured inputs
+  // Step 7+: Finalization
+
   if (step <= 1) {
-    // Seção 1: Company
+    // DISCOVERY Q1: About the business
     updates.company_name = answer || "Tech Startup";
     nextQuestion = {
-      text: "O que sua empresa oferece como serviço ou produto?",
+      text: "Vamos começar com uma conversa aberta. Me conte sobre o seu negócio — o que vocês fazem, como começou, qual o momento atual.",
       questionType: "text",
     };
   } else if (step === 2) {
-    // Seção 1: Company continues
+    // DISCOVERY Q2: Challenge / Motivation
     updates.services_offered = answer;
     nextQuestion = {
-      text: "Sua empresa atende consumidor final ou outras empresas?",
+      text: "O que te trouxe até aqui? Qual desafio ou oportunidade motivou você a buscar esse projeto?",
+      questionType: "text",
+    };
+  } else if (step === 3) {
+    // DISCOVERY Q3: Vision
+    updates.target_audience = answer;
+    nextQuestion = {
+      text: "Como você imagina o resultado ideal? Se tudo der certo, como será daqui a alguns meses?",
+      questionType: "text",
+    };
+  } else if (step === 4) {
+    // CONFIRMATION Q1: Confirm audience
+    updates.competitors = answer;
+    nextQuestion = {
+      text: "Pelo que você descreveu, seu público principal parece ser empresas. Isso está correto?",
+      questionType: "boolean_toggle",
+    };
+  } else if (step === 5) {
+    // CONFIRMATION Q2: Brand personality
+    updates.competitive_differentiator = answer;
+    nextQuestion = {
+      text: "Qual dessas personalidades mais se aproxima da sua marca?",
       questionType: "card_selector",
       options: [
-        { title: "B2C Direto", description: "Vendemos direto ao consumidor final via e-commerce ou varejo" },
-        { title: "B2B Corporativo", description: "Atendemos outras empresas com serviços ou produtos" },
-        { title: "B2B2C", description: "Vendemos para empresas que revendem ao consumidor" },
-        { title: "D2C", description: "Vendas diretas do fabricante ao consumidor sem intermediários" },
-        { title: "B2G / Governo", description: "Fornecemos para órgãos públicos ou licitações" },
+        { title: "Inovadora", description: "Sempre à frente, testando o novo" },
+        { title: "Elegante", description: "Sofisticada, premium, cuidado nos detalhes" },
+        { title: "Próxima", description: "Acolhedora, acessível, de igual para igual" },
+        { title: "Determinada", description: "Focada em resultados, resiliente" },
+        { title: "Criativa", description: "Ousada, original, fora da curva" },
         { title: "Outro", description: "Descreva sua própria opção" }
       ],
       allowMoreOptions: false,
     };
-  } else if (step === 3) {
-    // Seção 2: Market
-    updates.target_audience = answer;
-    nextQuestion = {
-      text: "Quais são seus principais concorrentes diretos?",
-      questionType: "text",
-    };
-  } else if (step === 4) {
-    // Seção 2: Market continues
-    updates.competitors = answer;
-    nextQuestion = {
-      text: "O que destaca sua marca dos concorrentes?",
-      questionType: "text",
-    };
-  } else if (step === 5) {
-    // Seção 4: Identity
-    updates.competitive_differentiator = answer;
-    nextQuestion = {
-      text: "Se sua empresa fosse uma pessoa, qual seria a personalidade?",
-      questionType: "multiple_choice",
-      options: ["Inovadora", "Determinada", "Elegante", "Moderna", "Profissional", "Outro"],
-    };
   } else if (step === 6) {
-    // Seção 4: Identity — Tom de Voz
+    // CONFIRMATION Q3: Tone of voice
     updates.brand_personality = answer;
     nextQuestion = {
       text: "Como sua marca se comunica com seus clientes?",
-      questionType: "card_selector",
-      options: [
-        { title: "Formal e Técnica", description: "Linguagem precisa, dados e termos específicos do setor" },
-        { title: "Informal e Próxima", description: "Tom amigável, conversa de igual para igual" },
-        { title: "Inspiracional e Emocional", description: "Conta histórias, provoca sentimentos" },
-        { title: "Direta e Objetiva", description: "Vai direto ao ponto, foco em resultado" },
-        { title: "Educativa e Didática", description: "Ensina, guia e compartilha conhecimento valioso" },
-        { title: "Outro", description: "Descreva sua própria opção" },
-      ],
-      allowMoreOptions: false,
+      questionType: "single_choice",
+      options: ["Formal e Técnica", "Informal e Próxima", "Inspiracional", "Direta e Objetiva", "Educativa", "Outro"],
     };
   } else {
     // Finalização

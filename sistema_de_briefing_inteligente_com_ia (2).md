@@ -1046,3 +1046,65 @@ briefing_sessions.engagement_summary (jsonb)
 briefing_sessions.data_completeness (jsonb)
 ```
 
+## ANEXO AA — DISCOVERY-FIRST FRAMEWORK ✅ IMPLEMENTADO
+
+### Conceito
+O briefing segue um modelo de "entrevista progressiva" com 3 macro-fases. As primeiras perguntas são inteiramente abertas (texto/voz), permitindo que o cliente se expresse livremente. Só depois, o sistema confirma inferências e aprofunda com perguntas estruturadas.
+
+### Macro-Fases
+
+#### FASE 0 — DISCOVERY (Perguntas 1-3 após seleção de idioma)
+**Propósito**: Deixar o cliente falar livremente — "dump" inicial.
+
+**Regras de IA**:
+- `questionType` OBRIGATORIAMENTE `"text"` — sem exceções
+- Perguntas amplas e exploratórias baseadas no contexto completo da sessão
+- Intent Engine opera em potência máxima para extrair inferências
+- `micro_feedback` SEMPRE `null` durante Discovery
+- Sem opções "Outro" — não há opções, apenas texto livre
+
+**Fluxo das 3 perguntas**:
+1. **Negócio**: O que faz, quem é, história
+2. **Desafio/Motivação**: O que trouxe até aqui, o que precisa
+3. **Visão**: Como imagina o resultado ideal, onde quer chegar
+
+**Regras de UX**:
+- Badge visual: "Fale livremente — quanto mais detalhes, melhor o resultado"
+- Textarea expandido (h-20/h-24)
+- Botão de voz destacado com pulse animation infinita
+- Placeholder convidativo: "Escreva ou grave um áudio — sem pressa, conte tudo..."
+- Botões "Pular" e "Voltar" ESCONDIDOS durante Discovery
+- Splash screen menciona: "Vamos começar com uma conversa aberta"
+
+#### FASE 1 — CONFIRMATION (Perguntas 4-8)
+**Propósito**: Confirmar inferências e descobrir gaps.
+
+**Regras de IA**:
+- SEMPRE referenciar o que o cliente disse na Discovery
+- Tipos de pergunta fechados: `boolean_toggle`, `single_choice`, `card_selector`
+- Confirmar inferências de alta confiança (>=0.7) com toggles
+- Explorar gaps com cards ou choices
+- `micro_feedback`: BAIXA frequência (max 1 a cada 3 perguntas), SEM emojis
+
+#### FASE 2 — DEEP DIVE (Perguntas 9+)
+**Propósito**: Fluxo normal com toda variedade de inputs.
+
+**Regras de IA**:
+- Todos os `questionType` permitidos
+- `micro_feedback`: MODERADA frequência (max 1 a cada 3-4 perguntas), SEM emojis
+- Segue PACKAGE_ORCHESTRATION para tópicos restantes
+- Todos os módulos operam em capacidade total
+
+### Integração com Módulos Existentes
+- **RHYTHM_CONTROL**: Regra de variação de tipo SUSPENSA durante Discovery
+- **CONSULTANT_PERSONA**: Tom extra caloroso e convidativo durante Discovery
+- **ACTIVE_LISTENING_ENGINE**: Opera normalmente em todas as fases
+- **INTENT_ENGINE**: Potência máxima durante Discovery para maximizar inferências
+- **ENGAGEMENT_MONITOR**: Opera normalmente em todas as fases
+
+### Detecção de Fase
+Conta-se o número de respostas do usuário no histórico (excluindo step 0 de idioma):
+- `count <= 3` → DISCOVERY
+- `count <= 8` → CONFIRMATION
+- `count > 8` → DEEP DIVE
+
