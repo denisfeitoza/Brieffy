@@ -2,20 +2,37 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// BUG-05 pattern: lazy init to avoid build-time crash
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) throw new Error("Supabase env vars not configured");
+  return createClient(url, key);
+}
 
 export async function POST(req: Request) {
   try {
-    const { initialContext } = await req.json();
+    const body = await req.json();
+    const { initialContext, briefingPurpose, depthSignals } = body;
 
-    if (!initialContext || typeof initialContext !== "string" || !initialContext.trim()) {
+    // Need at least one piece of context to suggest
+    const contextParts: string[] = [];
+    if (briefingPurpose && typeof briefingPurpose === "string" && briefingPurpose.trim()) {
+      contextParts.push(`Briefing Purpose: ${briefingPurpose.trim()}`);
+    }
+    if (initialContext && typeof initialContext === "string" && initialContext.trim()) {
+      contextParts.push(`Client Context: ${initialContext.trim()}`);
+    }
+    if (Array.isArray(depthSignals) && depthSignals.length > 0) {
+      contextParts.push(`Sensitive Topics: ${depthSignals.join(", ")}`);
+    }
+
+    if (contextParts.length === 0) {
       return NextResponse.json({ suggested_slugs: [], reasoning: "" });
     }
 
     // Fetch all active packages
-    const { data: packages, error } = await supabase
+    const { data: packages, error } = await getSupabase()
       .from("briefing_category_packages")
       .select("slug, name, description, department, briefing_purpose")
       .or("is_archived.is.null,is_archived.eq.false")
@@ -30,19 +47,20 @@ export async function POST(req: Request) {
       .map((p) => `- ${p.slug}: ${p.name} — ${p.description || ""}${p.briefing_purpose ? ` (Purpose: ${p.briefing_purpose})` : ""}`)
       .join("\n");
 
-    const systemPrompt = `You are an AI briefing strategist. Given context about a company/client, suggest which AI briefing packages would be most relevant.
+    const systemPrompt = `You are an AI briefing strategist. Given a briefing purpose and optional context about a company/client, suggest which AI briefing packages would be most relevant.
 
 Available packages:
 ${packagesList}
 
 Rules:
-1. Suggest 3-7 packages that are MOST relevant to the context
+1. Suggest 3-7 packages that are MOST relevant to the briefing purpose and context
 2. Always include packages that seem directly relevant to the company's industry/needs
-3. Return ONLY a JSON object with this exact format: {"suggested_slugs": ["slug1", "slug2"], "reasoning": "brief explanation in Portuguese"}
-4. Reasoning should be 1-2 sentences in Portuguese explaining the selection
-5. Return valid JSON only, no markdown formatting`;
+3. Weight the briefing PURPOSE more heavily than the client context — the purpose defines what the briefing needs
+4. Return ONLY a JSON object with this exact format: {"suggested_slugs": ["slug1", "slug2"], "reasoning": "brief explanation in Portuguese"}
+5. Reasoning should be 1-2 sentences in Portuguese explaining the selection
+6. Return valid JSON only, no markdown formatting`;
 
-    const userPrompt = `Context about the client/company:\n\n${initialContext.trim().slice(0, 2000)}`;
+    const userPrompt = contextParts.join("\n\n").slice(0, 3000);
 
     // Call LLM
     const overrides = await getDBSettings();
