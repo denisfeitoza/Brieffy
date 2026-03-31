@@ -825,16 +825,16 @@ export function TypeformWizard() {
                   </motion.div>
                 )}
 
-                {/* Micro-feedback badge from AI consultant */}
+                {/* Micro-feedback — subtle strategic insight from the AI */}
                 {activeMessage.microFeedback && (
                   <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="inline-flex items-start gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-200/90 text-sm leading-relaxed w-fit mb-4"
+                    initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm w-fit mb-5 max-w-md"
                   >
-                    <Sparkles className="w-4 h-4 flex-shrink-0 text-amber-400 mt-0.5" />
-                    <span className="italic">{activeMessage.microFeedback}</span>
+                    <span className="text-base leading-none mt-0.5">💡</span>
+                    <span className="text-[13px] text-zinc-400 leading-relaxed font-medium">{activeMessage.microFeedback}</span>
                   </motion.div>
                 )}
 
