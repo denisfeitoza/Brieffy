@@ -761,8 +761,8 @@ export function BriefingProvider({
       
       let currentPassphrase = editPassphrase;
       if (!currentPassphrase) {
-        const words = ["azul", "sol", "luz", "mar", "rio", "som", "flor", "dia", "mel", "ceu", "lua", "cor", "fim", "paz", "voo", "voz", "ar", "bom", "cais", "eco"];
-        currentPassphrase = Array.from({length: 4}, () => words[Math.floor(Math.random() * words.length)]).join("-");
+        const words = ["aurora","cristal","nebula","prisma","zenith","cosmos","atlas","vortex","pulsar","fenix","orion","tesla","helix","quasar","nexus","titan","omega","zephyr","cobalt","onyx","velvet","ember","storm","spark","bloom","forge","haven","crest","summit","jade"];
+        currentPassphrase = words[Math.floor(Math.random() * words.length)];
         setEditPassphrase(currentPassphrase);
       }
       

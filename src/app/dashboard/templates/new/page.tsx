@@ -58,13 +58,14 @@ interface CategoryPackage {
 // ─── Passphrase Generator ───────────────────────────────────────
 function generatePassphrase(): string {
   const words = [
-    "azul","sol","luz","mar","rio","som","flor","dia","mel",
-    "ceu","lua","cor","fim","paz","voo","voz","bom","eco",
-    "neon","zen","nova","fox","leo","max","pro","apex","astro",
+    "aurora","cristal","nebula","prisma","zenith","cosmos","atlas",
+    "vortex","pulsar","fenix","orion","tesla","helix","quasar",
+    "nexus","titan","omega","zephyr","stratos","mythos","vertex",
+    "photon","cypher","matrix","cipher","arctic","ember","storm",
+    "cobalt","onyx","velvet","ivory","prism","spark","bloom",
+    "drift","forge","haven","crest","summit","vapor","jade",
   ];
-  return Array.from({ length: 4 }, () =>
-    words[Math.floor(Math.random() * words.length)]
-  ).join("-");
+  return words[Math.floor(Math.random() * words.length)];
 }
 
 // ─── Step Indicator ─────────────────────────────────────────────
@@ -657,7 +658,7 @@ export default function NewBriefingWizard() {
                     value={editPassphrase}
                     onChange={e => setEditPassphrase(e.target.value)}
                     className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/40 h-11 font-mono text-sm rounded-xl pl-10 placeholder:text-zinc-600"
-                    placeholder="sol-mar-luz-paz"
+                    placeholder="ex: aurora"
                   />
                 </div>
               </div>

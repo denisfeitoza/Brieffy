@@ -33,7 +33,11 @@ const I18N: Record<string, Record<string, string>> = {
     copyAccess: "Copiar Acesso",
     clipboardMsg: "Aqui está o link para o seu diagnóstico interativo:",
     clipboardPassword: "Senha de acesso:",
-    clipboardSuccess: "Link e senha copiados!"
+    clipboardSuccess: "Link e senha copiados!",
+    thankYouTitle: "Obrigado por participar!",
+    thankYouSubtitle: "Suas respostas foram registradas com sucesso.",
+    thankYouBody: "Nossa equipe vai analisar cada detalhe com atenção para criar algo verdadeiramente alinhado com a sua visão.",
+    thankYouCta: "Pode fechar esta página",
   },
   en: {
     docGenerated: "Document Generated ✓",
@@ -55,7 +59,11 @@ const I18N: Record<string, Record<string, string>> = {
     copyAccess: "Copy Access",
     clipboardMsg: "Here is the link to your interactive diagnosis:",
     clipboardPassword: "Access password:",
-    clipboardSuccess: "Link and password copied!"
+    clipboardSuccess: "Link and password copied!",
+    thankYouTitle: "Thank you for participating!",
+    thankYouSubtitle: "Your responses have been recorded successfully.",
+    thankYouBody: "Our team will carefully analyze every detail to create something truly aligned with your vision.",
+    thankYouCta: "You can close this page",
   },
   es: {
     docGenerated: "Documento Generado ✓",
@@ -77,7 +85,11 @@ const I18N: Record<string, Record<string, string>> = {
     copyAccess: "Copiar Acceso",
     clipboardMsg: "Aquí está el enlace a su diagnóstico interactivo:",
     clipboardPassword: "Contraseña de acceso:",
-    clipboardSuccess: "¡Enlace y contraseña copiados!"
+    clipboardSuccess: "¡Enlace y contraseña copiados!",
+    thankYouTitle: "¡Gracias por participar!",
+    thankYouSubtitle: "Sus respuestas se han registrado con éxito.",
+    thankYouBody: "Nuestro equipo analizará cada detalle con atención para crear algo verdaderamente alineado con su visión.",
+    thankYouCta: "Puede cerrar esta página",
   }
 };
 
@@ -309,6 +321,150 @@ export function TypeformWizard() {
   // ESTÁGIO DE FINALIZAÇÃO & DOCUMENTO
   // ==========================
   if (isUploadStep) {
+    // ════════════════════════════════════════════════════════════
+    // CLIENT THANK YOU SCREEN — Non-owner sees a beautiful 
+    // animated thank you page, NOT the document/results
+    // ════════════════════════════════════════════════════════════
+    if (!isOwner) {
+      return (
+        <div className="flex flex-col h-full bg-neutral-950 text-white">
+          <main className="flex-1 flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col items-center text-center max-w-lg space-y-8 relative"
+            >
+              {/* Background glow */}
+              <div className="absolute inset-0 -z-10">
+                <motion.div
+                  className="w-72 h-72 rounded-full mx-auto"
+                  style={{ background: `radial-gradient(circle, ${activeColor}15 0%, transparent 70%)` }}
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              </div>
+
+              {/* Animated Check */}
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.3, duration: 0.7, type: 'spring', stiffness: 150 }}
+                className="relative"
+              >
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center border-2"
+                  style={{ borderColor: `${activeColor}40`, background: `${activeColor}10` }}
+                >
+                  <motion.svg
+                    width="48" height="48" viewBox="0 0 48 48"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ delay: 0.8, duration: 0.6, ease: 'easeOut' }}
+                  >
+                    <motion.path
+                      d="M14 24 L22 32 L34 16"
+                      fill="none"
+                      stroke={activeColor}
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ delay: 0.8, duration: 0.6, ease: 'easeOut' }}
+                    />
+                  </motion.svg>
+                </div>
+                <motion.div
+                  className="absolute inset-0 w-24 h-24 rounded-full"
+                  style={{ boxShadow: `0 0 40px ${activeColor}25, 0 0 80px ${activeColor}10` }}
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              </motion.div>
+
+              {/* Text Content */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2, duration: 0.6 }}
+                className="space-y-3"
+              >
+                <h1 className="text-3xl md:text-4xl font-outfit font-medium tracking-tight text-white">
+                  {t.thankYouTitle}
+                </h1>
+                <p className="text-lg text-neutral-300 font-medium">
+                  {t.thankYouSubtitle}
+                </p>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.8, duration: 0.8 }}
+                className="text-neutral-500 leading-relaxed max-w-md"
+              >
+                {t.thankYouBody}
+              </motion.p>
+
+              {/* Brand badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 2.4, duration: 0.5 }}
+                className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-white/5"
+                style={{ background: `${activeColor}08` }}
+              >
+                <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
+                <span className="text-sm font-medium text-neutral-400" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
+                  {activeCompanyName}
+                </span>
+              </motion.div>
+
+              {/* Floating particles */}
+              <div className="absolute inset-0 pointer-events-none -z-5 overflow-hidden">
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full"
+                    style={{
+                      background: activeColor,
+                      left: `${15 + i * 14}%`,
+                      top: `${20 + (i % 3) * 25}%`,
+                    }}
+                    animate={{
+                      y: [0, -30, 0],
+                      opacity: [0, 0.6, 0],
+                      scale: [0.5, 1.5, 0.5],
+                    }}
+                    transition={{
+                      duration: 3 + i * 0.5,
+                      delay: i * 0.4,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Subtle footer */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 3, duration: 0.5 }}
+                className="text-xs text-neutral-700 pt-4"
+              >
+                {t.thankYouCta}
+              </motion.p>
+            </motion.div>
+          </main>
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // OWNER DOCUMENT VIEW — Full document generation flow
+    // ════════════════════════════════════════════════════════════
     return (
       <div className="flex flex-col h-full bg-neutral-950 text-white selection:bg-indigo-500/30">
         <header className="flex items-center justify-between p-4 md:p-6 h-20 shrink-0">

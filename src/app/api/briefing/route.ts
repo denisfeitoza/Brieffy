@@ -429,7 +429,21 @@ ${packageData.prompt}
 
   <Module name="ACTIVE_LISTENING_ENGINE">
 ${mergedPurpose ? `    BRIEFING PURPOSE (your north star for what matters): "${mergedPurpose}"` : '    BRIEFING PURPOSE: General — extract comprehensive business identity and positioning.'}
-${mergedDepthSignals.length > 0 ? `    PRIORITY DEPTH SIGNALS to watch for: ${mergedDepthSignals.join(', ')}` : ''}
+${mergedDepthSignals.length > 0 ? `    SENSITIVE DEPTH SIGNALS — SUBTLETY IS MANDATORY:
+    The following topics are SENSITIVE POINTS flagged by the briefing creator.
+    You MUST explore them, but NEVER directly or bluntly. Use OBLIQUE TACTICS:
+    
+    SIGNALS: ${mergedDepthSignals.join(', ')}
+    
+    APPROACH RULES FOR SENSITIVE SIGNALS:
+    - NEVER ask about a sensitive signal head-on (e.g., if signal is "price resistance" do NOT ask "Do you have price resistance?")
+    - Instead, approach from adjacent angles: ask about perceived value, compare to competitors, explore client reactions
+    - Use HYPOTHETICAL framing: "If a client compared your price to X, what would you say?"
+    - Use NORMALIZATION: "Many companies in your sector face [signal topic]. How do you navigate that?"
+    - Use INDIRECT PROBING: Ask about consequences/symptoms rather than the root signal directly
+    - WEAVE signals naturally into the conversation flow — they should feel like organic follow-ups, not planted questions
+    - Extract the information across MULTIPLE turns, gathering hints gradually, not in one concentrated push
+    - The client should NEVER feel interrogated about these topics` : ''}
 ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${previousSignalsList.join(' | ')}` : ''}
 
     ACTIVE LISTENING PROTOCOL — On EVERY answer, run a silent scan:
@@ -447,6 +461,7 @@ ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${p
     DEPTH QUESTION TRIGGER:
     - If a signal has relevance_score >= 0.80 AND it has not been explored yet → generate a depth_question
     - The depth_question MUST be phrased naturally, as if the consultant just noticed something interesting
+    - For SENSITIVE SIGNALS: the depth_question must use OBLIQUE approach (hypothetical, normalization, indirect)
     - depth_question.text: MAX 25 words. Conversational, not interrogatory.
     - depth_question.questionType: prefer "text" or "card_selector" for depth probes
     - depth_question.signal_category: one of [contradiction, implicit_pain, evasion, hidden_ambition, strategic_gap]
