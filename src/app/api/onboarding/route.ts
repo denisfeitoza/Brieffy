@@ -77,6 +77,11 @@ export async function POST(req: Request) {
         }),
       });
 
+      // BUG-13 FIX: ALWAYS mark user as onboarded, regardless of summary generation success.
+      // Previously, is_onboarded was only set inside the `if (summaryRes.ok)` block,
+      // causing an infinite redirect loop when the LLM summary call failed.
+      const profileUpdate: Record<string, unknown> = { is_onboarded: true };
+
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
         let contentStr = summaryData.choices?.[0]?.message?.content || "";
@@ -94,15 +99,9 @@ export async function POST(req: Request) {
           };
         }
         
-        // Save to briefing_profiles
-        await getSupabaseAdmin()
-          .from("briefing_profiles")
-          .update({ 
-            company_summary: content.company_summary,
-            brand_color: content.brand_color,
-            is_onboarded: true
-          })
-          .eq("id", user.id);
+        // Enrich with summary data when available
+        profileUpdate.company_summary = content.company_summary;
+        profileUpdate.brand_color = content.brand_color;
 
         if (usage) {
           const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
@@ -115,6 +114,36 @@ export async function POST(req: Request) {
             completion_tokens: usage.completion_tokens || 0,
             estimated_cost_usd: cost
           }).then(({ error }: { error: { message: string } | null }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
+        }
+      } else {
+        console.error("[Onboarding] Summary LLM call failed:", summaryRes.status, await summaryRes.text().catch(() => 'N/A'));
+        // Still mark as onboarded with a fallback summary
+        profileUpdate.company_summary = "Empresa cadastrada via onboarding.";
+      }
+
+      // Save to briefing_profiles — ALWAYS sets is_onboarded = true
+      // Try admin client first (bypasses RLS with service_role key)
+      const { error: profileUpdateError, data: updatedRows } = await getSupabaseAdmin()
+        .from("briefing_profiles")
+        .update(profileUpdate)
+        .eq("id", user.id)
+        .select('id');
+
+      // BUG-13 FIX: If admin client silently updated 0 rows (RLS rejection when 
+      // SUPABASE_SERVICE_ROLE_KEY is missing and fallback to ANON_KEY has no auth context),
+      // retry with the authenticated session client which passes RLS via auth.uid().
+      if (profileUpdateError || !updatedRows || updatedRows.length === 0) {
+        if (profileUpdateError) {
+          console.error("[Onboarding] Admin update failed:", profileUpdateError);
+        } else {
+          console.warn("[Onboarding] Admin update matched 0 rows — likely RLS rejection. Retrying with session client.");
+        }
+        const { error: sessionRetryError } = await supabaseSession
+          .from("briefing_profiles")
+          .update({ is_onboarded: true, company_summary: profileUpdate.company_summary })
+          .eq("id", user.id);
+        if (sessionRetryError) {
+          console.error("[Onboarding] CRITICAL: Session retry also failed:", sessionRetryError);
         }
       }
 

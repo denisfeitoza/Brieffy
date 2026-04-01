@@ -44,8 +44,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             tagline: profile.tagline || '',
           });
 
-          // Redirect to onboarding if not onboarded (null OR false — covers legacy profiles)
+          // BUG-13 FIX: Prevent infinite onboarding redirect loop
+          // Check if user just completed onboarding (localStorage flag set by BriefingContext)
           if (!profile.is_onboarded && !pathname.startsWith('/dashboard/onboarding')) {
+            try {
+              const justOnboarded = localStorage.getItem('brieffy_just_onboarded');
+              if (justOnboarded) {
+                const elapsed = Date.now() - parseInt(justOnboarded);
+                if (elapsed < 30000) {
+                  // User just finished onboarding — DB update may not have propagated yet
+                  // Clear flag and skip redirect; the profile will update on next load
+                  localStorage.removeItem('brieffy_just_onboarded');
+                  setIsOnboarded(true);
+                  return;
+                }
+                // Flag is stale, remove it
+                localStorage.removeItem('brieffy_just_onboarded');
+              }
+            } catch {}
+
+            // Double-check: re-fetch profile to handle DB propagation delay
+            const { data: recheck } = await supabase
+              .from('briefing_profiles')
+              .select('is_onboarded')
+              .eq('id', user.id)
+              .single();
+            
+            if (recheck?.is_onboarded) {
+              setIsOnboarded(true);
+              return;
+            }
+
             router.push('/dashboard/onboarding');
           }
         }

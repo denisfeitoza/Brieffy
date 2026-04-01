@@ -681,6 +681,9 @@ export function BriefingProvider({
           : Promise.resolve();
 
         if (isOnboarding) {
+          // BUG-13 FIX: Set a flag so the dashboard layout knows onboarding just completed
+          // and won't redirect back due to DB propagation latency
+          try { localStorage.setItem('brieffy_just_onboarded', Date.now().toString()); } catch {}
           // BUG-06 FIX: Wait for metrics to be saved before redirecting
           persistPromise.then(() => {
             window.location.href = '/dashboard';
