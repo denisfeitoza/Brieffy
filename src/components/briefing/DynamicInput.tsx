@@ -16,7 +16,7 @@
 import { useState, useEffect } from "react";
 import { Message, MultiSliderOption, QuestionType } from "@/lib/types";
 import { MultiSliderQuestion } from "@/components/briefing/MultiSliderQuestion";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Mic } from "lucide-react";
 import { useBriefing } from "@/lib/BriefingContext";
 
 import {
@@ -290,13 +290,19 @@ export function DynamicInput({
             voiceLanguage={voiceLanguage}
             isDiscoveryPhase={isDiscoveryPhase}
           />
-          <div className="text-neutral-600 font-inter text-sm hidden sm:flex gap-4 mt-2 px-2 items-center justify-center w-full">
-            <span>
-              <b className="font-semibold text-neutral-400">Enter</b> {t.enterToSend}
-            </span>
-            <span>
-              <b className="font-semibold text-neutral-400">Shift + Enter</b> {t.shiftToSkip}
-            </span>
+          <div className="flex flex-col items-center gap-1.5 mt-2 w-full">
+            <div className="flex items-center gap-1.5 text-indigo-400/70 text-xs font-medium animate-in fade-in duration-700">
+              <Mic className="w-3.5 h-3.5" />
+              <span>{t.audioHint}</span>
+            </div>
+            <div className="text-neutral-600 font-inter text-sm hidden sm:flex gap-4 px-2 items-center justify-center w-full">
+              <span>
+                <b className="font-semibold text-neutral-400">Enter</b> {t.enterToSend}
+              </span>
+              <span>
+                <b className="font-semibold text-neutral-400">Shift + Enter</b> {t.shiftToSkip}
+              </span>
+            </div>
           </div>
         </>
       )}

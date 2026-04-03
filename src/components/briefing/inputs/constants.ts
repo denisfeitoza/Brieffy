@@ -42,6 +42,8 @@ export const I18N: Record<string, Record<string, string>> = {
     enterToSend: "para enviar",
     shiftToSkip: "pular ou próximo",
     viewOptions: "Ver opções",
+    audioHint: "Responda por áudio — captura mais detalhes e é mais rápido",
+    audioHintShort: "Toque no microfone para responder por voz",
   },
   en: {
     transcribing: "Transcribing audio...",
@@ -83,6 +85,8 @@ export const I18N: Record<string, Record<string, string>> = {
     enterToSend: "to send",
     shiftToSkip: "skip or next",
     viewOptions: "View options",
+    audioHint: "Reply with audio — captures more details and it's faster",
+    audioHintShort: "Tap the mic to answer by voice",
   },
   es: {
     transcribing: "Transcribiendo audio...",
@@ -124,6 +128,8 @@ export const I18N: Record<string, Record<string, string>> = {
     enterToSend: "para enviar",
     shiftToSkip: "omitir o siguiente",
     viewOptions: "Ver opciones",
+    audioHint: "Responde con audio — captura más detalles y es más rápido",
+    audioHintShort: "Toca el micrófono para responder por voz",
   },
 };
 

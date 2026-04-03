@@ -90,10 +90,10 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
       ? "Agregue un comentario u opción extra..."
       : "Add an extra comment or option..."
     : voiceLanguage === "pt"
-    ? "Ou digite sua resposta livremente..."
+    ? "Digite ou toque no 🎙 para responder por áudio..."
     : voiceLanguage === "es"
-    ? "O escriba su respuesta libremente..."
-    : "Or type your answer freely...";
+    ? "Escriba o toque el 🎙 para responder con audio..."
+    : "Type or tap 🎙 to answer with audio...";
 
   return (
     <div ref={wrapperRef} className={`relative group w-full ${isDiscoveryPhase ? 'mt-6' : 'mt-8'}`}>
@@ -140,13 +140,11 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
             } ${
               isRecording
                 ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
-                : isDiscoveryPhase
-                ? "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 bg-indigo-500/5 border border-indigo-500/20"
-                : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                : "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 bg-indigo-500/5 border border-indigo-500/20"
             }`}
             onClick={() => (isRecording ? stopRecording() : startRecording())}
             style={!isRecording ? {
-              animation: isDiscoveryPhase ? 'mic-glow 2s ease-in-out 1s infinite' : 'mic-glow 3s ease-in-out 1.5s 2',
+              animation: isDiscoveryPhase ? 'mic-glow 2s ease-in-out 1s infinite' : 'mic-glow 3s ease-in-out 1.5s infinite',
             } : undefined}
           >
             <Mic className={isDiscoveryPhase ? 'w-6 h-6' : 'w-5 h-5'} />

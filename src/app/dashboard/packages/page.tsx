@@ -47,6 +47,7 @@ export default function PackagesPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   const [form, setForm] = useState<Partial<CategoryPackage>>({});
+  const [saveWarnings, setSaveWarnings] = useState<string[]>([]);
 
   const checkAdmin = useCallback(async () => {
     try {
@@ -131,22 +132,33 @@ export default function PackagesPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveWarnings([]);
     try {
+      let res: Response;
       if (creating) {
-        const res = await fetch('/api/briefing/packages', {
+        res = await fetch('/api/briefing/packages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(form),
         });
         if (!res.ok) throw new Error('Failed to create');
       } else if (editing) {
-        const res = await fetch('/api/briefing/packages', {
+        res = await fetch('/api/briefing/packages', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editing, ...form }),
         });
         if (!res.ok) throw new Error('Failed to update');
+      } else {
+        return;
       }
+
+      const data = await res.json();
+      if (data._warnings && data._warnings.length > 0) {
+        setSaveWarnings(data._warnings);
+        setTimeout(() => setSaveWarnings([]), 8000);
+      }
+
       cancelEdit();
       fetchPackages();
     } catch (err) {
@@ -352,6 +364,16 @@ export default function PackagesPage() {
           <Plus className="w-4 h-4 mr-2" /> Novo Pacote
         </Button>
       </div>
+
+      {/* Validation Warnings */}
+      {saveWarnings.length > 0 && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-1 animate-in fade-in duration-300">
+          <p className="text-xs font-semibold text-amber-400">Pacote salvo com avisos:</p>
+          {saveWarnings.map((w, i) => (
+            <p key={i} className="text-xs text-amber-300/80">• {w}</p>
+          ))}
+        </div>
+      )}
 
       {/* Create/Edit Form */}
       {(creating || editing) && renderForm()}

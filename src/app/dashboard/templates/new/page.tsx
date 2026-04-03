@@ -303,7 +303,7 @@ export default function NewBriefingWizard() {
     navigator.clipboard.writeText(text);
     setShared(true);
     setTimeout(() => setShared(false), 2500);
-  }, [generatedLink, editPassphrase]);
+  }, [generatedLink, editPassphrase, accessPassword]);
   
   // ── Computed ────────────────────
   const groupedPackages = packages.reduce((acc, pkg) => {

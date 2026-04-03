@@ -31,6 +31,29 @@ async function requireAdmin() {
   return { supabase: adminSupabase, error: null };
 }
 
+const FRAGMENT_MIN_LENGTH = 50;
+const FRAGMENT_RECOMMENDED_KEYWORDS = [
+  "EXTRAIR", "extrair", "EXTRACT", "extract",
+  "CAMPOS", "campos", "FIELDS", "fields",
+  "ESTRATÉGIA", "estratégia", "STRATEGY", "strategy",
+  "PERGUNTA", "pergunta", "QUESTION", "question",
+];
+
+function validateFragment(fragment: string | undefined): { valid: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+  if (!fragment || fragment.trim().length === 0) {
+    return { valid: true, warnings: ["Fragment vazio — o pacote não adicionará perguntas específicas."] };
+  }
+  if (fragment.trim().length < FRAGMENT_MIN_LENGTH) {
+    warnings.push(`Fragment muito curto (${fragment.trim().length} chars). Mínimo recomendado: ${FRAGMENT_MIN_LENGTH}. Fragments curtos podem não gerar perguntas relevantes.`);
+  }
+  const hasKeyword = FRAGMENT_RECOMMENDED_KEYWORDS.some(kw => fragment.includes(kw));
+  if (!hasKeyword) {
+    warnings.push("Fragment não contém palavras-chave de instrução (ex: EXTRAIR, CAMPOS, ESTRATÉGIA, PERGUNTA). Considere usar um Skill Template como base.");
+  }
+  return { valid: true, warnings };
+}
+
 // GET - List all packages (ordered by sort_order)
 export async function GET(req: Request) {
   try {
@@ -72,6 +95,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "slug and name are required" }, { status: 400 });
     }
 
+    const fragmentCheck = validateFragment(system_prompt_fragment);
+
     const { data, error } = await adminSupabase!
       .from("briefing_category_packages")
       .insert([{
@@ -90,7 +115,7 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    return NextResponse.json({ ...data, _warnings: fragmentCheck.warnings });
   } catch (error) {
     console.error("Error creating package:", error);
     return NextResponse.json(
@@ -112,6 +137,10 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
+    const fragmentCheck = updates.system_prompt_fragment !== undefined
+      ? validateFragment(updates.system_prompt_fragment)
+      : { valid: true, warnings: [] };
+
     const { data, error } = await adminSupabase!
       .from("briefing_category_packages")
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -121,7 +150,7 @@ export async function PUT(req: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    return NextResponse.json({ ...data, _warnings: fragmentCheck.warnings });
   } catch (error) {
     console.error("Error updating package:", error);
     return NextResponse.json(
