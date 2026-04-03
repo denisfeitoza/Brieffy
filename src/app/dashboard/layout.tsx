@@ -2,14 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, LogOut, FileText, User, Sparkles, Menu, X, Plus, Package } from 'lucide-react';
+import { LayoutDashboard, LogOut, FileText, User, Menu, X, Package, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
+import { DashboardLanguageProvider, useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
+import type { DashboardLanguage } from '@/i18n/dashboardTranslations';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+// Language flag map for switcher
+const LANG_FLAGS: Record<DashboardLanguage, string> = { pt: '🇧🇷', en: '🇺🇸', es: '🇪🇸' };
+const LANG_ORDER: DashboardLanguage[] = ['pt', 'en', 'es'];
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t, language, setLanguage } = useDashboardLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -45,25 +52,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           });
 
           // BUG-13 FIX: Prevent infinite onboarding redirect loop
-          // Check if user just completed onboarding (localStorage flag set by BriefingContext)
           if (!profile.is_onboarded && !pathname.startsWith('/dashboard/onboarding')) {
             try {
               const justOnboarded = localStorage.getItem('brieffy_just_onboarded');
               if (justOnboarded) {
                 const elapsed = Date.now() - parseInt(justOnboarded);
                 if (elapsed < 30000) {
-                  // User just finished onboarding — DB update may not have propagated yet
-                  // Clear flag and skip redirect; the profile will update on next load
                   localStorage.removeItem('brieffy_just_onboarded');
                   setIsOnboarded(true);
                   return;
                 }
-                // Flag is stale, remove it
                 localStorage.removeItem('brieffy_just_onboarded');
               }
             } catch {}
 
-            // Double-check: re-fetch profile to handle DB propagation delay
             const { data: recheck } = await supabase
               .from('briefing_profiles')
               .select('is_onboarded')
@@ -95,11 +97,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', match: (p: string) => p === '/dashboard' || p.match(/^\/dashboard\/[0-9a-f]/) },
-    { href: '/dashboard/templates', icon: FileText, label: 'Briefings', match: (p: string) => p.startsWith('/dashboard/templates') },
-    ...(isAdmin ? [{ href: '/dashboard/packages', icon: Package, label: 'AI Packages', match: (p: string) => p.startsWith('/dashboard/packages') }] : []),
-    { href: '/dashboard/profile', icon: User, label: 'My Account', match: (p: string) => p.startsWith('/dashboard/profile') },
+    { href: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', match: (p: string) => p === '/dashboard' || !!p.match(/^\/dashboard\/[0-9a-f]/) },
+    { href: '/dashboard/templates', icon: FileText, labelKey: 'nav.briefings', match: (p: string) => p.startsWith('/dashboard/templates') },
+    ...(isAdmin ? [{ href: '/dashboard/packages', icon: Package, labelKey: 'nav.aiPackages', match: (p: string) => p.startsWith('/dashboard/packages') }] : []),
+    { href: '/dashboard/profile', icon: User, labelKey: 'nav.myAccount', match: (p: string) => p.startsWith('/dashboard/profile') },
   ];
+
+  const cycleLang = () => {
+    const idx = LANG_ORDER.indexOf(language);
+    const next = LANG_ORDER[(idx + 1) % LANG_ORDER.length];
+    setLanguage(next);
+  };
 
   return (
     <div suppressHydrationWarning className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col md:flex-row">
@@ -134,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {branding.tagline ? (
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium truncate max-w-[150px]">{branding.tagline}</p>
               ) : (
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">AI Platform</p>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">{t('nav.aiPlatform')}</p>
               )}
             </div>
           </Link>
@@ -152,14 +160,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }`}
                 >
                   <item.icon className="w-4 h-4 mr-3" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Button>
               </Link>
             ))}
           </nav>
         </div>
 
-        {/* User info + Logout */}
+        {/* User info + Language + Logout */}
         <div className="p-6 border-t border-white/10 space-y-3">
           <div className="flex items-center gap-3 px-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xs font-bold">
@@ -168,6 +176,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-zinc-200 truncate">{userName}</p>
             </div>
+            {/* Language Switcher */}
+            <button
+              onClick={cycleLang}
+              title={`Language: ${language.toUpperCase()}`}
+              className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-sm hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              {LANG_FLAGS[language]}
+            </button>
           </div>
           <Button
             variant="ghost"
@@ -175,7 +191,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="w-full justify-start rounded-xl text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
           >
             <LogOut className="w-4 h-4 mr-3" />
-            Sign Out
+            {t('nav.signOut')}
           </Button>
         </div>
       </aside>
@@ -186,20 +202,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {branding.logo_url ? (
             <img src={branding.logo_url} alt={branding.company_name} className="w-6 h-6 rounded-lg object-contain" />
           ) : (
-            <Sparkles className="w-5 h-5 text-cyan-400" />
+            <Globe className="w-5 h-5 text-cyan-400" />
           )}
           <span className="font-bold text-lg">{branding.company_name}</span>
         </Link>
-        <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={cycleLang}
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-sm"
+          >
+            {LANG_FLAGS[language]}
+          </button>
+          <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col p-6 animate-in fade-in duration-200">
           <div className="flex justify-between items-center mb-8">
-            <span className="font-bold text-xl">Menu</span>
+            <span className="font-bold text-xl">{t('nav.menu')}</span>
             <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)}>
               <X className="w-5 h-5" />
             </Button>
@@ -216,7 +240,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }`}
                 >
                   <item.icon className="w-5 h-5 mr-4" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Button>
               </Link>
             ))}
@@ -227,7 +251,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="w-full justify-start rounded-xl text-red-400 hover:bg-red-500/10 py-6 text-lg"
           >
             <LogOut className="w-5 h-5 mr-4" />
-            Sign Out
+            {t('nav.signOut')}
           </Button>
         </div>
       )}
@@ -237,5 +261,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <DashboardLanguageProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </DashboardLanguageProvider>
   );
 }

@@ -9,9 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Save, Loader2, User, Building2, Lock, BarChart3, Sparkles, Palette, Upload, ImageIcon, Globe, Type, CheckCircle2, X, FileText, CloudOff } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
+import { useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { t } = useDashboardLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -145,7 +148,7 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError(t('profile.passwordMinError'));
       return;
     }
 
@@ -157,7 +160,7 @@ export default function ProfilePage() {
       const supabase = createClient();
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      setPasswordSuccess('Password updated successfully!');
+      setPasswordSuccess(t('profile.passwordSuccess'));
       setNewPassword('');
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : 'Failed to update password');
@@ -169,8 +172,14 @@ export default function ProfilePage() {
   const handleLogoUpload = useCallback(async (file: File) => {
     if (!file) return;
     const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-    if (!allowedTypes.includes(file.type)) return;
-    if (file.size > 2 * 1024 * 1024) return;
+    if (!allowedTypes.includes(file.type)) {
+      toast.error(t('profile.logoTypeError'));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(t('profile.logoSizeError'));
+      return;
+    }
 
     setUploadingLogo(true);
     try {
@@ -186,7 +195,7 @@ export default function ProfilePage() {
     } finally {
       setUploadingLogo(false);
     }
-  }, []);
+  }, [t]);
 
   const handleSaveBranding = async () => {
     setSavingBranding(true);
@@ -235,9 +244,9 @@ export default function ProfilePage() {
     <div className="space-y-8 max-w-2xl animate-in fade-in duration-700">
       <div>
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-          My Account
+          {t('profile.title')}
         </h2>
-        <p className="text-zinc-400 mt-1 text-sm">Manage your profile and account settings.</p>
+        <p className="text-zinc-400 mt-1 text-sm">{t('profile.subtitle')}</p>
       </div>
 
       {/* Plan & Quota */}
@@ -248,14 +257,14 @@ export default function ProfilePage() {
               <Sparkles className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <p className="font-semibold text-white capitalize">{plan} Plan</p>
-              <p className="text-xs text-zinc-400">Your current subscription</p>
+              <p className="font-semibold text-white capitalize">{plan} {t('profile.plan')}</p>
+              <p className="text-xs text-zinc-400">{t('profile.yourSubscription')}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
-              <span className="text-zinc-300">{usedBriefings}/{maxBriefings} briefings used</span>
+              <span className="text-zinc-300">{usedBriefings}/{maxBriefings} {t('profile.briefingsUsed')}</span>
             </div>
             <div className="w-32 h-2 bg-zinc-800 rounded-full overflow-hidden">
               <div 
@@ -272,21 +281,21 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <User className="w-5 h-5 text-cyan-400" />
-            Profile Information
+            {t('profile.profileInfo')}
           </CardTitle>
           <CardDescription className="text-zinc-400">
-            Update your personal and company details.
+            {t('profile.updateDetails')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="space-y-2">
-            <Label className="text-zinc-300">Email</Label>
+            <Label className="text-zinc-300">{t('profile.email')}</Label>
             <Input value={email} disabled className="bg-black/30 border-white/5 text-zinc-500" />
-            <p className="text-[11px] text-zinc-600">Email cannot be changed.</p>
+            <p className="text-[11px] text-zinc-600">{t('profile.emailCannotChange')}</p>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-zinc-300">Display Name</Label>
+            <Label className="text-zinc-300">{t('profile.displayName')}</Label>
             <Input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -297,12 +306,12 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <Label className="text-zinc-300 flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5" />
-              Company Name
+              {t('profile.companyName')}
             </Label>
             <Input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Your company (optional)"
+              placeholder={t('profile.companyPlaceholder')}
               className="bg-black/50 border-white/10 focus-visible:ring-cyan-500"
             />
           </div>
@@ -310,16 +319,16 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <Label className="text-zinc-300 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" />
-              Operational Summary (.md)
+              {t('profile.operationalSummary')}
             </Label>
             <Textarea
               value={companySummary}
               onChange={(e) => setCompanySummary(e.target.value)}
-              placeholder="## Operational Overview\nDescribe your operations..."
+              placeholder={t('profile.summaryPlaceholder')}
               className="bg-black/50 border-white/10 focus-visible:ring-cyan-500 min-h-[150px] font-mono text-sm"
             />
             <p className="text-[11px] text-zinc-500 mt-1">
-              This summary provides context for the AI during the generation of briefings. Write in Markdown to structure ideas. Objective operational focus, no personalization.
+              {t('profile.summaryHelp')}
             </p>
           </div>
 
@@ -327,11 +336,11 @@ export default function ProfilePage() {
             {/* Auto-save indicator */}
             <span className={`text-xs text-emerald-400 flex items-center gap-1.5 transition-opacity duration-500 ${autoSaved ? 'opacity-100' : 'opacity-0'}`}>
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Auto-saved
+              {t('profile.autoSaved')}
             </span>
             <Button onClick={handleSaveProfile} disabled={saving} className="bg-cyan-600 hover:bg-cyan-500">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Save Profile
+              {t('profile.saveProfile')}
             </Button>
           </div>
         </CardContent>
@@ -343,10 +352,10 @@ export default function ProfilePage() {
           <div className="absolute inset-0 opacity-20" style={{ background: `linear-gradient(135deg, ${brandColor}30, ${brandAccent}15)` }} />
           <CardTitle className="flex items-center gap-2 text-white relative z-10">
             <Palette className="w-5 h-5" style={{ color: brandColor }} />
-            Branding & Customization
+            {t('profile.brandingTitle')}
           </CardTitle>
           <CardDescription className="text-zinc-400 relative z-10">
-            Personalize how your briefings appear to clients. Your logo and colors will be displayed in the briefing wizard.
+            {t('profile.brandingDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -354,7 +363,7 @@ export default function ProfilePage() {
           <div className="space-y-3">
             <Label className="text-zinc-300 flex items-center gap-1.5">
               <ImageIcon className="w-3.5 h-3.5" />
-              Company Logo
+              {t('profile.companyLogo')}
             </Label>
             <div className="flex items-start gap-4">
               {/* Logo Preview */}
@@ -408,13 +417,13 @@ export default function ProfilePage() {
                 {uploadingLogo ? (
                   <div className="flex flex-col items-center gap-2 py-2">
                     <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
-                    <p className="text-sm text-zinc-400">Uploading...</p>
+                    <p className="text-sm text-zinc-400">{t('profile.uploading')}</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 py-2">
                     <Upload className="w-6 h-6 text-zinc-500" />
-                    <p className="text-sm text-zinc-400">Drag & drop or click</p>
-                    <p className="text-[11px] text-zinc-600">PNG, JPG, WebP, SVG • Max 2MB</p>
+                    <p className="text-sm text-zinc-400">{t('profile.dragDrop')}</p>
+                    <p className="text-[11px] text-zinc-600">{t('profile.fileFormats')}</p>
                   </div>
                 )}
               </div>
@@ -424,7 +433,7 @@ export default function ProfilePage() {
           {/* Colors */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-zinc-300 text-sm">Primary Color</Label>
+              <Label className="text-zinc-300 text-sm">{t('profile.primaryColor')}</Label>
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <input
@@ -443,7 +452,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-300 text-sm">Accent Color</Label>
+              <Label className="text-zinc-300 text-sm">{t('profile.accentColor')}</Label>
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <input
@@ -468,24 +477,24 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label className="text-zinc-300 flex items-center gap-1.5 text-sm">
                 <Type className="w-3.5 h-3.5" />
-                Tagline
+                {t('profile.tagline')}
               </Label>
               <Input
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
-                placeholder="Transforming ideas into results"
+                placeholder={t('profile.taglinePlaceholder')}
                 className="bg-black/50 border-white/10 focus-visible:ring-cyan-500"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-zinc-300 flex items-center gap-1.5 text-sm">
                 <Globe className="w-3.5 h-3.5" />
-                Website
+                {t('profile.website')}
               </Label>
               <Input
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
-                placeholder="https://yourcompany.com"
+                placeholder={t('profile.websitePlaceholder')}
                 type="url"
                 className="bg-black/50 border-white/10 focus-visible:ring-cyan-500"
               />
@@ -494,7 +503,7 @@ export default function ProfilePage() {
 
           {/* Live Preview */}
           <div className="space-y-2">
-            <Label className="text-zinc-300 text-sm">Live Preview — Briefing Header</Label>
+            <Label className="text-zinc-300 text-sm">{t('profile.livePreview')}</Label>
             <div className="rounded-2xl border border-white/10 bg-neutral-950 overflow-hidden">
               <div className="flex items-center justify-between p-4 border-b border-white/5">
                 <div className="flex items-center gap-3">
@@ -532,7 +541,7 @@ export default function ProfilePage() {
             ) : (
               <Save className="w-4 h-4 mr-2" />
             )}
-            {brandingSaved ? 'Saved!' : 'Save Branding'}
+            {brandingSaved ? t('profile.saved') : t('profile.saveBranding')}
           </Button>
         </CardContent>
       </Card>
@@ -542,17 +551,17 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Lock className="w-5 h-5 text-cyan-400" />
-            Change Password
+            {t('profile.changePassword')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-zinc-300">New Password</Label>
+            <Label className="text-zinc-300">{t('profile.newPassword')}</Label>
             <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="At least 6 characters"
+              placeholder={t('profile.passwordPlaceholder')}
               className="bg-black/50 border-white/10 focus-visible:ring-cyan-500"
             />
           </div>
@@ -571,7 +580,7 @@ export default function ProfilePage() {
             className="border-white/10 text-zinc-300 hover:bg-white/5"
           >
             {changingPassword ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
-            Update Password
+            {t('profile.updatePassword')}
           </Button>
         </CardContent>
       </Card>

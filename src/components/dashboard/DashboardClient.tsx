@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { exportSessionsAsZip } from '@/lib/exportZip';
+import { useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
 
 interface Session {
   id: string;
@@ -34,21 +35,22 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 const FILTER_TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'finished', label: 'Completed' },
-  { key: 'in_progress', label: 'In Progress' },
-  { key: 'pending', label: 'Pending' },
+  { key: 'all', labelKey: 'dashboard.filterAll' },
+  { key: 'finished', labelKey: 'dashboard.filterCompleted' },
+  { key: 'in_progress', labelKey: 'dashboard.filterInProgress' },
+  { key: 'pending', labelKey: 'dashboard.filterPending' },
 ];
 
 const DATE_FILTERS = [
-  { key: 'all', label: 'All time' },
-  { key: '7', label: 'Last 7 days' },
-  { key: '30', label: 'Last 30 days' },
-  { key: '90', label: 'Last 3 months' },
+  { key: 'all', labelKey: 'dashboard.dateAll' },
+  { key: '7', labelKey: 'dashboard.dateLast7' },
+  { key: '30', labelKey: 'dashboard.dateLast30' },
+  { key: '90', labelKey: 'dashboard.dateLast90' },
 ];
 
 export function DashboardClient({ sessions }: { sessions: Session[] }) {
   const router = useRouter();
+  const { language, t } = useDashboardLanguage();
   const [filter, setFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -119,7 +121,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
     if (toExport.length === 0) return;
     setIsExporting(true);
     try {
-      await exportSessionsAsZip(toExport as Parameters<typeof exportSessionsAsZip>[0]);
+      await exportSessionsAsZip(toExport as Parameters<typeof exportSessionsAsZip>[0], language);
       setSelectedForExport(new Set());
     } catch (e) {
       console.error('Export error:', e);
@@ -131,7 +133,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
   const handleExportAll = async () => {
     setIsExporting(true);
     try {
-      await exportSessionsAsZip(sessions as Parameters<typeof exportSessionsAsZip>[0]);
+      await exportSessionsAsZip(sessions as Parameters<typeof exportSessionsAsZip>[0], language);
     } catch (e) {
       console.error('Export error:', e);
     } finally {
@@ -143,7 +145,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
     <div className="space-y-4">
       {/* Header + Search */}
       <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        <h3 className="text-xl font-semibold text-zinc-100">Meus Briefings</h3>
+        <h3 className="text-xl font-semibold text-zinc-100">{t('dashboard.myBriefings')}</h3>
         <div className="flex items-center gap-2 flex-1 md:justify-end">
           {/* Search */}
           <div className="relative flex-1 max-w-sm">
@@ -151,7 +153,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or ID..."
+              placeholder={t('dashboard.searchPlaceholder')}
               className="pl-9 bg-zinc-900/50 border-white/10 focus-visible:ring-cyan-500 rounded-xl h-10"
             />
             {search && (
@@ -174,7 +176,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
             title="Export all briefings as ZIP"
           >
             <Package className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-xs">Export All</span>
+            <span className="hidden sm:inline text-xs">{t('dashboard.exportAll')}</span>
           </Button>
         </div>
       </div>
@@ -183,7 +185,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
       {selectedForExport.size > 0 && (
         <div className="flex items-center justify-between bg-cyan-950/40 border border-cyan-900/50 rounded-2xl px-4 py-3">
           <span className="text-sm text-cyan-300 font-medium">
-            {selectedForExport.size} briefing{selectedForExport.size > 1 ? 's' : ''} selecionado{selectedForExport.size > 1 ? 's' : ''}
+            {selectedForExport.size} {t('dashboard.briefingsSelected')}
           </span>
           <div className="flex gap-2">
             <Button
@@ -192,7 +194,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
               onClick={() => setSelectedForExport(new Set())}
               className="text-zinc-400 hover:text-zinc-200 text-xs rounded-lg"
             >
-              Clear
+              {t('dashboard.clear')}
             </Button>
             <Button
               size="sm"
@@ -201,7 +203,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
               className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
-              {isExporting ? 'Exporting...' : 'Export ZIP'}
+              {isExporting ? t('dashboard.exporting') : t('dashboard.exportZip')}
             </Button>
           </div>
         </div>
@@ -222,7 +224,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
               {tab.key !== 'all' && (
                 <span className="ml-1.5 text-xs opacity-70">
                   {sessions.filter(s => s.status === tab.key).length}
@@ -245,7 +247,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                     : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
                 }`}
               >
-                {d.label}
+                {t(d.labelKey)}
               </button>
             ))}
           </div>
@@ -254,7 +256,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
 
       {filtered.length !== sessions.length && (
         <p className="text-xs text-zinc-500">
-          Showing <span className="text-zinc-300 font-medium">{filtered.length}</span> of {sessions.length} briefings
+          {t('dashboard.showing')} <span className="text-zinc-300 font-medium">{filtered.length}</span> {t('dashboard.of')} {sessions.length} {t('dashboard.briefings')}
         </p>
       )}
 
@@ -263,8 +265,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
         <Card className="bg-zinc-900/30 border-white/5">
           <CardContent className="text-center py-12 text-zinc-500">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
-            <p className="text-lg">No briefings found</p>
-            <p className="text-sm mt-1">Try adjusting your filters or create a new briefing!</p>
+            <p className="text-lg">{t('dashboard.noBriefings')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -343,7 +344,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         }`}
                       >
                         <Copy className="w-3.5 h-3.5 mr-1" />
-                        {copiedId === session.id ? 'Copied!' : 'Link'}
+                        {copiedId === session.id ? t('dashboard.copied') : t('dashboard.link')}
                       </Button>
                       <Button
                         variant="ghost"
@@ -375,7 +376,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <SheetTitle className="text-zinc-100 font-semibold text-base truncate">
-                      {previewSession.session_name || 'Untitled Briefing'}
+                      {previewSession.session_name || t('dashboard.untitled')}
                     </SheetTitle>
                     <p className="text-xs text-zinc-500 mt-0.5">
                       {format(new Date(previewSession.created_at), 'MMM dd, yyyy • HH:mm')}
@@ -388,7 +389,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                       onClick={async () => {
                         setIsExporting(true);
                         try {
-                          await exportSessionsAsZip([previewSession] as Parameters<typeof exportSessionsAsZip>[0]);
+                          await exportSessionsAsZip([previewSession] as Parameters<typeof exportSessionsAsZip>[0], language);
                         } finally {
                           setIsExporting(false);
                         }
@@ -397,7 +398,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                       className="border-white/10 text-zinc-400 hover:text-zinc-200 rounded-xl text-xs gap-1"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      Export
+                      {t('dashboard.export')}
                     </Button>
                     <Link href={`/dashboard/${previewSession.id}`}>
                       <Button
@@ -405,7 +406,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs"
                       >
                         <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                        Open Full
+                        {t('dashboard.openFull')}
                       </Button>
                     </Link>
                   </div>
@@ -422,7 +423,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                 ) : (
                   <div className="text-center text-zinc-500 py-12">
                     <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                    <p>No document content available.</p>
+                    <p>{t('dashboard.noContent')}</p>
                   </div>
                 )}
               </div>

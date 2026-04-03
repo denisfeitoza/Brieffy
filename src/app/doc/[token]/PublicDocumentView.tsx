@@ -6,11 +6,54 @@ import { Button } from "@/components/ui/button";
 import { Lock, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
+type DocLanguage = 'pt' | 'en' | 'es';
+
+const DOC_TRANSLATIONS: Record<DocLanguage, Record<string, string>> = {
+  pt: {
+    restricted: 'Documento Restrito',
+    enterPassphrase: 'Digite a palavra-chave que você recebeu junto com o link para acessar e editar o documento.',
+    passphrasePlaceholder: 'Ex: luz-mar-azul-som',
+    accessFile: 'Acessar Documento',
+    accessGranted: 'Acesso liberado.',
+    invalidCredentials: 'Não foi possível acessar o documento.',
+    interactiveDiagnostic: 'Diagnóstico Interativo',
+  },
+  en: {
+    restricted: 'Restricted Document',
+    enterPassphrase: 'Enter the passphrase you received along with the link to access and edit the document.',
+    passphrasePlaceholder: 'E.g.: sun-sky-blue-star',
+    accessFile: 'Access Document',
+    accessGranted: 'Access granted.',
+    invalidCredentials: 'Could not access the document.',
+    interactiveDiagnostic: 'Interactive Diagnostic',
+  },
+  es: {
+    restricted: 'Documento Restringido',
+    enterPassphrase: 'Ingresa la contraseña que recibiste junto con el enlace para acceder y editar el documento.',
+    passphrasePlaceholder: 'Ej: sol-mar-azul-som',
+    accessFile: 'Acceder al Documento',
+    accessGranted: 'Acceso otorgado.',
+    invalidCredentials: 'No se pudo acceder al documento.',
+    interactiveDiagnostic: 'Diagnóstico Interactivo',
+  },
+};
+
+function detectBrowserLanguage(): DocLanguage {
+  if (typeof navigator === 'undefined') return 'en';
+  const lang = navigator.language?.slice(0, 2)?.toLowerCase();
+  if (lang === 'pt' || lang === 'en' || lang === 'es') return lang as DocLanguage;
+  return 'en';
+}
+
 export function PublicDocumentView({ token }: { token: string }) {
   const [passphrase, setPassphrase] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [documentContent, setDocumentContent] = useState<string>("");
   const [isVerifying, setIsVerifying] = useState(false);
+  // Start with browser language, then override with session language once verified
+  const [lang, setLang] = useState<DocLanguage>(detectBrowserLanguage);
+
+  const tr = DOC_TRANSLATIONS[lang] || DOC_TRANSLATIONS.en;
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,17 +69,28 @@ export function PublicDocumentView({ token }: { token: string }) {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Senha ou token inválidos.");
+        throw new Error(data.error || tr.invalidCredentials);
+      }
+
+      // Determine the final language (backend > current detected)
+      const finalLang: DocLanguage =
+        data.chosenLanguage && ['pt', 'en', 'es'].includes(data.chosenLanguage)
+          ? (data.chosenLanguage as DocLanguage)
+          : lang;
+
+      if (finalLang !== lang) {
+        setLang(finalLang);
       }
 
       setDocumentContent(data.document || data.documentContent || "");
       setIsAuthenticated(true);
-      toast.success("Acesso liberado.");
+      // Use finalLang directly to avoid stale closure on tr
+      toast.success(DOC_TRANSLATIONS[finalLang].accessGranted);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        toast.error(err.message || "Não foi possível acessar o documento.");
+        toast.error(err.message || tr.invalidCredentials);
       } else {
-        toast.error("Não foi possível acessar o documento.");
+        toast.error(tr.invalidCredentials);
       }
       setPassphrase("");
     } finally {
@@ -57,7 +111,7 @@ export function PublicDocumentView({ token }: { token: string }) {
     
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Erro ao salvar.");
+      throw new Error(data.error || "Error saving.");
     }
   };
 
@@ -71,7 +125,7 @@ export function PublicDocumentView({ token }: { token: string }) {
             </div>
             Brieffy
           </div>
-          <h1 className="text-xl text-neutral-400 font-medium tracking-tight">Diagnóstico Interativo</h1>
+          <h1 className="text-xl text-neutral-400 font-medium tracking-tight">{tr.interactiveDiagnostic}</h1>
         </header>
 
         <DocumentEditor 
@@ -96,16 +150,16 @@ export function PublicDocumentView({ token }: { token: string }) {
           <Lock className="w-8 h-8" />
         </div>
         
-        <h2 className="text-2xl font-outfit text-white font-medium mb-2 text-center">Diagnóstico Restrito</h2>
+        <h2 className="text-2xl font-outfit text-white font-medium mb-2 text-center">{tr.restricted}</h2>
         <p className="text-neutral-400 text-center mb-8">
-          Digite a palavra-chave que você recebeu junto com o link para acessar e editar o documento.
+          {tr.enterPassphrase}
         </p>
 
         <form onSubmit={handleVerify} className="w-full space-y-4">
           <div className="space-y-2">
             <input
               type="text"
-              placeholder="Ex: luz-mar-azul-som"
+              placeholder={tr.passphrasePlaceholder}
               className="w-full bg-black border border-neutral-800 text-white placeholder-neutral-600 px-4 py-3 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
@@ -120,7 +174,7 @@ export function PublicDocumentView({ token }: { token: string }) {
             {isVerifying ? (
               <span className="w-5 h-5 border-2 border-black border-t-transparent border-r-transparent rounded-full animate-spin"></span>
             ) : (
-              <>Acessar Arquivo <ArrowRight className="w-4 h-4 ml-2" /></>
+              <>{tr.accessFile} <ArrowRight className="w-4 h-4 ml-2" /></>
             )}
           </Button>
         </form>

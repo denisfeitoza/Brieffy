@@ -6,10 +6,13 @@ import {
   Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu,
   Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck,
   Lightbulb, Shield, Server, ShoppingCart, Video,
-  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2, ShieldCheck, Eye, EyeOff,
+  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2, ShieldCheck,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
+import { PASSPHRASE_WORDS } from '@/i18n/dashboardTranslations';
 
 import {
   Dialog,
@@ -45,21 +48,6 @@ const DEPT_COLORS: Record<string, { bg: string; border: string; text: string; gl
   general:    { bg: 'bg-zinc-500/8',    border: 'border-zinc-500/20',   text: 'text-zinc-400',   glow: 'shadow-zinc-500/10' },
 };
 
-const DEPT_LABELS: Record<string, string> = {
-  branding: '🎨 Branding',
-  technology: '⚙️ Tecnologia',
-  marketing: '📊 Marketing',
-  operations: '🔄 Operações',
-  finance: '💰 Finanças',
-  people: '👥 Pessoas',
-  commercial: '📈 Comercial',
-  product: '💡 Produto',
-  legal: '🛡️ Jurídico',
-  digital: '🛒 Digital',
-  content: '🎬 Conteúdo',
-  general: '📦 Geral',
-};
-
 interface CategoryPackage {
   slug: string;
   name: string;
@@ -79,6 +67,7 @@ interface GenerateLinkModalProps {
 
 export function GenerateLinkModal({ templateId, templateName, existingSession }: GenerateLinkModalProps) {
   const router = useRouter();
+  const { t, language } = useDashboardLanguage();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<'create' | 'done'>(existingSession ? 'done' : 'create');
 
@@ -103,6 +92,14 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
   const [generatedLink, setGeneratedLink] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const generateCoolPassphrase = useCallback(() => {
+    const words = PASSPHRASE_WORDS[language] || PASSPHRASE_WORDS.en;
+    const newPassphrase = Array.from({ length: 4 }, () =>
+      words[Math.floor(Math.random() * words.length)]
+    ).join('-');
+    setEditPassphrase(newPassphrase);
+  }, [language]);
+
   // Fetch packages on open
   useEffect(() => {
     if (open) {
@@ -119,25 +116,12 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, existingSession]);
 
-  const generateCoolPassphrase = () => {
-    const words = [
-      "azul", "sol", "luz", "mar", "rio", "som", "flor", "dia", "mel",
-      "ceu", "lua", "cor", "fim", "paz", "voo", "voz", "bom", "eco",
-      "neon", "zen", "nova", "fox", "leo", "max", "pro", "apex", "astro",
-    ];
-    const newPassphrase = Array.from({ length: 4 }, () =>
-      words[Math.floor(Math.random() * words.length)]
-    ).join("-");
-    setEditPassphrase(newPassphrase);
-  };
-
   const fetchPackages = async () => {
     setLoadingPackages(true);
     try {
       const res = await fetch('/api/briefing/packages');
       const data = await res.json();
       setPackages(data || []);
-      // Pre-select default-enabled packages
       const defaults = (data || [])
         .filter((p: CategoryPackage) => p.is_default_enabled)
         .map((p: CategoryPackage) => p.slug);
@@ -200,7 +184,6 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
       if (data.suggested_slugs && data.suggested_slugs.length > 0) {
         setAiSuggestedSlugs(data.suggested_slugs);
         setAiReasoning(data.reasoning || '');
-        // Merge AI suggestions with current selection (add, don't remove)
         setSelectedSlugs(prev => {
           const merged = new Set([...prev, ...data.suggested_slugs]);
           return [...merged];
@@ -231,6 +214,27 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
+      // ── Quota validation ────────────────────────────────────
+      if (user) {
+        const { data: quota } = await supabase
+          .from('briefing_quotas')
+          .select('used_briefings, max_briefings, is_blocked')
+          .eq('user_id', user.id)
+          .single();
+
+        if (quota?.is_blocked) {
+          toast.error(language === 'pt' ? 'Sua conta está bloqueada. Contate o suporte.' : language === 'es' ? 'Tu cuenta está bloqueada. Contacta soporte.' : 'Your account is blocked. Contact support.');
+          setLoading(false);
+          return;
+        }
+
+        if (quota && quota.used_briefings >= quota.max_briefings) {
+          toast.error(language === 'pt' ? `Você atingiu o limite de ${quota.max_briefings} briefings. Faça upgrade do seu plano.` : language === 'es' ? `Has alcanzado el límite de ${quota.max_briefings} briefings. Actualiza tu plan.` : `You've reached your limit of ${quota.max_briefings} briefings. Please upgrade your plan.`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const { data, error } = await supabase
         .from('briefing_sessions')
         .insert([{
@@ -253,16 +257,17 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
       setGeneratedLink(link);
       setStep('done');
     } catch (err) {
-      console.error('Erro ao gerar link:', err);
+      console.error('Error generating link:', err);
+      toast.error(language === 'pt' ? 'Erro ao gerar link.' : language === 'es' ? 'Error al generar enlace.' : 'Error generating link.');
     } finally {
       setLoading(false);
     }
   };
 
   const copyToClipboard = () => {
-    const parts = [`🔗 Link do Briefing:\n${generatedLink}`];
-    if (accessPassword) parts.push(`🔒 Senha de Acesso: ${accessPassword}`);
-    if (editPassphrase) parts.push(`🔑 Palavra-chave do Documento: ${editPassphrase}`);
+    const parts = [`${t('clipboard.briefingLink')}\n${generatedLink}`];
+    if (accessPassword) parts.push(`${t('clipboard.accessPassword')} ${accessPassword}`);
+    if (editPassphrase) parts.push(`${t('clipboard.documentPassword')} ${editPassphrase}`);
     navigator.clipboard.writeText(parts.join('\n\n'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -282,7 +287,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
         render={
           <Button variant="ghost" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 px-3">
             <Share2 className="w-4 h-4 mr-2" />
-            Gerar Link
+            {t('modal.generateLinkBtn')}
           </Button>
         }
       />
@@ -299,10 +304,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
                 </div>
-                Novo Briefing
+                {t('modal.newBriefing')}
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Motor inteligente: <strong className="text-cyan-400">{templateName}</strong>
+                {t('modal.intelligentEngine')}: <strong className="text-cyan-400">{templateName}</strong>
               </DialogDescription>
             </DialogHeader>
 
@@ -312,10 +317,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">1</span>
-                  Nome do Briefing <span className="text-red-400 text-xs">*</span>
+                  {t('modal.briefingName')} <span className="text-red-400 text-xs">{t('modal.required')}</span>
                 </label>
                 <Input
-                  placeholder="Ex: Acme Corp — Rebrand 2026"
+                  placeholder={t('modal.briefingNamePlaceholder')}
                   value={sessionName}
                   onChange={(e) => setSessionName(e.target.value)}
                   className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/40 h-12 text-base rounded-xl placeholder:text-zinc-600"
@@ -330,8 +335,8 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                   className="flex items-center gap-2 text-sm font-semibold text-zinc-300 hover:text-white transition-colors w-full"
                 >
                   <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">2</span>
-                  Contexto Prévio
-                  <span className="text-zinc-600 text-xs font-normal">(opcional)</span>
+                  {t('modal.priorContext')}
+                  <span className="text-zinc-600 text-xs font-normal">{t('modal.optional')}</span>
                   <ChevronDown className={`w-4 h-4 text-zinc-500 ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -346,7 +351,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                     >
                       <div className="space-y-2">
                         <Textarea
-                          placeholder="O que você já sabe sobre essa empresa? A IA vai usar isso para adaptar as perguntas…"
+                          placeholder={t('modal.contextPlaceholder')}
                           value={initialContext}
                           onChange={(e) => setInitialContext(e.target.value)}
                           className="bg-black/40 border-white/10 min-h-[90px] focus-visible:ring-cyan-500/40 rounded-xl resize-y placeholder:text-zinc-600 text-sm"
@@ -369,7 +374,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                               ) : (
                                 <Wand2 className="w-3 h-3" />
                               )}
-                              {isSuggesting ? 'Analisando...' : '✨ Deixar IA sugerir pacotes'}
+                              {isSuggesting ? t('modal.analyzing') : t('modal.aiSuggestPackages')}
                             </Button>
                           </motion.div>
                         )}
@@ -400,13 +405,13 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
                     <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">3</span>
-                    Pacotes de IA
+                    {t('modal.aiPackages')}
                   </label>
                   {selectedSlugs.length > 0 && (
                     <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-2">
-                      <span className="text-cyan-400 font-semibold">{selectedSlugs.length}</span> selecionados
+                      <span className="text-cyan-400 font-semibold">{selectedSlugs.length}</span> {t('modal.selected')}
                       <span className="text-zinc-600">·</span>
-                      ~<span className="text-zinc-300 font-semibold">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} perguntas
+                      ~<span className="text-zinc-300 font-semibold">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} {t('modal.questions')}
                     </span>
                   )}
                 </div>
@@ -420,7 +425,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                     {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                       <div key={dept}>
                         <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-600 mb-2 px-0.5">
-                          {DEPT_LABELS[dept] || dept}
+                          {t(`dept.${dept}`)}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                           {pkgs.map((pkg) => {
@@ -444,7 +449,6 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                                   }
                                 `}
                               >
-                                {/* Checkbox */}
                                 <div className={`
                                   w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200
                                   ${isSelected
@@ -454,16 +458,12 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                                 `}>
                                   {isSelected && <CheckCircle2 className="w-3 h-3 text-cyan-400" />}
                                 </div>
-
-                                {/* Icon */}
                                 <div className={`
                                   w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors
                                   ${isSelected ? 'bg-white/8' : 'bg-zinc-800/60'}
                                 `}>
                                   <IconComp className={`w-3.5 h-3.5 ${isSelected ? colors.text : 'text-zinc-500'}`} />
                                 </div>
-
-                                {/* Content */}
                                 <div className="flex-1 min-w-0 overflow-hidden">
                                   <div className="flex items-center gap-1.5">
                                     <span className={`text-xs font-semibold truncate ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
@@ -484,8 +484,6 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                                     {pkg.description}
                                   </p>
                                 </div>
-
-                                {/* Question count */}
                                 <span className="text-[9px] font-mono text-zinc-600 shrink-0">
                                   {pkg.max_questions === null ? '∞' : `≤${pkg.max_questions}`}
                                 </span>
@@ -507,9 +505,9 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                   className="flex items-center gap-2 text-sm font-semibold text-zinc-300 hover:text-white transition-colors w-full"
                 >
                   <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">4</span>
-                  Senha de Acesso ao Briefing
+                  {t('modal.accessPassword')}
                   <span className="text-amber-400/80 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                    Recomendado
+                    {t('modal.recommended')}
                   </span>
                   <ChevronDown className={`w-4 h-4 text-zinc-500 ml-auto transition-transform duration-300 ${showAccessPassword ? 'rotate-180' : ''}`} />
                 </button>
@@ -525,7 +523,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                     >
                       <div className="space-y-2">
                         <p className="text-[11px] text-zinc-500 leading-relaxed">
-                          O cliente precisará digitar esta senha antes de começar o briefing. Protege o link contra acessos indesejados.
+                          {t('modal.accessPasswordDesc')}
                         </p>
                         <div className="relative">
                           <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" />
@@ -533,7 +531,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                             value={accessPassword}
                             onChange={(e) => setAccessPassword(e.target.value)}
                             className="bg-black/40 border-white/10 focus-visible:ring-amber-500/40 h-11 text-sm rounded-xl pl-10 placeholder:text-zinc-600"
-                            placeholder="Ex: acme2026"
+                            placeholder={t('modal.accessPasswordPlaceholder')}
                           />
                         </div>
                       </div>
@@ -547,7 +545,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
                     <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">5</span>
-                    Senha do Documento
+                    {t('modal.documentPassword')}
                   </label>
                   <button
                     type="button"
@@ -555,7 +553,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                     className="text-cyan-400 hover:text-cyan-300 text-xs flex items-center gap-1 transition-colors"
                   >
                     <Wand2 className="w-3 h-3" />
-                    Gerar outra
+                    {t('modal.generateAnother')}
                   </button>
                 </div>
                 <div className="relative">
@@ -564,7 +562,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                     value={editPassphrase}
                     onChange={(e) => setEditPassphrase(e.target.value)}
                     className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/40 h-11 font-mono text-sm rounded-xl pl-10 placeholder:text-zinc-600"
-                    placeholder="sol-mar-luz-paz"
+                    placeholder={t('modal.passphrasePlaceholder')}
                   />
                 </div>
               </div>
@@ -580,12 +578,12 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Preparando IA...
+                    {t('modal.preparingAI')}
                   </>
                 ) : (
                   <>
                     <Link2 className="w-5 h-5" />
-                    Gerar Link ({selectedSlugs.length} pacotes)
+                    {t('modal.generateLink')} ({selectedSlugs.length} {t('modal.packages')})
                   </>
                 )}
               </Button>
@@ -610,9 +608,9 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
               </div>
 
               <div className="text-center space-y-1">
-                <h3 className="font-bold text-lg text-white">Briefing Criado! ✨</h3>
+                <h3 className="font-bold text-lg text-white">{t('modal.briefingCreated')}</h3>
                 <p className="text-sm text-zinc-400 max-w-[280px]">
-                  Envie o link e a senha para o cliente iniciar.
+                  {t('modal.sendLinkAndPassword')}
                 </p>
               </div>
 
@@ -634,7 +632,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                   }`}
                 >
                   {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? 'Copiado!' : 'Copiar'}
+                  {copied ? t('modal.copied') : t('modal.copy')}
                 </Button>
               </div>
 
@@ -644,14 +642,14 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                   <div className="flex items-center gap-1.5 mb-2">
                     <ShieldCheck className="w-3 h-3 text-amber-400" />
                     <span className="text-[10px] text-amber-400/80 uppercase tracking-[0.15em] font-bold">
-                      Senha de Acesso
+                      {t('modal.accessPasswordLabel')}
                     </span>
                   </div>
                   <span className="text-xl font-mono font-bold tracking-wider text-amber-400">
                     {accessPassword}
                   </span>
                   <p className="text-[10px] text-zinc-600 text-center mt-2 max-w-[250px] leading-relaxed">
-                    O cliente precisará digitar esta senha para iniciar o briefing.
+                    {t('modal.accessPasswordClientDesc')}
                   </p>
                 </div>
               )}
@@ -661,14 +659,14 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 <div className="flex items-center gap-1.5 mb-2">
                   <Lock className="w-3 h-3 text-zinc-500" />
                   <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-bold">
-                    Senha do Documento
+                    {t('modal.documentPasswordLabel')}
                   </span>
                 </div>
                 <span className={`text-xl font-mono font-bold tracking-wider ${editPassphrase ? 'text-cyan-400' : 'text-zinc-500 italic text-sm'}`}>
-                  {editPassphrase || 'Não definida'}
+                  {editPassphrase || t('modal.notDefined')}
                 </span>
                 <p className="text-[10px] text-zinc-600 text-center mt-2 max-w-[250px] leading-relaxed">
-                  Usada pelo cliente para acessar e editar o documento final.
+                  {t('modal.documentPasswordDesc')}
                 </p>
               </div>
 
@@ -678,7 +676,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 className="w-full border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl h-10"
                 onClick={() => setOpen(false)}
               >
-                Fechar
+                {t('modal.close')}
               </Button>
             </div>
           </motion.div>

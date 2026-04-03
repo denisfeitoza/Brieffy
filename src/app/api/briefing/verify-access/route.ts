@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const { sessionId, password } = await req.json();
 
     if (!sessionId || typeof password !== "string") {
-      return NextResponse.json({ valid: false, error: "Dados incompletos." }, { status: 400 });
+      return NextResponse.json({ valid: false, error: "Incomplete data." }, { status: 400 });
     }
 
     const { data: session, error } = await getSupabaseAdmin()
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       .single();
 
     if (error || !session) {
-      return NextResponse.json({ valid: false, error: "Sessão não encontrada." }, { status: 404 });
+      return NextResponse.json({ valid: false, error: "Session not found." }, { status: 404 });
     }
 
     if (!session.access_password) {
@@ -43,14 +43,14 @@ export async function POST(req: Request) {
     }
 
     if (!safeCompare(session.access_password, password)) {
-      return NextResponse.json({ valid: false, error: "Senha incorreta." }, { status: 401 });
+      return NextResponse.json({ valid: false, error: "Incorrect password." }, { status: 401 });
     }
 
     return NextResponse.json({ valid: true });
   } catch (err: unknown) {
     console.error("[verify-access] Error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Erro interno" },
+      { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 }
     );
   }

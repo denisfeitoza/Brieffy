@@ -1,5 +1,7 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { format } from "date-fns";
+import type { DashboardLanguage } from "@/i18n/dashboardTranslations";
 
 // Local type matching DashboardClient's Session interface
 interface Session {
@@ -11,25 +13,55 @@ interface Session {
   final_document?: string;
   final_assets?: Record<string, unknown>;
 }
-import { format } from "date-fns";
 
-function sessionToMarkdown(session: Session): string {
+const EXPORT_LABELS: Record<DashboardLanguage, {
+  finished: string;
+  inProgress: string;
+  finalDocument: string;
+  notFinished: string;
+  unknownDate: string;
+}> = {
+  pt: {
+    finished: '✅ Concluído',
+    inProgress: '🔄 Em andamento',
+    finalDocument: 'Documento Final',
+    notFinished: 'Briefing não finalizado.',
+    unknownDate: 'Data desconhecida',
+  },
+  en: {
+    finished: '✅ Completed',
+    inProgress: '🔄 In progress',
+    finalDocument: 'Final Document',
+    notFinished: 'Briefing not finished.',
+    unknownDate: 'Unknown date',
+  },
+  es: {
+    finished: '✅ Completado',
+    inProgress: '🔄 En progreso',
+    finalDocument: 'Documento Final',
+    notFinished: 'Briefing no finalizado.',
+    unknownDate: 'Fecha desconocida',
+  },
+};
+
+function sessionToMarkdown(session: Session, lang: DashboardLanguage): string {
+  const labels = EXPORT_LABELS[lang];
   const createdAt = session.created_at
     ? format(new Date(session.created_at), "dd/MM/yyyy HH:mm")
-    : "Data desconhecida";
+    : labels.unknownDate;
 
   const statusLabel =
     session.status === "finished"
-      ? "✅ Concluído"
+      ? labels.finished
       : session.status === "in_progress"
-      ? "🔄 Em andamento"
+      ? labels.inProgress
       : session.status;
 
   const lines: string[] = [
     `# ${session.template_name || "Briefing"}`,
     "",
     `**ID:** ${session.id}`,
-    `**Data:** ${createdAt}`,
+    `**${lang === 'pt' ? 'Data' : lang === 'es' ? 'Fecha' : 'Date'}:** ${createdAt}`,
     `**Status:** ${statusLabel}`,
     "",
     "---",
@@ -37,29 +69,28 @@ function sessionToMarkdown(session: Session): string {
   ];
 
   if (session.final_document) {
-    lines.push("## Documento Final", "", session.final_document, "");
+    lines.push(`## ${labels.finalDocument}`, "", session.final_document, "");
   } else {
-    lines.push("## Documento Final", "", "_Briefing não finalizado._", "");
+    lines.push(`## ${labels.finalDocument}`, "", `_${labels.notFinished}_`, "");
   }
 
   return lines.join("\n");
 }
 
-export async function exportSessionsAsZip(sessions: Session[]): Promise<void> {
+export async function exportSessionsAsZip(sessions: Session[], lang: DashboardLanguage = 'en'): Promise<void> {
   const zip = new JSZip();
 
   const manifest: Record<string, unknown>[] = [];
 
   for (const session of sessions) {
-    // Sanitize folder name
     const rawName = session.template_name || session.id;
     const folderName = rawName.replace(/[^a-zA-Z0-9À-ÿ \-_]/g, "").trim().slice(0, 60) || session.id;
     const dateStr = session.created_at
       ? format(new Date(session.created_at), "yyyy-MM-dd")
-      : "sem-data";
+      : "no-date";
 
     const fileName = `${dateStr}_briefing.md`;
-    const md = sessionToMarkdown(session);
+    const md = sessionToMarkdown(session, lang);
 
     zip.folder(folderName)?.file(fileName, md);
 
@@ -72,7 +103,6 @@ export async function exportSessionsAsZip(sessions: Session[]): Promise<void> {
     });
   }
 
-  // Add manifest
   zip.file(
     "manifest.json",
     JSON.stringify({ exported_at: new Date().toISOString(), count: sessions.length, sessions: manifest }, null, 2)

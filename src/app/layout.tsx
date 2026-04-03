@@ -16,19 +16,20 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Brieffy | Smart Briefing AI",
-  description: "Sistema Adaptativo de Briefing Inteligente para diagnóstico, marketing e branding. Gere briefings completos em minutos com a Brieffy.",
+  description: "Adaptive Intelligent Briefing System for diagnostics, marketing, and branding. Generate complete briefings in minutes with Brieffy.",
   openGraph: {
     title: "Brieffy | Smart Briefing AI",
-    description: "Sistema Adaptativo de Briefing Inteligente para diagnóstico, marketing e branding.",
+    description: "Adaptive Intelligent Briefing System for diagnostics, marketing, and branding.",
     url: "https://brieffy.com",
     siteName: "Brieffy",
-    locale: "pt_BR",
+    locale: "en_US",
+    alternateLocale: ["pt_BR", "es_ES"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Brieffy | Smart Briefing AI",
-    description: "Sistema Adaptativo de Briefing Inteligente para diagnóstico, marketing e branding.",
+    description: "Adaptive Intelligent Briefing System for diagnostics, marketing, and branding.",
   },
   appleWebApp: {
     title: "Brieffy",
@@ -44,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="pt-BR"
+      lang="en"
       className={`dark ${inter.variable} ${outfit.variable} h-full antialiased`}
       suppressHydrationWarning
     >
