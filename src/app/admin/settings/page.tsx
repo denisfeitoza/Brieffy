@@ -12,7 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { 
   Settings, Cpu, Mic, Gauge, FileText, Save, 
   Loader2, CheckCircle2, AlertCircle, Zap, Brain, 
-  Volume2, Clock, Target 
+  Volume2, Clock, Target, LayoutTemplate 
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -226,6 +226,11 @@ export default function AdminSettingsPage() {
             <Target className="w-4 h-4" />
             <span className="hidden sm:inline">Briefing</span>
             <span className="sm:hidden">Brief</span>
+          </TabsTrigger>
+          <TabsTrigger value="formats" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-300 px-4 py-2.5 gap-2">
+            <LayoutTemplate className="w-4 h-4" />
+            <span className="hidden sm:inline">Formats</span>
+            <span className="sm:hidden">Fmt</span>
           </TabsTrigger>
         </TabsList>
 
@@ -557,6 +562,93 @@ export default function AdminSettingsPage() {
                     before making aesthetic suggestions.
                   </p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB: FORMATS */}
+        <TabsContent value="formats" className="mt-6 space-y-6">
+          <Card className="bg-zinc-900/50 backdrop-blur-md border-purple-500/10">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <LayoutTemplate className="w-5 h-5 text-blue-400" />
+                </div>
+                Format Sandbox
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="rounded-xl bg-blue-500/5 border border-blue-500/20 p-4 flex gap-3 mb-6">
+                <AlertCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-zinc-400">
+                  <p className="font-medium text-blue-300 mb-1">Modular Format Capabilities</p>
+                  <p className="text-xs">
+                    Enable or disable specific question formats that the AI is permitted to use. 
+                    The "Text" format cannot be disabled as it is required for the Discovery phase.
+                    Changes here dynamically recreate the AI's allowed system constraints.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Formats Mapping */}
+                {[
+                  { id: "briefing_format_single_choice", label: "Single Choice", desc: "Permit single-choice options (card buttons)." },
+                  { id: "briefing_format_multiple_choice", label: "Multiple Choice", desc: "Permit checkboxes for multiple selections." },
+                  { id: "briefing_format_card_selector", label: "Card Selector", desc: "Rich cards with title & descriptions." },
+                  { id: "briefing_format_slider", label: "Slider", desc: "1 to 10 numerical slider." },
+                  { id: "briefing_format_multi_slider", label: "Multi Slider", desc: "Multiple 1 to 5 dimension sliders." },
+                  { id: "briefing_format_boolean_toggle", label: "Boolean Toggle", desc: "Yes/No or binary choice." },
+                  { id: "briefing_format_color_picker", label: "Color Picker", desc: "Visual color palette selector." },
+                  { id: "briefing_format_file_upload", label: "File Upload", desc: "File collection requests." },
+                ].map((fmt) => {
+                  const currentValue = settings[fmt.id] !== "false"; // Default true
+                  return (
+                    <div key={fmt.id} className="flex flex-row items-center justify-between rounded-xl border border-white/5 p-4 bg-black/20">
+                      <div className="space-y-0.5 pr-4">
+                        <Label className="text-base text-zinc-200">{fmt.label}</Label>
+                        <p className="text-xs text-zinc-500">{fmt.desc}</p>
+                      </div>
+                      <div className="flex shrink-0">
+                        {/* Custom Toggle Switch */}
+                        <button
+                          type="button"
+                          onClick={() => updateSetting(fmt.id, currentValue ? "false" : "true")}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-neutral-900 ${
+                            currentValue ? "bg-blue-500" : "bg-neutral-700"
+                          }`}
+                        >
+                          <span className="sr-only">Toggle {fmt.label}</span>
+                          <span
+                            aria-hidden="true"
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              currentValue ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Hardcoded Text - Always Enabled */}
+                <div className="flex flex-row items-center justify-between rounded-xl border border-white/5 p-4 bg-black/20 opacity-60">
+                  <div className="space-y-0.5 pr-4">
+                    <Label className="text-base text-zinc-200">Text (Free Input)</Label>
+                    <p className="text-xs text-zinc-500">Universal fallback. Forced enable.</p>
+                  </div>
+                  <div className="flex shrink-0">
+                    <button
+                      type="button"
+                      disabled
+                      className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-indigo-500/50"
+                    >
+                      <span className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5" />
+                    </button>
+                  </div>
+                </div>
+
               </div>
             </CardContent>
           </Card>

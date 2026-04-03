@@ -35,6 +35,45 @@ export interface SettingsOverride {
   briefing_max_history?: string;
   briefing_timeout_ms?: string;
   briefing_basal_threshold?: string;
+
+  // Question Format Toggles
+  briefing_format_single_choice?: string;
+  briefing_format_multiple_choice?: string;
+  briefing_format_boolean_toggle?: string;
+  briefing_format_card_selector?: string;
+  briefing_format_slider?: string;
+  briefing_format_multi_slider?: string;
+  briefing_format_color_picker?: string;
+  briefing_format_file_upload?: string;
+}
+
+// ================================================================
+// Format Configuration
+// ================================================================
+export interface FormatConfig {
+  single_choice: boolean;
+  multiple_choice: boolean;
+  boolean_toggle: boolean;
+  card_selector: boolean;
+  slider: boolean;
+  multi_slider: boolean;
+  color_picker: boolean;
+  file_upload: boolean;
+}
+
+export function getFormatConfig(overrides?: SettingsOverride): FormatConfig {
+  // If undefined we default to "true" (enabled) for backwards compatibility
+  const getBool = (val: string | undefined): boolean => val !== "false";
+  return {
+    single_choice: getBool(overrides?.briefing_format_single_choice),
+    multiple_choice: getBool(overrides?.briefing_format_multiple_choice),
+    boolean_toggle: getBool(overrides?.briefing_format_boolean_toggle),
+    card_selector: getBool(overrides?.briefing_format_card_selector),
+    slider: getBool(overrides?.briefing_format_slider),
+    multi_slider: getBool(overrides?.briefing_format_multi_slider),
+    color_picker: getBool(overrides?.briefing_format_color_picker),
+    file_upload: getBool(overrides?.briefing_format_file_upload),
+  };
 }
 
 // ================================================================

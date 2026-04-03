@@ -40,8 +40,11 @@ function LogoBadge({ name }: { name: string }) {
   );
 }
 
+import { useLanguage } from "@/i18n/LanguageContext";
+
 export function TrustedByMarquee() {
   const doubled = [...LOGOS, ...LOGOS];
+  const { t } = useLanguage();
 
   return (
     <section className="relative py-16 md:py-20 overflow-hidden">
@@ -53,7 +56,7 @@ export function TrustedByMarquee() {
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
       >
-        Empresas que confiam na Brieffy
+        {t("trusted.title")}
       </motion.p>
 
       {/* Marquee Track */}

@@ -3,47 +3,50 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
-const TESTIMONIALS = [
+const getTestimonials = (t: (key: string) => string) => [
   {
     name: "Ana Costa",
-    role: "CEO · Agência Pulse Digital",
-    text: "Antes levávamos 3 reuniões pra fechar um briefing. Com o Brieffy, nosso cliente responde sozinho em 5 minutos — e o resultado é mais completo do que qualquer call que já fizemos.",
+    role: t("testim.1.role"),
+    text: t("testim.1.text"),
     avatar: "AC",
     color: "#f59e0b",
   },
   {
     name: "Ricardo Mendes",
-    role: "Head de Projetos · DevCraft",
-    text: "O skill de Web/App Briefing eliminou completamente o problema de escopo mal definido. Agora recebemos requisitos estruturados que vão direto pro backlog.",
+    role: t("testim.2.role"),
+    text: t("testim.2.text"),
     avatar: "RM",
     color: ACCENT,
   },
   {
     name: "Camila Torres",
-    role: "Diretora · Consultoria Growth Lab",
-    text: "O diagnóstico com score de maturidade mudou como apresentamos propostas. O cliente já entra na reunião entendendo onde precisa melhorar.",
+    role: t("testim.3.role"),
+    text: t("testim.3.text"),
     avatar: "CT",
     color: "#a855f7",
   },
   {
     name: "Fernando Silva",
-    role: "PM · InnovateTech Solutions",
-    text: "Padronizamos a coleta de requisitos em 4 equipes diferentes usando o Brieffy. A consistência subiu e o retrabalho caiu brutalmente.",
+    role: t("testim.4.role"),
+    text: t("testim.4.text"),
     avatar: "FS",
     color: "#10b981",
   },
 ];
 
 export function TestimonialsCarousel() {
+  const { t } = useLanguage();
+  const testimonials = getTestimonials(t);
   const [active, setActive] = useState(0);
 
-  const next = () => setActive((a) => (a + 1) % TESTIMONIALS.length);
+  const next = () => setActive((a) => (a + 1) % testimonials.length);
   const prev = () =>
-    setActive((a) => (a - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
+    setActive((a) => (a - 1 + testimonials.length) % testimonials.length);
 
   return (
     <section className="relative py-20 md:py-32">
@@ -63,13 +66,13 @@ export function TestimonialsCarousel() {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            Depoimentos
+            {t("testim.badge")}
           </motion.span>
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
-            Quem usa, <span className="text-neutral-500">recomenda</span>
+            {t("testim.title1")} <span className="text-neutral-500">{t("testim.title2")}</span>
           </h2>
         </motion.div>
 
@@ -86,12 +89,12 @@ export function TestimonialsCarousel() {
             {/* Quote icon */}
             <Quote
               className="w-10 h-10 mx-auto mb-6 opacity-20"
-              style={{ color: TESTIMONIALS[active].color }}
+              style={{ color: testimonials[active].color }}
             />
 
             {/* Text */}
             <p className="text-lg md:text-xl text-neutral-300 leading-relaxed max-w-2xl mx-auto mb-8 italic">
-              &ldquo;{TESTIMONIALS[active].text}&rdquo;
+              &ldquo;{testimonials[active].text}&rdquo;
             </p>
 
             {/* Avatar + Name */}
@@ -99,20 +102,20 @@ export function TestimonialsCarousel() {
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white"
                 style={{
-                  background: `linear-gradient(135deg, ${TESTIMONIALS[active].color}, ${TESTIMONIALS[active].color}80)`,
+                  background: `linear-gradient(135deg, ${testimonials[active].color}, ${testimonials[active].color}80)`,
                 }}
               >
-                {TESTIMONIALS[active].avatar}
+                {testimonials[active].avatar}
               </div>
               <div>
                 <p
                   className="text-base font-semibold text-white"
                   style={{ fontFamily: '"Outfit", sans-serif' }}
                 >
-                  {TESTIMONIALS[active].name}
+                  {testimonials[active].name}
                 </p>
                 <p className="text-sm text-neutral-500">
-                  {TESTIMONIALS[active].role}
+                  {testimonials[active].role}
                 </p>
               </div>
             </div>
@@ -130,7 +133,7 @@ export function TestimonialsCarousel() {
 
             {/* Dots */}
             <div className="flex gap-2">
-              {TESTIMONIALS.map((_, i) => (
+              {testimonials.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActive(i)}

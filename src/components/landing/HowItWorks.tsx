@@ -2,35 +2,39 @@
 
 import { motion } from "framer-motion";
 import { Link2, MessageSquareText, FileOutput } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
-const STEPS = [
+const getSteps = (t: (key: string) => string) => [
   {
     number: "01",
     icon: Link2,
-    title: "Crie e compartilhe",
-    desc: "Monte seu briefing com os Skills que precisa, personalize com sua marca e compartilhe via link seguro.",
-    detail: "Setup em menos de 2 minutos",
+    title: t("how.1.title"),
+    desc: t("how.1.desc"),
+    detail: t("how.1.detail"),
   },
   {
     number: "02",
     icon: MessageSquareText,
-    title: "O cliente conversa com a IA",
-    desc: "Seu cliente responde um briefing adaptativo — por texto ou voz. A IA se adapta em tempo real a cada resposta.",
-    detail: "Experiência conversacional premium",
+    title: t("how.2.title"),
+    desc: t("how.2.desc"),
+    detail: t("how.2.detail"),
   },
   {
     number: "03",
     icon: FileOutput,
-    title: "Receba o briefing completo",
-    desc: "Documento estruturado com score de diagnóstico, insights da IA e todos os ativos gerados — pronto para usar.",
-    detail: "Output profissional automático",
+    title: t("how.3.title"),
+    desc: t("how.3.desc"),
+    detail: t("how.3.detail"),
   },
 ];
 
 export function HowItWorks() {
+  const { t } = useLanguage();
+  const steps = getSteps(t);
+
   return (
     <section id="how-it-works" className="relative py-20 md:py-32">
       {/* Background */}
@@ -62,15 +66,15 @@ export function HowItWorks() {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            Como Funciona
+            {t("how.badge")}
           </motion.span>
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
-            Três passos.
+            {t("how.title1")}
             <br />
-            <span className="text-neutral-500">Zero complicação.</span>
+            <span className="text-neutral-500">{t("how.title2")}</span>
           </h2>
         </motion.div>
 
@@ -91,7 +95,7 @@ export function HowItWorks() {
           </div>
 
           <div className="space-y-12 md:space-y-0 md:grid md:grid-cols-1 md:gap-16">
-            {STEPS.map((step, i) => {
+            {steps.map((step, i) => {
               const Icon = step.icon;
               const isEven = i % 2 === 0;
 
@@ -173,7 +177,7 @@ export function HowItWorks() {
                               i === 0 ? BRAND : i === 1 ? ACCENT : "#10b981",
                           }}
                         >
-                          Passo {step.number}
+                          {t("how.step")} {step.number}
                         </span>
                       </div>
                       <h3

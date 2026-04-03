@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLLMConfig, getDBSettings, getPerformanceConfig } from "@/lib/aiConfig";
+import { getLLMConfig, getDBSettings, getPerformanceConfig, getFormatConfig } from "@/lib/aiConfig";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
@@ -133,6 +133,7 @@ export async function POST(req: Request) {
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
     const perfConfig = getPerformanceConfig(dbSettings);
+    const formatConfig = getFormatConfig(dbSettings);
 
     // Se não tiver API Key, usamos um mock temporário para mostrar a UI fluida
     if (!llmConfig.apiKey) {
@@ -196,6 +197,17 @@ export async function POST(req: Request) {
     // ================================================================
     // SYSTEM PROMPT — v5 PREMIUM INTELLIGENCE (Skills-Inspired)
     // ================================================================
+    const allowedFormats: string[] = [];
+    allowedFormats.push(`  - text: Use sparingly, only for open-ended names/descriptions (e.g. core differences, meanings).`);
+    if (formatConfig.multiple_choice) allowedFormats.push(`  - multiple_choice: Multi-select categories (e.g. communication_channels). Send options array of strings. ALWAYS default to EXACTLY 6 options (minimum 4, maximum 8). The 6th (last) option MUST ALWAYS be "Outro" (or language equivalent). So you generate 5 real options + 1 "Outro" = 6 total.`);
+    if (formatConfig.single_choice) allowedFormats.push(`  - single_choice: Exclusive choices. ALWAYS default to EXACTLY 6 options. The 6th (last) option MUST ALWAYS be "Outro" (or language equivalent). So you generate 5 real options + 1 "Outro" = 6 total. CRITICAL RULE FOR TYPOGRAPHY/FONTS: When asking about brand typography, you MUST provide EXACTLY 6 options using REAL Google Font names in format "FontName - TwoWordDescription". Examples: "Inter - Moderna Neutra", "Playfair Display - Elegante Classica", "Outfit - Geometrica Tech", "Merriweather - Tradicional Confiavel", "Space Grotesk - Futurista Limpa". The 6th option MUST ALWAYS be "Nenhuma dessas - Padrao do Sistema". NEVER use generic categories — use REAL font names. Include the company/brand name in the question text so the card preview showcases it.`);
+    if (formatConfig.boolean_toggle) allowedFormats.push(`  - boolean_toggle: Use for Yes/No questions or simple binary exclusive questions. Extremely tactile UI. (No "Other" option needed here — binary only.)`);
+    if (formatConfig.card_selector) allowedFormats.push(`  - card_selector: Use for strategic routes or descriptive personas. Send options as array of objects: { title: string, description: string }. ALWAYS default to generating exactly 6 cards. The 6th (last) card MUST ALWAYS be the "Outro" card: { title: "Outro", description: "Descreva sua própria opção" } (adapt to session language). So you generate 5 real cards + 1 "Outro" card = 6 total.`);
+    if (formatConfig.slider) allowedFormats.push(`  - slider: Use for measurable things on a single 1-10 scale (e.g. company_age, maturity). Send minOption and maxOption.`);
+    if (formatConfig.multi_slider) allowedFormats.push(`  - multi_slider: Use for PROFILE/DNA questions requiring multiple dimensions simultaneously. Send options as array of objects: [{"label":"Dimension Name","min":1,"max":5,"minLabel":"Low Label","maxLabel":"High Label"}]. CRITICAL: The scale MUST STRICTLY be min:1 and max:5. NEVER return a scale of 1-10. Always output 3-5 slider dimensions per question.`);
+    if (formatConfig.color_picker) allowedFormats.push(`  - color_picker: Use ONLY when specifically gathering brand color and visual palette vibes. The UI provides an advanced wizard automatically.`);
+    if (formatConfig.file_upload) allowedFormats.push(`  - file_upload: Use ONLY at the very end to ask for existing assets or references.`);
+
     const systemPrompt = `<SystemRole>
 You are a Briefing AI Engine — an elite strategic consultant having a REAL CONVERSATION.
 You are NOT filling a form. You are NOT conducting an interview. You are having a discovery conversation with a real human being.
@@ -760,6 +772,7 @@ ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${p
 
 <UI_Components_Rules>
   You MUST aggressively vary the questionType throughout the ENTIRE briefing. Your goal is an interactive, tactile experience. DO NOT default to "text".
+  ONLY use the following allowed components. NEVER invent or use a questionType that is not in this list below:
 
   ═══ UNIVERSAL "OTHER" OPTION RULE ═══
   For ALL choice-based question types (multiple_choice, single_choice, card_selector), the LAST option MUST ALWAYS be an "Other" escape hatch.
@@ -771,15 +784,7 @@ ${previousSignalsList.length > 0 ? `    Already detected (DO NOT duplicate): ${p
   For card_selector, the "Other" card should have title "Outro" (or language equivalent) and description explaining the user can describe their own option.
   ═══ END UNIVERSAL "OTHER" OPTION RULE ═══
 
-  - text: Use sparingly, only for open-ended names/descriptions (e.g. core differences, meanings).
-  - multiple_choice: Multi-select categories (e.g. communication_channels). Send options array of strings. ALWAYS default to EXACTLY 6 options (minimum 4, maximum 8). The 6th (last) option MUST ALWAYS be "Outro" (or language equivalent). So you generate 5 real options + 1 "Outro" = 6 total.
-  - single_choice: Exclusive choices. ALWAYS default to EXACTLY 6 options. The 6th (last) option MUST ALWAYS be "Outro" (or language equivalent). So you generate 5 real options + 1 "Outro" = 6 total. CRITICAL RULE FOR TYPOGRAPHY/FONTS: When asking about brand typography, you MUST provide EXACTLY 6 options using REAL Google Font names in format "FontName - TwoWordDescription". Examples: "Inter - Moderna Neutra", "Playfair Display - Elegante Classica", "Outfit - Geometrica Tech", "Merriweather - Tradicional Confiavel", "Space Grotesk - Futurista Limpa". The 6th option MUST ALWAYS be "Nenhuma dessas - Padrao do Sistema". NEVER use generic categories — use REAL font names. Include the company/brand name in the question text so the card preview showcases it.
-  - boolean_toggle: Use for Yes/No questions or simple binary exclusive questions. Extremely tactile UI. (No "Other" option needed here — binary only.)
-  - card_selector: Use for strategic routes or descriptive personas. Send options as array of objects: { title: string, description: string }. ALWAYS default to generating exactly 6 cards. The 6th (last) card MUST ALWAYS be the "Outro" card: { title: "Outro", description: "Descreva sua própria opção" } (adapt to session language). So you generate 5 real cards + 1 "Outro" card = 6 total.
-  - slider: Use for measurable things on a single 1-10 scale (e.g. company_age, maturity). Send minOption and maxOption.
-  - multi_slider: Use for PROFILE/DNA questions requiring multiple dimensions simultaneously. Send options as array of objects: [{"label":"Dimension Name","min":1,"max":5,"minLabel":"Low Label","maxLabel":"High Label"}]. CRITICAL: The scale MUST STRICTLY be min:1 and max:5. NEVER return a scale of 1-10. Always output 3-5 slider dimensions per question.
-  - color_picker: Use ONLY when specifically gathering brand color and visual palette vibes. The UI provides an advanced wizard automatically.
-  - file_upload: Use ONLY at the very end to ask for existing assets or references.
+${allowedFormats.join('\n')}
 </UI_Components_Rules>
 
 <PreviousQuestions>
@@ -996,6 +1001,17 @@ active_listening rules:
 
           // Safety auto-fill for UI components
           if (parsed.nextQuestion) {
+            // Validation: force fallback to text if AI generated a disabled format
+            const qType = parsed.nextQuestion.questionType;
+            if (qType && qType !== 'text') {
+              const isAllowed = (formatConfig as any)[qType];
+              if (isAllowed === false) {
+                console.warn(`[Briefing] AI generated disabled format '${qType}'. Forcing fallback to 'text'.`);
+                parsed.nextQuestion.questionType = 'text';
+                parsed.nextQuestion.options = [];
+              }
+            }
+
             if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
               parsed.nextQuestion.options = [
                 { label: "Formalidade", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },

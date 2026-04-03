@@ -1,28 +1,32 @@
 "use client";
 
 import Link from "next/link";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
-const FOOTER_LINKS = {
-  Produto: [
-    { label: "Recursos", href: "#features" },
-    { label: "Para Quem", href: "#audience" },
-    { label: "Como Funciona", href: "#how-it-works" },
+const getFooterLinks = (t: (key: string) => string) => ({
+  [t("footer.col1.title")]: [
+    { label: t("footer.col1.link1"), href: "#features" },
+    { label: t("footer.col1.link2"), href: "#audience" },
+    { label: t("footer.col1.link3"), href: "#how-it-works" },
   ],
-  Empresa: [
-    { label: "Sobre", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Contato", href: "#" },
+  [t("footer.col2.title")]: [
+    { label: t("footer.col2.link1"), href: "#" },
+    { label: t("footer.col2.link2"), href: "#" },
+    { label: t("footer.col2.link3"), href: "#" },
   ],
-  Legal: [
-    { label: "Termos de Uso", href: "#" },
-    { label: "Privacidade", href: "#" },
+  [t("footer.col3.title")]: [
+    { label: t("footer.col3.link1"), href: "#" },
+    { label: t("footer.col3.link2"), href: "#" },
   ],
-};
+});
 
 export function LandingFooter() {
+  const { t } = useLanguage();
+  const footerLinks = getFooterLinks(t);
+
   return (
     <footer className="relative border-t border-white/[0.06] pt-14 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -55,13 +59,12 @@ export function LandingFooter() {
               </span>
             </div>
             <p className="text-sm text-neutral-600 leading-relaxed max-w-xs">
-              Sistema Adaptativo de Briefing Inteligente com IA. Transforme horas
-              de reunião em minutos de conversa.
+              {t("footer.desc")}
             </p>
           </div>
 
           {/* Link columns */}
-          {Object.entries(FOOTER_LINKS).map(([title, links]) => (
+          {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
               <h4
                 className="text-xs uppercase tracking-[0.15em] text-neutral-500 font-semibold mb-4"
@@ -88,7 +91,7 @@ export function LandingFooter() {
         {/* Bottom bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/[0.04]">
           <p className="text-xs text-neutral-700">
-            © {new Date().getFullYear()} Brieffy. Todos os direitos reservados.
+            © {new Date().getFullYear()} {t("footer.copy")}
           </p>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-neutral-700">

@@ -2,11 +2,14 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
 export function CTASection() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative py-24 md:py-36 overflow-hidden">
       {/* Background effects */}
@@ -75,7 +78,7 @@ export function CTASection() {
             className="text-3xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-6 leading-tight"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
-            Pronto para eliminar
+            {t("cta.title1")}
             <br />
             <span
               style={{
@@ -84,12 +87,11 @@ export function CTASection() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              briefings quebrados?
+              {t("cta.title2")}
             </span>
           </h2>
           <p className="text-base md:text-lg text-neutral-400 max-w-xl mx-auto mb-10">
-            Comece gratuitamente e veja a diferença que um briefing inteligente
-            faz no seu próximo projeto.
+            {t("cta.desc")}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -118,7 +120,7 @@ export function CTASection() {
                 animate={{ opacity: [0.2, 0.5, 0.2] }}
                 transition={{ duration: 2.5, repeat: Infinity }}
               />
-              <span className="relative z-10">Criar Conta Gratuita →</span>
+              <span className="relative z-10">{t("cta.btn")}</span>
             </Link>
           </div>
 
@@ -129,7 +131,7 @@ export function CTASection() {
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
           >
-            Sem cartão de crédito · Setup em 2 minutos · Cancele quando quiser
+            {t("cta.sub")}
           </motion.p>
         </motion.div>
       </div>

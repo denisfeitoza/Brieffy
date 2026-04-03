@@ -9,31 +9,31 @@ import {
   Layers,
   Palette,
 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
-/* ─── Live Demo Mockup ─── */
-const DEMO_STEPS = [
+const getDemoSteps = (t: (key: string) => string) => [
   {
     role: "ai",
-    text: "Olá! Conte-me um pouco sobre o seu negócio. O que vocês fazem?",
+    text: t("solution.chat.1"),
     type: "question",
   },
   {
     role: "user",
-    text: "Somos uma consultoria de marketing digital focada em e-commerce.",
+    text: t("solution.chat.2"),
     type: "answer",
   },
   {
     role: "ai",
-    text: "Interessante! Qual é o perfil dos seus clientes ideais?",
+    text: t("solution.chat.3"),
     type: "question",
-    options: ["PMEs (10-50 func.)", "E-commerce D2C", "Startups SaaS", "Outro"],
+    options: t("solution.chat.options").split("|"),
   },
   {
     role: "insight",
-    text: "IA extraiu: Segmento → Marketing Digital | Público → E-commerce | Maturidade → Alta",
+    text: t("solution.chat.4"),
     type: "extraction",
   },
 ];
@@ -41,9 +41,11 @@ const DEMO_STEPS = [
 function DemoMessage({
   step,
   index,
+  t
 }: {
-  step: (typeof DEMO_STEPS)[0];
+  step: ReturnType<typeof getDemoSteps>[0];
   index: number;
+  t: (key: string) => string;
 }) {
   const isAI = step.role === "ai";
   const isInsight = step.role === "insight";
@@ -73,7 +75,7 @@ function DemoMessage({
           <div className="flex items-center gap-1.5 mb-1.5">
             <Brain className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
-              Extração Automática
+              {t("solution.demo.ext")}
             </span>
           </div>
         )}
@@ -114,6 +116,9 @@ function DemoMessage({
 }
 
 export function SolutionDemo() {
+  const { t } = useLanguage();
+  const demoSteps = getDemoSteps(t);
+
   return (
     <section className="relative py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -137,13 +142,13 @@ export function SolutionDemo() {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            A Solução
+            {t("solution.badge")}
           </motion.span>
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
-            Um consultor inteligente,
+            {t("solution.title1")}
             <br />
             <span
               style={{
@@ -152,12 +157,11 @@ export function SolutionDemo() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              não um formulário
+              {t("solution.title2")}
             </span>
           </h2>
           <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto">
-            O Brieffy conduz uma conversa consultiva adaptativa — cada pergunta é
-            calculada pela IA com base no que já foi dito.
+            {t("solution.desc")}
           </p>
         </motion.div>
 
@@ -187,8 +191,8 @@ export function SolutionDemo() {
 
             {/* Chat Area */}
             <div className="p-5 space-y-3">
-              {DEMO_STEPS.map((step, i) => (
-                <DemoMessage key={i} step={step} index={i} />
+              {demoSteps.map((step, i) => (
+                <DemoMessage key={i} step={step} index={i} t={t} />
               ))}
 
               {/* Typing indicator */}
@@ -223,7 +227,7 @@ export function SolutionDemo() {
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
                 <MessageSquareText className="w-4 h-4 text-neutral-600" />
                 <span className="text-sm text-neutral-600 flex-1">
-                  Digite ou use áudio...
+                  {t("solution.demo.input")}
                 </span>
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -250,32 +254,32 @@ export function SolutionDemo() {
             {[
               {
                 icon: Brain,
-                title: "IA que pensa 5 passos à frente",
-                desc: "O motor antecipa lacunas de informação e prioriza perguntas de maior impacto — nunca repete o que já sabe.",
+                title: t("solution.feat.1.title"),
+                desc: t("solution.feat.1.desc"),
                 color: BRAND,
               },
               {
                 icon: Mic,
-                title: "Texto e áudio em qualquer idioma",
-                desc: "Seu cliente responde como preferir. A IA detecta o idioma automaticamente e extrai dados estruturados.",
+                title: t("solution.feat.2.title"),
+                desc: t("solution.feat.2.desc"),
                 color: ACCENT,
               },
               {
                 icon: BarChart3,
-                title: "Score de diagnóstico em tempo real",
-                desc: "Enquanto conversa, o sistema calcula maturidade digital, clareza de marca e posicionamento.",
+                title: t("solution.feat.3.title"),
+                desc: t("solution.feat.3.desc"),
                 color: "#10b981",
               },
               {
                 icon: Palette,
-                title: "Geração de ativos visuais",
-                desc: "Slogans, paletas de cores e tom de voz — gerados e escolhidos pelo cliente durante o briefing.",
+                title: t("solution.feat.4.title"),
+                desc: t("solution.feat.4.desc"),
                 color: "#f59e0b",
               },
               {
                 icon: Layers,
-                title: "Skills modulares personalizáveis",
-                desc: "Monte briefings com pacotes de expertise: Branding, Marketing, Web/App, IA & Automação e muito mais.",
+                title: t("solution.feat.5.title"),
+                desc: t("solution.feat.5.desc"),
                 color: "#a855f7",
               },
             ].map((feat, i) => {

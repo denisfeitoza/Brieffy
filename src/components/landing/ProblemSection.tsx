@@ -8,34 +8,36 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-const PROBLEMS = [
+import { useLanguage } from "@/i18n/LanguageContext";
+
+const getProblems = (t: (key: string) => string) => [
   {
     icon: Clock,
-    title: "Horas em reuniões de briefing",
-    desc: "Longas chamadas para extrair informações que se perdem em anotações desorganizadas.",
-    stat: "2.5h",
-    statLabel: "média por briefing",
+    title: t("problem.cards.1.title"),
+    desc: t("problem.cards.1.desc"),
+    stat: t("problem.cards.1.stat"),
+    statLabel: t("problem.cards.1.statLabel"),
   },
   {
     icon: RotateCcw,
-    title: "Retrabalho constante",
-    desc: "Briefings incompletos geram entregas erradas. O ciclo rework-refazer nunca acaba.",
-    stat: "67%",
-    statLabel: "dos projetos sofrem retrabalho",
+    title: t("problem.cards.2.title"),
+    desc: t("problem.cards.2.desc"),
+    stat: t("problem.cards.2.stat"),
+    statLabel: t("problem.cards.2.statLabel"),
   },
   {
     icon: FileQuestion,
-    title: "Briefings genéricos e rasos",
-    desc: "Formulários estáticos que não se adaptam ao contexto do cliente. Informações superficiais.",
-    stat: "80%",
-    statLabel: "das respostas são vagas",
+    title: t("problem.cards.3.title"),
+    desc: t("problem.cards.3.desc"),
+    stat: t("problem.cards.3.stat"),
+    statLabel: t("problem.cards.3.statLabel"),
   },
   {
     icon: AlertTriangle,
-    title: "Sem padrão entre equipes",
-    desc: "Cada pessoa faz de um jeito. Zero consistência, zero escalabilidade.",
-    stat: "0%",
-    statLabel: "de padronização",
+    title: t("problem.cards.4.title"),
+    desc: t("problem.cards.4.desc"),
+    stat: t("problem.cards.4.stat"),
+    statLabel: t("problem.cards.4.statLabel"),
   },
 ];
 
@@ -56,6 +58,9 @@ const itemVars = {
 };
 
 export function ProblemSection() {
+  const { t } = useLanguage();
+  const problems = getProblems(t);
+
   return (
     <section className="relative py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,15 +79,15 @@ export function ProblemSection() {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            O Problema
+            {t("problem.badge")}
           </motion.span>
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
-            Briefings tradicionais
+            {t("problem.title")}
             <br />
-            <span className="text-neutral-500">estão quebrados</span>
+            <span className="text-neutral-500">{t("problem.title.broken")}</span>
           </h2>
         </motion.div>
 
@@ -94,7 +99,7 @@ export function ProblemSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
         >
-          {PROBLEMS.map((problem) => {
+          {problems.map((problem) => {
             const Icon = problem.icon;
             return (
               <motion.div

@@ -223,11 +223,15 @@ const TypewriterText = memo(function TypewriterText({
   );
 });
 
+import { useLanguage } from "@/i18n/LanguageContext";
+
 /* ─── HERO ─── */
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
 export function HeroSection() {
+  const { t } = useLanguage();
+
   const nodes = useMemo(
     () => [
       { x: 150, y: 40 },
@@ -343,7 +347,7 @@ export function HeroSection() {
                 transition={{ duration: 2, repeat: Infinity }}
               />
               <span className="text-xs text-neutral-400 font-medium">
-                Inteligência Artificial Adaptativa
+                {t("hero.badge")}
               </span>
             </motion.div>
 
@@ -352,7 +356,7 @@ export function HeroSection() {
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.08] mb-6"
               style={{ fontFamily: '"Outfit", sans-serif' }}
             >
-              <TypewriterText text="Briefings que" speed={55} />
+              <TypewriterText text={t("hero.title1") + " "} speed={55} />
               <br />
               <span
                 style={{
@@ -361,7 +365,7 @@ export function HeroSection() {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                pensam por você
+                {t("hero.title2")}
               </span>
             </h1>
 
@@ -372,13 +376,12 @@ export function HeroSection() {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.8, duration: 0.8 }}
             >
-              Transforme horas de reuniões em{" "}
+              {t("hero.sub1")}
               <span className="text-white font-medium">
-                minutos de conversa inteligente
+                {t("hero.sub2")}
               </span>
-              . IA adaptativa que extrai insights profundos e entrega briefings
-              completos com a{" "}
-              <span className="text-white font-medium">sua marca</span>.
+              {t("hero.sub3")}
+              <span className="text-white font-medium">{t("hero.sub4")}</span>.
             </motion.p>
 
             {/* CTAs */}
@@ -413,13 +416,13 @@ export function HeroSection() {
                   animate={{ opacity: [0.3, 0.6, 0.3] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 />
-                <span className="relative z-10">Comece Grátis →</span>
+                <span className="relative z-10">{t("hero.cta.start")}</span>
               </Link>
               <Link
                 href="/dashboard/login"
                 className="text-sm sm:text-base text-neutral-400 hover:text-white transition-colors border border-white/[0.08] hover:border-white/20 px-7 py-3.5 rounded-full w-full sm:w-auto text-center backdrop-blur-sm bg-white/[0.02]"
               >
-                Acessar a Plataforma
+                {t("hero.cta.login")}
               </Link>
             </motion.div>
           </motion.div>

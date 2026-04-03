@@ -3,22 +3,44 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
-
-const NAV_LINKS = [
-  { label: "Recursos", href: "#features" },
-  { label: "Para Quem", href: "#audience" },
-  { label: "Como Funciona", href: "#how-it-works" },
-];
+import { useLanguage } from "@/i18n/LanguageContext";
+import { type Language } from "@/i18n/landingTranslations";
 
 export function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
+
+  const NAV_LINKS = [
+    { label: t("nav.features"), href: "#features" },
+    { label: t("nav.audience"), href: "#audience" },
+    { label: t("nav.howItWorks"), href: "#how-it-works" },
+  ];
 
   useEffect(() => {
     const handle = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", handle, { passive: true });
     return () => window.removeEventListener("scroll", handle);
   }, []);
+
+  const LanguageSwitcher = () => (
+    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1 backdrop-blur-md">
+      {(['pt', 'en', 'es'] as Language[]).map((lang) => (
+        <button
+          key={lang}
+          onClick={() => setLanguage(lang)}
+          className={`flex items-center justify-center w-6 h-6 rounded-full transition-all ${
+            language === lang ? 'bg-white/20 scale-110' : 'hover:bg-white/10 opacity-60 hover:opacity-100'
+          }`}
+          aria-label={`Change language to ${lang}`}
+        >
+          {lang === 'pt' && '🇧🇷'}
+          {lang === 'en' && '🇺🇸'}
+          {lang === 'es' && '🇪🇸'}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <>
@@ -90,17 +112,21 @@ export function LandingNavbar() {
               ))}
             </div>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons & Language Switcher */}
             <div className="hidden md:flex items-center gap-3">
+              <LanguageSwitcher />
+              
+              <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
+
               <Link
                 href="/dashboard/login"
                 className="text-sm text-neutral-300 hover:text-white transition-colors px-4 py-2"
               >
-                Entrar
+                {t("nav.login")}
               </Link>
               <Link
                 href="/dashboard/register"
-                className="relative group text-sm font-semibold text-white px-5 py-2.5 rounded-full overflow-hidden"
+                className="relative group text-sm font-semibold text-white px-5 py-2.5 rounded-full overflow-hidden whitespace-nowrap"
               >
                 <span
                   className="absolute inset-0 rounded-full"
@@ -116,36 +142,39 @@ export function LandingNavbar() {
                       "linear-gradient(135deg, oklch(0.70 0.28 255), #0ed7f0)",
                   }}
                 />
-                <span className="relative z-10">Comece Grátis</span>
+                <span className="relative z-10">{t("nav.getStarted")}</span>
               </Link>
             </div>
 
-            {/* Mobile Burger */}
-            <button
-              className="md:hidden flex flex-col items-center justify-center w-10 h-10 gap-1.5"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Menu"
-            >
-              <motion.span
-                className="block w-5 h-0.5 bg-white rounded-full"
-                animate={
-                  mobileOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }
-                }
-                transition={{ duration: 0.2 }}
-              />
-              <motion.span
-                className="block w-5 h-0.5 bg-white rounded-full"
-                animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
-                transition={{ duration: 0.15 }}
-              />
-              <motion.span
-                className="block w-5 h-0.5 bg-white rounded-full"
-                animate={
-                  mobileOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }
-                }
-                transition={{ duration: 0.2 }}
-              />
-            </button>
+            {/* Mobile Burger & Lang */}
+            <div className="md:hidden flex items-center gap-4">
+              <LanguageSwitcher />
+              <button
+                className="flex flex-col items-center justify-center w-10 h-10 gap-1.5"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label="Menu"
+              >
+                <motion.span
+                  className="block w-5 h-0.5 bg-white rounded-full"
+                  animate={
+                    mobileOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }
+                  }
+                  transition={{ duration: 0.2 }}
+                />
+                <motion.span
+                  className="block w-5 h-0.5 bg-white rounded-full"
+                  animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
+                  transition={{ duration: 0.15 }}
+                />
+                <motion.span
+                  className="block w-5 h-0.5 bg-white rounded-full"
+                  animate={
+                    mobileOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }
+                  }
+                  transition={{ duration: 0.2 }}
+                />
+              </button>
+            </div>
           </div>
         </div>
       </motion.nav>
@@ -181,7 +210,7 @@ export function LandingNavbar() {
             className="text-center text-sm text-neutral-300 border border-white/10 rounded-full py-3 hover:bg-white/5 transition-colors"
             onClick={() => setMobileOpen(false)}
           >
-            Entrar
+            {t("nav.login")}
           </Link>
           <Link
             href="/dashboard/register"
@@ -192,7 +221,7 @@ export function LandingNavbar() {
             }}
             onClick={() => setMobileOpen(false)}
           >
-            Comece Grátis
+            {t("nav.getStarted")}
           </Link>
         </div>
       </motion.div>

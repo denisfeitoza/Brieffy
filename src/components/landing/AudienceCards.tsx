@@ -7,62 +7,39 @@ import {
   Lightbulb,
   FolderKanban,
 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
-const AUDIENCES = [
+const getAudiences = (t: (key: string) => string) => [
   {
     icon: Megaphone,
-    title: "Agências de Marketing",
-    subtitle: "De onboarding a escopo completo",
+    title: t("audience.1.title"),
+    subtitle: t("audience.1.sub"),
     color: "#f59e0b",
-    arguments: [
-      "Onboarding de cliente em 5 minutos — não em 2 horas de reunião",
-      "Briefings padronizados em toda a equipe",
-      "White-label: seu logo, suas cores, sua experiência",
-      "Score automático de maturidade do cliente",
-      "Extraia posicionamento, público e dores sem esforço",
-    ],
+    arguments: t("audience.1.args").split("|"),
   },
   {
     icon: Lightbulb,
-    title: "Consultorias",
-    subtitle: "Diagnóstico inteligente de negócios",
+    title: t("audience.2.title"),
+    subtitle: t("audience.2.sub"),
     color: "#a855f7",
-    arguments: [
-      "Diagnóstico estruturado em minutos, não semanas",
-      "IA extrai insights das entrelinhas automaticamente",
-      "Documento profissional pronto para apresentar",
-      "Combine Skills: Strategy + Branding + CX em um briefing",
-      "Identifique gaps estratégicos que o cliente não percebe",
-    ],
+    arguments: t("audience.2.args").split("|"),
   },
   {
     icon: Code2,
-    title: "Software Houses",
-    subtitle: "Escopo técnico sem ambiguidade",
+    title: t("audience.3.title"),
+    subtitle: t("audience.3.sub"),
     color: ACCENT,
-    arguments: [
-      "Capture requisitos técnicos com a skill Web/App Briefing",
-      "Eliminação de retrabalho por briefing incompleto",
-      "Skills de IA & Automação para entender processos",
-      "Output estruturado que alimenta seu backlog",
-      "Envie o link e receba o escopo completo",
-    ],
+    arguments: t("audience.3.args").split("|"),
   },
   {
     icon: FolderKanban,
-    title: "Gestores de Projeto",
-    subtitle: "Extração de requisitos escalável",
+    title: t("audience.4.title"),
+    subtitle: t("audience.4.sub"),
     color: "#10b981",
-    arguments: [
-      "Padronize a coleta de informações entre equipes",
-      "Histórico completo de todas as sessões de briefing",
-      "Compartilhe via link — sem instalar nada",
-      "Multi-idioma automático para projetos globais",
-      "Integre insights ao seu pipeline de projetos",
-    ],
+    arguments: t("audience.4.args").split("|"),
   },
 ];
 
@@ -81,6 +58,9 @@ const cardVars = {
 };
 
 export function AudienceCards() {
+  const { t } = useLanguage();
+  const audiences = getAudiences(t);
+
   return (
     <section id="audience" className="relative py-20 md:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -99,13 +79,13 @@ export function AudienceCards() {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            Para Quem
+            {t("audience.badge")}
           </motion.span>
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
-            Feito para quem precisa de
+            {t("audience.title1")}
             <br />
             <span
               style={{
@@ -114,7 +94,7 @@ export function AudienceCards() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              briefings de verdade
+              {t("audience.title2")}
             </span>
           </h2>
         </motion.div>
@@ -127,7 +107,7 @@ export function AudienceCards() {
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
         >
-          {AUDIENCES.map((aud) => {
+          {audiences.map((aud) => {
             const Icon = aud.icon;
             return (
               <motion.div

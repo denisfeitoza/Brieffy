@@ -2,37 +2,38 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
-const STATS = [
+const getStats = (t: (key: string) => string) => [
   {
     value: 90,
     suffix: "%",
-    label: "Menos retrabalho",
-    desc: "Briefings completos na primeira vez",
+    label: t("stats.1.label"),
+    desc: t("stats.1.desc"),
     color: BRAND,
   },
   {
     value: 5,
     suffix: "min",
-    label: "Tempo médio",
-    desc: "vs 2h+ de reunião convencional",
+    label: t("stats.2.label"),
+    desc: t("stats.2.desc"),
     color: ACCENT,
   },
   {
     value: 100,
     suffix: "%",
-    label: "White-label",
-    desc: "Sua marca, sua experiência",
+    label: t("stats.3.label"),
+    desc: t("stats.3.desc"),
     color: "#10b981",
   },
   {
     value: 15,
     suffix: "+",
-    label: "Skills disponíveis",
-    desc: "De branding a IA & automação",
+    label: t("stats.4.label"),
+    desc: t("stats.4.desc"),
     color: "#a855f7",
   },
 ];
@@ -86,6 +87,9 @@ function AnimatedCounter({
 }
 
 export function StatsCounter() {
+  const { t } = useLanguage();
+  const stats = getStats(t);
+
   return (
     <section className="relative py-20 md:py-28">
       {/* Divider line top */}
@@ -99,7 +103,7 @@ export function StatsCounter() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
         >
-          {STATS.map((stat, i) => (
+          {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
               className="text-center"

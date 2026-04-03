@@ -12,22 +12,25 @@ import { StatsCounter } from "@/components/landing/StatsCounter";
 import { TestimonialsCarousel } from "@/components/landing/TestimonialsCarousel";
 import { CTASection } from "@/components/landing/CTASection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LanguageProvider } from "@/i18n/LanguageContext";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[oklch(0.10_0.02_260)] text-white overflow-x-hidden">
-      <LandingNavbar />
-      <HeroSection />
-      <TrustedByMarquee />
-      <ProblemSection />
-      <SolutionDemo />
-      <FeaturesGrid />
-      <AudienceCards />
-      <HowItWorks />
-      <StatsCounter />
-      <TestimonialsCarousel />
-      <CTASection />
-      <LandingFooter />
-    </main>
+    <LanguageProvider>
+      <main className="min-h-screen bg-[oklch(0.10_0.02_260)] text-white overflow-x-hidden">
+        <LandingNavbar />
+        <HeroSection />
+        <TrustedByMarquee />
+        <ProblemSection />
+        <SolutionDemo />
+        <FeaturesGrid />
+        <AudienceCards />
+        <HowItWorks />
+        <StatsCounter />
+        <TestimonialsCarousel />
+        <CTASection />
+        <LandingFooter />
+      </main>
+    </LanguageProvider>
   );
 }

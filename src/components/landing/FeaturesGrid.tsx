@@ -9,45 +9,46 @@ import {
   PieChart,
   Workflow,
 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "oklch(0.65 0.25 255)";
 const ACCENT = "#06b6d4";
 
-const FEATURES = [
+const getFeatures = (t: (key: string) => string) => [
   {
     icon: Sparkles,
-    title: "IA Consultiva Adaptativa",
-    desc: "Cada pergunta é gerada com base no contexto acumulado. Zero repetição, máximo aprofundamento.",
+    title: t("features.1.title"),
+    desc: t("features.1.desc"),
     gradient: `linear-gradient(135deg, ${BRAND}, #8b5cf6)`,
   },
   {
     icon: Shield,
-    title: "White-label com sua marca",
-    desc: "Seu logo, suas cores, seu domínio. O cliente vê apenas sua identidade — nunca a nossa.",
+    title: t("features.2.title"),
+    desc: t("features.2.desc"),
     gradient: `linear-gradient(135deg, #10b981, ${ACCENT})`,
   },
   {
     icon: Globe,
-    title: "Multi-idioma automático",
-    desc: "O sistema detecta e se adapta ao idioma do respondente. Suporte nativo a PT, EN, ES e mais.",
+    title: t("features.3.title"),
+    desc: t("features.3.desc"),
     gradient: `linear-gradient(135deg, #f59e0b, #ef4444)`,
   },
   {
     icon: Zap,
-    title: "Respostas em 5 minutos",
-    desc: "Opções rápidas por clique, voz ou texto. O briefing mais rápido que seu cliente já respondeu.",
+    title: t("features.4.title"),
+    desc: t("features.4.desc"),
     gradient: `linear-gradient(135deg, ${ACCENT}, ${BRAND})`,
   },
   {
     icon: PieChart,
-    title: "Diagnóstico com Score",
-    desc: "Métricas automáticas de clareza de marca, maturidade digital e definição de público-alvo.",
+    title: t("features.5.title"),
+    desc: t("features.5.desc"),
     gradient: `linear-gradient(135deg, #a855f7, #ec4899)`,
   },
   {
     icon: Workflow,
-    title: "Documento estruturado",
-    desc: "Output final organizado com todas as respostas, insights, score e estratégias sugeridas.",
+    title: t("features.6.title"),
+    desc: t("features.6.desc"),
     gradient: `linear-gradient(135deg, #14b8a6, #3b82f6)`,
   },
 ];
@@ -68,6 +69,9 @@ const itemVars = {
 };
 
 export function FeaturesGrid() {
+  const { t } = useLanguage();
+  const features = getFeatures(t);
+
   return (
     <section id="features" className="relative py-20 md:py-32">
       {/* Background glow */}
@@ -99,15 +103,15 @@ export function FeaturesGrid() {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            Recursos
+            {t("features.badge")}
           </motion.span>
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
-            Tudo que você precisa,
+            {t("features.title1")}
             <br />
-            <span className="text-neutral-500">nada que você não precisa</span>
+            <span className="text-neutral-500">{t("features.title2")}</span>
           </h2>
         </motion.div>
 
@@ -119,7 +123,7 @@ export function FeaturesGrid() {
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
         >
-          {FEATURES.map((feat) => {
+          {features.map((feat) => {
             const Icon = feat.icon;
             return (
               <motion.div
