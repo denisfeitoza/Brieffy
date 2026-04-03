@@ -18,6 +18,47 @@ const supabase = createClient();
 
 const BriefingContext = createContext<BriefingContextType | undefined>(undefined);
 
+// ================================================================
+// LOCAL STORAGE HELPERS — fallback when Supabase is unreachable
+// ================================================================
+const LS_PREFIX = 'brieffy_';
+
+function lsSave(key: string, data: unknown) {
+  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(data)); } catch { /* quota or SSR */ }
+}
+
+function lsLoad<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(LS_PREFIX + key);
+    return raw ? JSON.parse(raw) as T : null;
+  } catch { return null; }
+}
+
+function lsRemove(key: string) {
+  try { localStorage.removeItem(LS_PREFIX + key); } catch { /* SSR */ }
+}
+
+// ================================================================
+// SUPABASE RETRY — retries transient failures (network, 5xx)
+// ================================================================
+async function supabaseRetry(
+  fn: () => Promise<{ error: unknown }>,
+  maxRetries = 2
+): Promise<{ error: unknown }> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const result = await fn();
+    if (!result.error) return result;
+    if (attempt < maxRetries) {
+      console.warn(`[Supabase] Retry ${attempt + 1}/${maxRetries}`);
+      await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+    } else {
+      console.error('[Supabase] All retries exhausted:', result.error);
+      return result;
+    }
+  }
+  return { error: 'Retry logic error' };
+}
+
 export interface SerializedTemplate {
   id: string;
   name: string;
@@ -394,21 +435,35 @@ export function BriefingProvider({
       maxOption: m.maxOption,
     }));
 
-    supabase.from('briefing_sessions').update({
-      messages_snapshot: snapshot,
-      current_step_index: newStepIndex,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', sid)
-    .then(({ error }: { error: unknown }) => {
-      if (error) console.error('[Snapshot] Failed to persist:', error);
+    // localStorage backup — immediate, survives network failures
+    lsSave(`session_${sid}`, {
+      snapshot,
+      stepIndex: newStepIndex,
+      state: briefingStateRef.current,
+      signals: detectedSignalsRef.current,
+      language: chosenLanguage,
+      ts: Date.now(),
     });
-  }, [existingSessionId, sessionId]);
+
+    supabaseRetry(() =>
+      supabase.from('briefing_sessions').update({
+        messages_snapshot: snapshot,
+        current_step_index: newStepIndex,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sid)
+    ).then(({ error }) => {
+      if (error) console.error('[Snapshot] Failed to persist after retries:', error);
+    });
+  }, [existingSessionId, sessionId, chosenLanguage]);
 
   const submitAnswer = async (answer: string | string[] | number) => {
-    // Validação flexível dependendo do tipo da resposta
     if (typeof answer === 'string' && !answer.trim()) return;
     if (Array.isArray(answer) && answer.length === 0) return;
+
+    // Clear any draft saved in localStorage for this step
+    const sid = existingSessionId || sessionId;
+    if (sid) lsRemove(`draft_${sid}_${currentStepIndex}`);
 
     // Detect language from the initial language selection step (step 0)
     let activeLanguage = chosenLanguage;
@@ -439,26 +494,38 @@ export function BriefingProvider({
     // Lazily create session on first interaction (fixes session leak bug)
     const activeSessionId = await ensureSession();
     
-    // Log Interaction to Database — UPSERT so re-answering a step updates the row
+    // Log Interaction to Database — UPSERT with retry for network resilience
     let interactionId: string | null = null;
     if (activeSessionId) {
       try {
-        const { data: intData, error: intError } = await supabase
-          .from('briefing_interactions')
-          .upsert({
-            session_id: activeSessionId,
-            step_order: currentStepIndex,
-            question_type: currentMsgToLog.questionType || 'text',
-            question_text: currentMsgToLog.content,
-            options_offered: currentMsgToLog.options ? currentMsgToLog.options : null,
-            user_answer: answer,
-            is_depth_question: currentMsgToLog.isDepthQuestion || false,
-          }, { onConflict: 'session_id,step_order' })
-          .select('id')
-          .single();
-        
-        if (intError) console.error("Erro ao salvar interação no Supabase:", intError);
-        else if (intData) interactionId = intData.id;
+        const upsertPayload = {
+          session_id: activeSessionId,
+          step_order: currentStepIndex,
+          question_type: currentMsgToLog.questionType || 'text',
+          question_text: currentMsgToLog.content,
+          options_offered: currentMsgToLog.options ? currentMsgToLog.options : null,
+          user_answer: answer,
+          is_depth_question: currentMsgToLog.isDepthQuestion || false,
+        };
+
+        for (let attempt = 0; attempt <= 2; attempt++) {
+          const { data: intData, error: intError } = await supabase
+            .from('briefing_interactions')
+            .upsert(upsertPayload, { onConflict: 'session_id,step_order' })
+            .select('id')
+            .single();
+
+          if (!intError && intData) {
+            interactionId = intData.id;
+            break;
+          }
+          if (attempt < 2) {
+            console.warn(`[Interaction] Retry ${attempt + 1}/2`);
+            await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          } else {
+            console.error("Erro ao salvar interação após retries:", intError);
+          }
+        }
 
         // When re-answering a past step (went back), remove stale future interactions
         // because the AI will generate new questions from this point forward
@@ -576,6 +643,7 @@ export function BriefingProvider({
           : briefingStateRef.current;
 
         const sessionUpdate: Record<string, unknown> = {
+          status: 'in_progress',
           company_info: mergedState,
           chosen_language: activeLanguage,
           updated_at: new Date().toISOString(),
@@ -591,23 +659,22 @@ export function BriefingProvider({
           sessionUpdate.detected_signals = detectedSignalsRef.current;
         }
 
-        supabase.from('briefing_sessions').update(sessionUpdate)
-          .eq('id', activeSessionId)
-          .then(({ error }: { error: unknown }) => {
-            if (error) console.error('Erro ao salvar progresso da sessão:', error);
-          });
+        supabaseRetry(() =>
+          supabase.from('briefing_sessions').update(sessionUpdate).eq('id', activeSessionId)
+        ).then(({ error }) => {
+          if (error) console.error('Erro ao salvar progresso da sessão após retries:', error);
+        });
 
         if (interactionId) {
           const interactionUpdate: Record<string, unknown> = {};
           if (data.inferences) interactionUpdate.inferences = data.inferences;
           if (newSignals.length > 0) interactionUpdate.detected_signal = newSignals[0].summary;
           if (Object.keys(interactionUpdate).length > 0) {
-            supabase.from('briefing_interactions')
-              .update(interactionUpdate)
-              .eq('id', interactionId)
-              .then(({ error }: { error: unknown }) => {
-                if (error) console.error('Erro ao atualizar interação:', error);
-              });
+            supabaseRetry(() =>
+              supabase.from('briefing_interactions').update(interactionUpdate).eq('id', interactionId!)
+            ).then(({ error }) => {
+              if (error) console.error('Erro ao atualizar interação após retries:', error);
+            });
           }
         }
       }
@@ -615,6 +682,7 @@ export function BriefingProvider({
       if (data.isFinished) {
         setIsFinished(true);
         if (data.assets) setAssets(data.assets);
+        if (activeSessionId) lsRemove(`session_${activeSessionId}`);
 
         // BUG-06 FIX: Always persist metrics BEFORE redirecting (even for onboarding)
         const persistPromise = activeSessionId
@@ -781,9 +849,12 @@ export function BriefingProvider({
       if (data.nextQuestion && data.nextQuestion.options) {
         setMessages((prev) => {
           const newMessages = [...prev];
-          // Substitui (ou adiciona) as opções da pergunta atual
           const existingOptions = newMessages[currentStepIndex].options || [];
-          newMessages[currentStepIndex].options = [...existingOptions, ...data.nextQuestion.options];
+          newMessages[currentStepIndex] = {
+            ...newMessages[currentStepIndex],
+            options: [...existingOptions, ...data.nextQuestion.options],
+          };
+          persistSnapshot(newMessages, currentStepIndex);
           return newMessages;
         });
       }

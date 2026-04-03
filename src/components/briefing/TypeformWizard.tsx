@@ -368,6 +368,28 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   const [isRecording, setIsRecording] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
+  // ─── Draft auto-save to localStorage (debounced) ───
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftKey = accessSessionId ? `brieffy_draft_${accessSessionId}_${currentStepIndex}` : null;
+
+  useEffect(() => {
+    if (!draftKey || !inputText.trim()) return;
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(draftKey, inputText); } catch { /* quota */ }
+    }, 800);
+    return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
+  }, [inputText, draftKey]);
+
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved && !inputText) setInputText(saved);
+    } catch { /* SSR */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
   // ─── AI Splash Screen on First Load ───
   const isResumedSession = messages.length > 1 && currentStepIndex > 0;
   const [showSplash, setShowSplash] = useState(!isResumedSession);
@@ -514,6 +536,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     if (inputText.trim()) {
       submitAnswer(inputText.trim());
       setInputText("");
+      if (draftKey) try { localStorage.removeItem(draftKey); } catch { /* ok */ }
     } else {
       goNext();
     }

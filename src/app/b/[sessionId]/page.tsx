@@ -40,7 +40,7 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
   const selectedPackages: string[] = Array.isArray(session.selected_packages)
     ? session.selected_packages
     : [];
-  const isInProgress = session.status === 'in_progress';
+  const isInProgress = session.status === 'in_progress' || session.status === 'pending';
 
   // Parallel fetch: template, branding, packages, interactions, settings — all independent after session
   const [templateResult, brandingResult, selectedPackageDetails, savedInteractions, dbSettings] = await Promise.all([

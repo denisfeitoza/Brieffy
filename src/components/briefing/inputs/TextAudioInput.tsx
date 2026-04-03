@@ -134,13 +134,12 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         ) : (
           <Button
             size="icon"
-            variant="ghost"
-            className={`rounded-xl transition-all ${
+            className={`rounded-xl transition-all shadow-lg ${
               isDiscoveryPhase ? 'h-14 w-14' : 'h-12 w-12'
             } ${
               isRecording
-                ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
-                : "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 bg-indigo-500/5 border border-indigo-500/20"
+                ? "bg-red-500 text-white hover:bg-red-600 animate-pulse shadow-red-500/30"
+                : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/30"
             }`}
             onClick={() => (isRecording ? stopRecording() : startRecording())}
             style={!isRecording ? {
