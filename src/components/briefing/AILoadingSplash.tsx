@@ -2,16 +2,7 @@
 
 import { motion } from "framer-motion";
 import { memo, useMemo, useState, useEffect } from "react";
-
-/* ================================================================
- * AI LOADING SPLASH — Premium loading screen shown while the
- * briefing session initializes. Features:
- *  • Company branding at the top (logo/name of the agency sending)
- *  • AI-themed neural network animation (center)
- *  • Brief.i marketing message at the bottom
- *  • Smooth progress bar that fills over the duration
- *  • Auto-dismiss with smooth exit
- * ================================================================ */
+import { getContrastColor } from "@/lib/utils";
 
 interface AILoadingSplashProps {
   branding: {
@@ -44,18 +35,6 @@ const SPLASH_I18N: Record<string, { generating: string; subtitle: string; footer
     footer: "Con Brief.i, responda briefings más rápido e inteligente. Aprendemos de sus respuestas para generar las próximas basándonos en ellas.",
   },
 };
-
-function getContrastColor(hexcolor: string) {
-  if (!hexcolor) return "#ffffff";
-  const hex = hexcolor.replace("#", "");
-  if (hex.length !== 6 && hex.length !== 3) return "#ffffff";
-  const fullHex = hex.length === 3 ? hex.split("").map((x) => x + x).join("") : hex;
-  const r = parseInt(fullHex.substr(0, 2), 16);
-  const g = parseInt(fullHex.substr(2, 2), 16);
-  const b = parseInt(fullHex.substr(4, 2), 16);
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 128 ? "#000000" : "#ffffff";
-}
 
 // ─── Orbital Particle ──────────────────────────────────
 const OrbitalParticle = memo(function OrbitalParticle({
@@ -275,9 +254,8 @@ export const AILoadingSplash = memo(function AILoadingSplash({
   language = "pt",
   skillCount = 0,
 }: AILoadingSplashProps) {
-  // Progress bar duration scales with the number of skills selected.
-  // Base: 3.8s (no skills). Each skill adds 0.8s. Capped at 8s.
-  const progressDuration = Math.min(3.8 + skillCount * 0.8, 8);
+  // Progress bar synced with splash dismiss: base 1.6s + 0.2s per skill, capped at 2.6s
+  const progressDuration = Math.min(1.6 + skillCount * 0.2, 2.6);
   const t = SPLASH_I18N[language] || SPLASH_I18N.pt;
   const brandColor = branding.brand_color || "#6366f1";
   const accentColor = branding.brand_accent || "#06b6d4";

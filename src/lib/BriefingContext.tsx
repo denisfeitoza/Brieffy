@@ -64,6 +64,7 @@ export function BriefingProvider({
   savedLanguage,
   savedMessagesSnapshot,
   savedStepIndex,
+  initialTimeoutMs,
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;
@@ -76,6 +77,8 @@ export function BriefingProvider({
   apiEndpoint?: string;
   isOnboarding?: boolean;
   isOwner?: boolean;
+  /** Server-injected timeout setting (avoids client-side fetch) */
+  initialTimeoutMs?: number;
   /** Pre-loaded interactions for session resume */
   savedInteractions?: SavedInteraction[];
   /** Pre-loaded company_info state for session resume */
@@ -236,19 +239,8 @@ export function BriefingProvider({
     basalFieldsMissing: [],
   });
 
-  // Performance settings from DB — uses public endpoint (no auth required)
-  const [perfSettings, setPerfSettings] = useState({ timeoutMs: 30000 });
-  useEffect(() => {
-    fetch('/api/settings/public')
-      .then(r => r.ok ? r.json() : {})
-      .then((map: Record<string, string>) => {
-        if (typeof map !== 'object' || Array.isArray(map)) return;
-        setPerfSettings({
-          timeoutMs: parseInt(map.briefing_timeout_ms || '30000'),
-        });
-      })
-      .catch(() => {}); // Fallback to defaults silently
-  }, []);
+  // Performance settings — prefer server-injected value, no client-side fetch needed
+  const perfSettings = { timeoutMs: initialTimeoutMs || 30000 };
 
   // ================================================================
   // RESUME — After restoring, immediately ask the AI for the next question
@@ -536,28 +528,12 @@ export function BriefingProvider({
         updateBriefingState(data.updates);
       }
 
-      // Persist company_info + language on EVERY step even when basalCoverage is absent
-      // (ensures progress is saved if the API doesn't return basalCoverage)
-      if (activeSessionId && !data.basalCoverage) {
-        const mergedState = data.updates
-          ? { ...briefingStateRef.current, ...data.updates }
-          : briefingStateRef.current;
-        supabase.from('briefing_sessions').update({
-          company_info: mergedState,
-          chosen_language: activeLanguage,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', activeSessionId)
-        .then(({error}) => {
-          if (error) console.error('Erro ao salvar progresso (sem basal):', error);
-        });
-      }
-
       // ================================================================
       // ACTIVE LISTENING — Process new signals from AI response
       // ================================================================
+      let newSignals: BriefingSignal[] = [];
       if (data.active_listening?.signals?.length) {
-        const newSignals: BriefingSignal[] = data.active_listening.signals.map((s: {
+        newSignals = data.active_listening.signals.map((s: {
           category: SignalCategory;
           summary: string;
           relevance_score: number;
@@ -571,50 +547,15 @@ export function BriefingProvider({
           timestamp: Date.now(),
         }));
 
-        // BUG-01 FIX: Use ref to avoid stale closure when persisting accumulated signals
         setDetectedSignals(prev => {
           const merged = [...prev, ...newSignals];
           detectedSignalsRef.current = merged;
           return merged;
         });
 
-        // Persist signals to the session (async, non-blocking)
-        // BUG-01 FIX: Use ref value (always up-to-date) instead of stale `detectedSignals` state
-        if (activeSessionId) {
-          const mergedForPersist = [...detectedSignalsRef.current, ...newSignals.filter(
-            s => !detectedSignalsRef.current.find(e => e.id === s.id)
-          )];
-          supabase.from('briefing_sessions')
-            .update({ detected_signals: mergedForPersist })
-            .eq('id', activeSessionId)
-            .then(({ error }) => {
-              if (error) console.error('[ActiveListening] Failed to persist signals:', error);
-            });
-        }
-
-        // Update interaction row with detected signal summary (async)
-        if (interactionId && newSignals.length > 0) {
-          supabase.from('briefing_interactions')
-            .update({ detected_signal: newSignals[0].summary })
-            .eq('id', interactionId)
-            .then(({ error }) => {
-              if (error) console.error('[ActiveListening] Failed to update interaction signal:', error);
-            });
-        }
-
         console.log(`[ActiveListening] ${newSignals.length} new signal(s) detected:`, 
           newSignals.map(s => `[${s.category}] ${s.summary} (${Math.round(s.relevance_score * 100)}%)`).join(', ')
         );
-      }
-
-      // Persist inferences to the interaction row (async, non-blocking)
-      if (data.inferences && interactionId && activeSessionId) {
-        supabase.from('briefing_interactions')
-          .update({ inferences: data.inferences })
-          .eq('id', interactionId)
-          .then(({ error }) => {
-            if (error) console.error("Erro ao salvar inferences:", error);
-          });
       }
 
       // Update basal coverage tracking from AI response
@@ -625,26 +566,6 @@ export function BriefingProvider({
           basalFieldsCollected: data.basalFieldsCollected || [],
           basalFieldsMissing: data.basalFieldsMissing || [],
         });
-
-        // Persist basal coverage + company_info + language on each step (async, non-blocking)
-        // This ensures the client can leave and return with full state restored.
-        if (activeSessionId) {
-          const mergedState = data.updates
-            ? { ...briefingStateRef.current, ...data.updates }
-            : briefingStateRef.current;
-          supabase.from('briefing_sessions').update({
-            basal_coverage: data.basalCoverage,
-            basal_fields_collected: data.basalFieldsCollected || [],
-            current_section: data.currentSection || 'company',
-            company_info: mergedState,
-            chosen_language: activeLanguage,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', activeSessionId)
-          .then(({error}) => {
-            if (error) console.error('Erro ao salvar progresso da sessão:', error);
-          });
-        }
       } else if (isOnboarding) {
         // Progress bar fallback for onboarding: /api/onboarding never returns basalCoverage
         // Synthesize based on how many steps the user has completed (max 8 steps)
@@ -654,6 +575,52 @@ export function BriefingProvider({
           ...prev,
           basalCoverage: syntheticCoverage,
         }));
+      }
+
+      // ================================================================
+      // CONSOLIDATED DB WRITE — Single update per step (was 3-4 separate writes)
+      // ================================================================
+      if (activeSessionId && !data.isFinished) {
+        const mergedState = data.updates
+          ? { ...briefingStateRef.current, ...data.updates }
+          : briefingStateRef.current;
+
+        const sessionUpdate: Record<string, unknown> = {
+          company_info: mergedState,
+          chosen_language: activeLanguage,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (data.basalCoverage !== undefined) {
+          sessionUpdate.basal_coverage = data.basalCoverage;
+          sessionUpdate.basal_fields_collected = data.basalFieldsCollected || [];
+          sessionUpdate.current_section = data.currentSection || 'company';
+        }
+
+        if (newSignals.length > 0) {
+          sessionUpdate.detected_signals = detectedSignalsRef.current;
+        }
+
+        supabase.from('briefing_sessions').update(sessionUpdate)
+          .eq('id', activeSessionId)
+          .then(({ error }) => {
+            if (error) console.error('Erro ao salvar progresso da sessão:', error);
+          });
+
+        // Consolidated interaction update (inferences + signal in one write)
+        if (interactionId) {
+          const interactionUpdate: Record<string, unknown> = {};
+          if (data.inferences) interactionUpdate.inferences = data.inferences;
+          if (newSignals.length > 0) interactionUpdate.detected_signal = newSignals[0].summary;
+          if (Object.keys(interactionUpdate).length > 0) {
+            supabase.from('briefing_interactions')
+              .update(interactionUpdate)
+              .eq('id', interactionId)
+              .then(({ error }) => {
+                if (error) console.error('Erro ao atualizar interação:', error);
+              });
+          }
+        }
       }
 
       if (data.isFinished) {

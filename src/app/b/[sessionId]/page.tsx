@@ -1,6 +1,7 @@
 import { BriefingProvider } from "@/lib/BriefingContext";
 import { TypeformWizard } from "@/components/briefing/TypeformWizard";
 import { getSessionById, getTemplateById, getBrandingByUserId, getPackagesBySlugs, getInteractionsBySession } from "@/lib/services/briefingService";
+import { getDBSettings, getPerformanceConfig } from "@/lib/aiConfig";
 import { notFound } from "next/navigation";
 import type { BrandingInfo } from "@/lib/types";
 
@@ -32,33 +33,34 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
 
   try {
     session = await getSessionById(sessionId);
-    // Busca o template base que gerou a sessão para recuperar cores, campos estruturais etc.
-    if (session.template_id) {
-       template = await getTemplateById(session.template_id);
-    }
-
-    // Fetch branding from the template/session owner
-    const ownerId = session.user_id || template?.user_id;
-    if (ownerId) {
-      branding = await getBrandingByUserId(ownerId);
-    }
-  } catch (error) {
-    // Se não encontrou o ID da sessão, volta a 404
+  } catch {
     notFound();
   }
 
-  // Agrega o contexto inicial (o que já se sabe da empresa) ao template object ou passar via prop
   const selectedPackages: string[] = Array.isArray(session.selected_packages)
     ? session.selected_packages
     : [];
-
-  const selectedPackageDetails = await getPackagesBySlugs(selectedPackages);
-
-  // ================================================================
-  // RESUME SUPPORT — load previous interactions if session is in_progress
-  // ================================================================
   const isInProgress = session.status === 'in_progress';
-  const savedInteractions = isInProgress ? await getInteractionsBySession(sessionId) : [];
+
+  // Parallel fetch: template, branding, packages, interactions, settings — all independent after session
+  const [templateResult, brandingResult, selectedPackageDetails, savedInteractions, dbSettings] = await Promise.all([
+    session.template_id ? getTemplateById(session.template_id).catch(() => null) : Promise.resolve(null),
+    (session.user_id ? getBrandingByUserId(session.user_id) : Promise.resolve(undefined)) as Promise<BrandingInfo | undefined>,
+    getPackagesBySlugs(selectedPackages),
+    isInProgress ? getInteractionsBySession(sessionId) : Promise.resolve([]),
+    getDBSettings(),
+  ]);
+
+  const perfConfig = getPerformanceConfig(dbSettings);
+
+  template = templateResult;
+
+  // If branding wasn't found via user_id, try template owner
+  if (!brandingResult && template?.user_id) {
+    branding = await getBrandingByUserId(template.user_id);
+  } else {
+    branding = brandingResult;
+  }
 
   // Restore company state, signals, basal coverage and language from the session
   const savedState = (isInProgress && session.company_info && typeof session.company_info === 'object')
@@ -119,6 +121,7 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        savedLanguage={savedLanguage}
        savedMessagesSnapshot={savedMessagesSnapshot}
        savedStepIndex={savedStepIndex}
+       initialTimeoutMs={perfConfig.timeoutMs}
     >
       <main className="h-screen w-full bg-neutral-950 font-inter">
         <TypeformWizard />

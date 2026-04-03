@@ -65,6 +65,12 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
 
   const placeholder = placeholderOverride
     ? placeholderOverride
+    : isRecording
+    ? voiceLanguage === "pt"
+      ? "Ouvindo... Pode falar! (clique no microfone para parar)"
+      : voiceLanguage === "es"
+      ? "Escuchando... ¡Puedes hablar! (toca el micrófono para detener)"
+      : "Listening... Speak now! (click mic to stop)"
     : isTranscribing
     ? voiceLanguage === "pt"
       ? "Transcrevendo áudio..."
@@ -104,9 +110,13 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         }}
         disabled={isLoading || isSubmittingLocal || isTranscribing}
         placeholder={placeholder}
-        className={`w-full bg-neutral-900/50 border-neutral-800 rounded-2xl pl-6 pr-32 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all font-inter ${
+        className={`w-full transition-all font-inter pr-32 pl-6 rounded-2xl ${
+          isRecording 
+            ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30 text-red-100 placeholder:text-red-400/80 animate-pulse' 
+            : 'bg-neutral-900/50 border-neutral-800 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500'
+        } ${
           isDiscoveryPhase
-            ? 'h-20 md:h-24 text-lg md:text-xl border-indigo-500/20'
+            ? `h-20 md:h-24 text-lg md:text-xl ${!isRecording ? 'border-indigo-500/20' : ''}`
             : 'h-14 md:h-16 text-base md:text-lg'
         }`}
         spellCheck="false"

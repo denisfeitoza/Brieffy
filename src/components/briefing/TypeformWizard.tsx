@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
 import { InsightsPanel } from "./InsightsPanel";
+import { getContrastColor } from "@/lib/utils";
 
 const I18N: Record<string, Record<string, string>> = {
   pt: {
@@ -93,19 +94,6 @@ const I18N: Record<string, Record<string, string>> = {
     thankYouCta: "Puede cerrar esta página",
   }
 };
-
-function getContrastColor(hexcolor: string) {
-  if (!hexcolor) return "#ffffff";
-  const hex = hexcolor.replace("#", "");
-  if (hex.length !== 6 && hex.length !== 3) return "#ffffff";
-  // Convert 3-char hex to 6-char
-  const fullHex = hex.length === 3 ? hex.split('').map(x => x + x).join('') : hex;
-  const r = parseInt(fullHex.substr(0, 2), 16);
-  const g = parseInt(fullHex.substr(2, 2), 16);
-  const b = parseInt(fullHex.substr(4, 2), 16);
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 128 ? "#000000" : "#ffffff";
-}
 
 const BrandedLogo = memo(function BrandedLogo({ branding, size = 'md', isSolid = false }: { branding: { logo_url: string; company_name: string; brand_color: string }; size?: 'sm' | 'md', isSolid?: boolean }) {
   const sizeClasses = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
@@ -384,13 +372,11 @@ export function TypeformWizard() {
 
   useEffect(() => {
     if (!showSplash) return;
-    // Splash duration scales with skill count: base 4s + 0.6s per skill, capped at 8s
-    const splashDuration = Math.min(4000 + (selectedPackageDetails?.length || 0) * 600, 8000);
-    // Auto-dismiss splash after dynamic duration
+    // Splash: base 1.8s + 0.2s per skill, capped at 2.8s (was 4-8s — reduced for UX)
+    const splashDuration = Math.min(1800 + (selectedPackageDetails?.length || 0) * 200, 2800);
     splashTimerRef.current = setTimeout(() => {
       setShowSplash(false);
       setJustExitedSplash(true);
-      // Reset after entrance animation completes
       setTimeout(() => setJustExitedSplash(false), 800);
     }, splashDuration);
     return () => {
