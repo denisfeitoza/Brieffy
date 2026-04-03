@@ -44,8 +44,8 @@ export interface SettingsOverride {
 export function getLLMConfig(overrides?: SettingsOverride): LLMConfig {
   const provider = (overrides?.ai_llm_provider || process.env.AI_LLM_PROVIDER || "groq") as LLMProvider;
   const model = overrides?.ai_llm_model || process.env.AI_LLM_MODEL || "openai/gpt-oss-120b";
-  const temperature = parseFloat(overrides?.ai_llm_temperature || "0");
-  const maxTokens = parseInt(overrides?.ai_llm_max_tokens || "1200");
+  const temperature = parseFloat(overrides?.ai_llm_temperature || "0.35");
+  const maxTokens = parseInt(overrides?.ai_llm_max_tokens || "1500");
 
   switch (provider) {
     case "groq":
@@ -174,7 +174,7 @@ export function getPerformanceConfig(overrides?: SettingsOverride) {
     // maxHistory is kept for legacy admin UI but no longer limits the actual context sent.
     maxHistory: parseInt(overrides?.briefing_max_history || "999"),
     timeoutMs: parseInt(overrides?.briefing_timeout_ms || "30000"),
-    basalThreshold: parseFloat(overrides?.briefing_basal_threshold || "0.85"),
+    basalThreshold: parseFloat(overrides?.briefing_basal_threshold || "0.70"),
   };
 }
 

@@ -664,7 +664,9 @@ export function BriefingProvider({
         const persistPromise = activeSessionId
           ? supabase.from('briefing_sessions').update({ 
               status: 'finished', 
-              company_info: data.updates || briefingState,
+              company_info: (data.updates && Object.keys(data.updates).length > 0)
+                ? { ...briefingStateRef.current, ...data.updates }
+                : briefingStateRef.current,
               final_assets: data.assets,
               // BUG-01 FIX: Use ref to get the latest accumulated signals
               detected_signals: detectedSignalsRef.current,
