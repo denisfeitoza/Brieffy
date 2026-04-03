@@ -41,17 +41,17 @@ async function buildPackagePrompts(selectedSlugs?: string[]): Promise<{ prompt: 
     }).join('\n\n');
 
     const prompt = `
-═══ CATEGORY PACKAGES — Active AI Specializations ═══
-The following specialized skill packages are ACTIVE for this briefing session.
-Each package adds unique questions for its area. CRITICAL DEDUPLICATION RULES:
-1. If a question from Package A is already covered by Package B or by the universal basal fields, DO NOT ask it again.
-2. Use your judgment to MERGE overlapping topics into richer, combined questions.
-3. When the multi_slider type is specified in a package, you MUST generate the question using questionType "multi_slider" with the specified options format.
-4. Each package's questions should be distributed across the relevant sections, not clustered together.
-5. Before asking any question, explain BRIEFLY why it matters for the project: "Understanding X helps us Y."
+═══ PACOTES DE SKILL — Especializações de IA Ativas ═══
+Os seguintes pacotes de skill especializados estão ATIVOS nesta sessão de briefing.
+Cada pacote adiciona perguntas únicas para sua área. REGRAS CRÍTICAS DE DEDUPLICAÇÃO:
+1. Se uma pergunta do Pacote A já é coberta pelo Pacote B ou pelos campos basais universais, NÃO pergunte novamente.
+2. Use seu julgamento para MESCLAR tópicos sobrepostos em perguntas mais ricas e combinadas.
+3. Quando o tipo multi_slider é especificado num pacote, você DEVE gerar a pergunta usando questionType "multi_slider" com o formato de opções especificado.
+4. As perguntas de cada pacote devem ser distribuídas pelas seções relevantes, não agrupadas juntas.
+5. Antes de fazer qualquer pergunta, explique BREVEMENTE por que ela importa: "Entender X nos ajuda a Y."
 
 ${fragments}
-═══ END CATEGORY PACKAGES ═══`;
+═══ FIM DOS PACOTES DE SKILL ═══`;
     return { prompt, purposes, depthSignals };
   } catch (err) {
     console.error('Error building package prompts:', err);
@@ -88,6 +88,44 @@ const SECTION_PIPELINE = [
   { id: "visual", title: "Visual References", priority: 5 },
   { id: "delivery", title: "Expectations & Delivery", priority: 6 }
 ];
+
+const ABSOLUTE_MAX_QUESTIONS = 20;
+const MIN_MEANINGFUL_VALUE_LENGTH = 3;
+
+function calculateEngagement(history: { role: string; content: string }[]): 'high' | 'medium' | 'low' {
+  const recentUserMsgs = history
+    .filter(m => m.role === 'user')
+    .slice(-3);
+
+  if (recentUserMsgs.length === 0) return 'high';
+
+  const avgWords = recentUserMsgs.reduce((sum, m) => {
+    return sum + m.content.trim().split(/\s+/).length;
+  }, 0) / recentUserMsgs.length;
+
+  const skippedCount = recentUserMsgs.filter(m =>
+    m.content === '(skipped)' || m.content.trim().length < 3
+  ).length;
+
+  if (skippedCount >= 2 || avgWords < 5) return 'low';
+  if (avgWords < 15 || skippedCount >= 1) return 'medium';
+  return 'high';
+}
+
+function calculateQualityBasalCoverage(
+  currentState: Record<string, unknown>,
+  basalFields: string[]
+): number {
+  let qualityCount = 0;
+  for (const field of basalFields) {
+    const val = currentState?.[field];
+    if (!val) continue;
+    if (typeof val === 'string' && val.trim().length < MIN_MEANINGFUL_VALUE_LENGTH) continue;
+    if (Array.isArray(val) && val.length === 0) continue;
+    qualityCount++;
+  }
+  return qualityCount / Math.max(basalFields.length, 1);
+}
 
 export async function POST(req: Request) {
   try {
@@ -197,27 +235,42 @@ export async function POST(req: Request) {
     const targetLang = langMap[chosenLanguage || 'pt'] || 'Portuguese (pt-BR)';
 
     // ================================================================
-    // PHASE DETECTION — Determine current phase to build a LEAN prompt
+    // PHASE DETECTION — Uses quality-validated coverage + question count
     // ================================================================
     const questionCount = history.filter((m: { role: string }) => m.role === 'assistant').length;
-    const currentBasalCoverage = Object.keys(currentState || {}).length / Math.max(basalFields.length, 1);
+    const currentBasalCoverage = calculateQualityBasalCoverage(currentState || {}, basalFields);
+    const backendEngagement = calculateEngagement(history || []);
+
     type BriefingPhase = 'discovery' | 'confirm' | 'depth' | 'finalize';
     let currentPhase: BriefingPhase = 'discovery';
-    if (questionCount >= 3 || currentBasalCoverage >= 0.3) currentPhase = 'confirm';
-    if (questionCount >= 6 || currentBasalCoverage >= 0.5) currentPhase = 'depth';
-    if (currentBasalCoverage >= perfConfig.basalThreshold) currentPhase = 'finalize';
+    if (questionCount >= 3 && currentBasalCoverage >= 0.2) currentPhase = 'confirm';
+    if (questionCount >= 6 && currentBasalCoverage >= 0.4) currentPhase = 'depth';
+    if (currentBasalCoverage >= perfConfig.basalThreshold && questionCount >= 8) currentPhase = 'finalize';
 
     // ================================================================
-    // HISTORY COMPRESSION — Summarize old messages, keep recent ones full
+    // CIRCUIT BREAKER — Hard limit enforced in code, not just prompt
     // ================================================================
-    const RECENT_WINDOW = 6;
+    const maxQForEngagement = backendEngagement === 'low' ? 8 : backendEngagement === 'medium' ? 12 : 16;
+    const effectiveMax = Math.min(maxQForEngagement, ABSOLUTE_MAX_QUESTIONS);
+    const forceFinish = questionCount >= effectiveMax;
+    if (forceFinish) {
+      console.warn(`[Briefing] Circuit breaker: ${questionCount} questions reached (limit: ${effectiveMax}, engagement: ${backendEngagement}). Forcing finalization.`);
+      currentPhase = 'finalize';
+    }
+
+    // ================================================================
+    // HISTORY COMPRESSION — Keep recent messages full, summarize older ones
+    // User answers get more space (up to 300 chars) to preserve context
+    // ================================================================
+    const RECENT_WINDOW = 8;
     let compressedHistory = history;
     if (history.length > RECENT_WINDOW) {
       const oldMessages = history.slice(0, history.length - RECENT_WINDOW);
       const recentMessages = history.slice(history.length - RECENT_WINDOW);
       const summaryParts = oldMessages.map((m: { role: string; content: string }) => {
-        const lines = m.content.split('\n');
-        return `[${m.role}] ${lines[0].slice(0, 100)}`;
+        const maxLen = m.role === 'user' ? 300 : 120;
+        const text = m.content.replace(/\n+/g, ' ').slice(0, maxLen);
+        return `[${m.role}] ${text}`;
       });
       const summaryMsg = {
         role: 'system',
@@ -244,12 +297,11 @@ export async function POST(req: Request) {
     // PHASE-SPECIFIC MODULES — Only include what's needed for current phase
     // ================================================================
     const CORE_PERSONA = `<SystemRole>
-You are a Briefing AI Engine — an elite strategic consultant having a REAL CONVERSATION.
-Conduct 1 question per turn. Every question naturally follows from what the client said.
-Your intelligence is measured by how FEW questions you need to extract MAXIMUM insight.
+Você é um Motor de Briefing com IA — um consultor estratégico de elite tendo uma CONVERSA REAL.
+Conduza 1 pergunta por turno. Cada pergunta segue naturalmente do que o cliente disse.
+Sua inteligência é medida por quão POUCAS perguntas você precisa para extrair o MÁXIMO de insight.
+REGRA ABSOLUTA: TODO texto visível ao usuário DEVE ser em ${targetLang}. Isso inclui pergunta, opções, micro_feedback e qualquer texto.
 </SystemRole>
-
-<LanguageConstraint>ALL user-facing text MUST be in ${targetLang}.</LanguageConstraint>
 
 <Context>
   <Template>${templateContext}</Template>
@@ -259,80 +311,90 @@ ${extraContext ? `  <AgencyProfile>${extraContext}</AgencyProfile>` : ''}
 </Context>
 ${selectedPackages && selectedPackages.length > 0 ? `<ActiveSkillPackages>\n${packageData.prompt}\n</ActiveSkillPackages>` : ''}`;
 
-    const INTENT_MODULE = `<IntentClassification>
-Classify user intent: CREATE (new info), UPDATE (modify existing), EXPLORE (thinking aloud).
-CREATE confidence ≥85%→auto-proceed. UPDATE→only change mentioned fields (SURGICAL). EXPLORE→no updates.
-Output: {"mode":"CREATE|UPDATE|EXPLORE","confidence":0-1,"target_fields":[]}
-When UPDATE: include diff_summary {changed:[],preserved:[]}. Preserve fields NOT mentioned.
-</IntentClassification>`;
+    const INTENT_MODULE = `<ClassificacaoDeIntencao>
+Classifique a intenção do usuário: CREATE (info nova), UPDATE (modificar existente), EXPLORE (pensando alto).
+CREATE com confiança ≥85%→prossiga. UPDATE→mude APENAS os campos mencionados (CIRÚRGICO). EXPLORE→sem updates.
+Formato: {"mode":"CREATE|UPDATE|EXPLORE","confidence":0-1,"target_fields":[]}
+</ClassificacaoDeIntencao>`;
 
-    const EXTRACTION_MODULE = `<InferenceEngine>
-Extract EXPLICIT (→updates) and IMPLICIT (→inferences.extracted) data. Assign confidence 0-1.
-Inferences ≥0.7 auto-fill. Read between lines: hesitation=uncertainty, overemphasis on competitors=insecurity, "we do everything"=no focus.
-Map JTBD forces (push/pull/anxiety/habit) and job dimensions (functional/emotional/social).
-StoryBrand: decompose problems into external/internal/philosophical layers.
-Track question_efficiency: {fields_advanced, inferences_generated}. Target ≥2 fields/turn.
-</InferenceEngine>`;
+    const EXTRACTION_MODULE = `<MotorDeInferencia>
+Extraia dados EXPLÍCITOS (→updates) e IMPLÍCITOS (→inferences). Atribua confiança 0-1.
+Inferências ≥0.7 preenchem automaticamente. Leia nas entrelinhas: hesitação=incerteza, ênfase excessiva em concorrentes=insegurança, "fazemos tudo"=falta de foco.
+Alvo: ≥2 campos avançados por turno.
+</MotorDeInferencia>`;
 
-    const ACTIVE_LISTENING_MODULE = `<ActiveListening>
-${mergedPurpose ? `PURPOSE: "${mergedPurpose}"` : 'PURPOSE: General business identity.'}
-${mergedDepthSignals.length > 0 ? `SENSITIVE SIGNALS (approach obliquely): ${mergedDepthSignals.join(', ')}` : ''}
-${previousSignalsList.length > 0 ? `Already detected (skip): ${previousSignalsList.join(' | ')}` : ''}
-Scan every answer for: contradiction, implicit_pain, evasion, hidden_ambition, strategic_gap.
-Report signals with relevance≥0.60 (max 2/turn). depth_question if relevance≥0.80 (max 25 words, natural tone).
-</ActiveListening>`;
+    const ACTIVE_LISTENING_MODULE = `<EscutaAtiva>
+${mergedPurpose ? `PROPÓSITO: "${mergedPurpose}"` : 'PROPÓSITO: Identidade geral do negócio.'}
+${mergedDepthSignals.length > 0 ? `SINAIS SENSÍVEIS (aborde obliquamente): ${mergedDepthSignals.join(', ')}` : ''}
+${previousSignalsList.length > 0 ? `Já detectados (pule): ${previousSignalsList.join(' | ')}` : ''}
+Escaneie cada resposta em busca de: contradição, dor_implícita, evasão, ambição_oculta, lacuna_estratégica.
+Reporte sinais com relevância≥0.60 (max 2/turno). Pergunta de profundidade se relevância≥0.80 (max 25 palavras, tom natural).
+</EscutaAtiva>`;
 
-    // Phase-specific behavior modules
     const PHASE_MODULES: Record<BriefingPhase, string> = {
-      discovery: `<Phase name="DISCOVERY">
-Q1 MUST be "text" — open WHY→HOW→WHAT question. Be warm, inviting. Let client speak freely.
-After Q1: ≥8 inferences→move to confirm. 4-7→one more targeted text. <4→up to 2 more text questions.
-micro_feedback MUST be null. Celebrate rich answers.
-ONLY "text" questionType in this phase.
-</Phase>`,
-      confirm: `<Phase name="RAPID-CONFIRM">
-Confirm inferences in BATCH: use multi_slider, card_selector, boolean_toggle.
-Max 2-3 questions. Reference what client said. micro_feedback: max 1 total.
-After confirmation, if basalCoverage≥0.5→move to depth.
-</Phase>`,
-      depth: `<Phase name="TARGETED-DEPTH">
-Surgical questions for remaining gaps. Combine 2+ fields per question.
-Full questionType variety. Vary types (never 3 consecutive same).
-micro_feedback: max 1 every 3-4 questions. No emojis.
-If basalCoverage≥0.70 AND engagement≠"high"→PRE_FINALIZATION_REVIEW.
-</Phase>`,
-      finalize: `<Phase name="FINALIZATION">
-PRE_FINALIZATION_REVIEW: scan basalFieldsMissing + active packages. If gaps + engagement not low: 1-3 rapid tactile questions.
-If engagement="low": infer remaining fields (confidence 0.5-0.7).
-When isFinished=true include: session_quality_score (0-100), engagement_summary, data_completeness.
-NEVER finish if basalCoverage<0.5.
-</Phase>`,
+      discovery: `<Fase nome="DESCOBERTA">
+Q1 DEVE ser "text" — pergunta aberta POR QUÊ→COMO→O QUÊ. Seja caloroso e convidativo. Deixe o cliente falar livremente.
+Após Q1: ≥8 inferências→avance para confirmação. 4-7→mais uma pergunta text direcionada. <4→até 2 perguntas text.
+micro_feedback DEVE ser null. Celebre respostas ricas.
+APENAS questionType "text" nesta fase.
+</Fase>`,
+      confirm: `<Fase nome="CONFIRMAÇÃO-RÁPIDA">
+Confirme inferências em LOTE: use multi_slider, card_selector, boolean_toggle.
+Máximo 2-3 perguntas. Referencie o que o cliente disse. micro_feedback: max 1 total.
+</Fase>`,
+      depth: `<Fase nome="PROFUNDIDADE-CIRÚRGICA">
+Perguntas cirúrgicas para lacunas restantes. Combine 2+ campos por pergunta.
+Variedade total de questionType. Varie tipos (nunca 3 consecutivos iguais).
+micro_feedback: max 1 a cada 3-4 perguntas. Sem emojis.
+</Fase>`,
+      finalize: `<Fase nome="FINALIZAÇÃO">
+${forceFinish ? 'CIRCUIT BREAKER ATIVO: limite de perguntas atingido. Você DEVE finalizar AGORA com isFinished=true.' : ''}
+Escaneie basalFieldsMissing + pacotes ativos. Se houver lacunas + engagement não baixo: 1-3 perguntas rápidas táteis.
+Se engagement="low": infira campos restantes (confiança 0.5-0.7).
+Quando isFinished=true inclua: session_quality_score (0-100).
+NUNCA finalize se basalCoverage<0.4.
+</Fase>`,
     };
 
-    const CONSULTANT_RULES = `<ConsultantRules>
-You're a STRATEGIC CONSULTANT, not an interviewer. Conversation, not interrogation.
-- NEVER bare questions. Connect to what client said. Natural bridges.
-- Question text: MAX 20 words. Frame as collaborative exploration.
-- Short/vague answer→extract what you can, move on. Rich answer→acknowledge, explore best thread.
-- Adapt tone: Branding→creative, Finance→analytical, Marketing→strategic, Tech→innovative.
-- ANTI-PATTERNS: "What are your competitors?"(interrogation), "Great answer!"(empty praise).
-</ConsultantRules>`;
+    const CONSULTANT_RULES = `<RegrasDeConsultor>
+Você é um CONSULTOR ESTRATÉGICO, não um entrevistador. Conversa, não interrogatório.
+- NUNCA faça perguntas soltas. Conecte ao que o cliente disse. Pontes naturais.
+- Texto da pergunta: MÁXIMO 20 palavras. Enquadre como exploração colaborativa.
+- Resposta curta/vaga→extraia o que puder, siga em frente. Resposta rica→reconheça, explore o melhor fio.
+- Adapte o tom: Branding→criativo, Finanças→analítico, Marketing→estratégico, Tech→inovador.
+- ANTI-PADRÕES: "Quais são seus concorrentes?"(interrogatório), "Ótima resposta!"(elogio vazio).
+</RegrasDeConsultor>`;
 
-    const BEHAVIOR_RULES = `<BehaviorRules>
-- ${generateMore ? 'generateMore=true: ONLY change options, no new question.' : 'Formulate the NEXT question.'}
-- If basalCoverage>=${perfConfig.basalThreshold} AND objectives met: isFinished=true, fill assets.
-- ANTI-REPEAT: Check <PreviousQuestions>. NEVER generate semantically similar question.
-- Engagement monitoring: <10 words for 3 turns→"low", "(skipped)"→drop one level. When low→tactile types only.
-- HARD LIMITS: 5-8 questions (low engagement), 8-12 (standard), 12-16 (deep). ABSOLUTE MAX: 20.
-- Skip known fields. Infer when possible. Every question must have strategic reason.
-- For choice types: LAST option ALWAYS "Outro"/"Other"/"Otra".
-${selectedPackages && selectedPackages.length > 0 ? `- PACKAGE ORCHESTRATION: unified conversation. Sequence: basal→branding→strategy→execution→consulting. Deduplicate across packages. Natural transitions.` : ''}
-</BehaviorRules>`;
+    const BEHAVIOR_RULES = `<RegrasDeComportamento>
+- ${generateMore ? 'generateMore=true: APENAS mude as opções, sem nova pergunta.' : 'Formule a PRÓXIMA pergunta.'}
+- Se basalCoverage>=${perfConfig.basalThreshold} E objetivos atingidos: isFinished=true, preencha assets.
+- ANTI-REPETIÇÃO: Verifique <PreviousQuestions>. NUNCA gere pergunta semanticamente similar.
+- ENGAGEMENT ATUAL (calculado pelo sistema): "${backendEngagement}". ${backendEngagement === 'low' ? 'Cliente com baixo engajamento — use APENAS tipos táteis (boolean_toggle, slider, single_choice). Seja breve.' : backendEngagement === 'medium' ? 'Engajamento moderado — equilibre perguntas abertas e táteis.' : 'Bom engajamento — explore com profundidade.'}
+- Pule campos já conhecidos. Infira quando possível. Cada pergunta deve ter razão estratégica.
+- Para tipos de escolha: ÚLTIMA opção SEMPRE "Outro"/"Other"/"Otra".
+${selectedPackages && selectedPackages.length > 0 ? `- ORQUESTRAÇÃO DE PACOTES: conversa unificada. Sequência: basal→branding→estratégia→execução→consultoria. Deduplicação cruzada entre pacotes. Transições naturais.` : ''}
+</RegrasDeComportamento>`;
 
-    const OUTPUT_FORMAT = `<OutputFormat>
-Return ONLY valid JSON:
-{"intent":{"mode":"CREATE","confidence":0.95,"target_fields":[]},"updates":{},"diff_summary":null,"question_efficiency":{"fields_advanced":0,"inferences_generated":0},"inferences":{"extracted":[{"field":"","value":"","confidence":0,"source":""}],"skipped_topics":[],"depth_decision":"move_on"},"basalCoverage":0,"currentSection":"","basalFieldsCollected":[],"basalFieldsMissing":[],"plannedNextQuestions":[],"nextQuestion":{"text":"","questionType":"","options":[],"allowMoreOptions":false},"isFinished":false,"assets":null,"micro_feedback":null,"engagement_level":"high","active_listening":{"signals":[],"depth_question":null},"pre_finalization_review":false,"session_quality_score":null,"engagement_summary":null,"data_completeness":null}
-</OutputFormat>`;
+    const OUTPUT_FORMAT = `<FormatoSaida>
+Retorne APENAS JSON válido com estes campos:
+{
+  "intent": {"mode": "CREATE", "confidence": 0.95, "target_fields": []},
+  "updates": {},
+  "inferences": {"extracted": [{"field": "", "value": "", "confidence": 0}]},
+  "basalCoverage": 0,
+  "currentSection": "",
+  "basalFieldsCollected": [],
+  "basalFieldsMissing": [],
+  "nextQuestion": {"text": "", "questionType": "", "options": [], "allowMoreOptions": false},
+  "isFinished": false,
+  "assets": null,
+  "micro_feedback": null,
+  "engagement_level": "${backendEngagement}",
+  "active_listening": {"signals": [], "depth_question": null},
+  "session_quality_score": null
+}
+Campos obrigatórios: intent, updates, nextQuestion (ou isFinished=true), basalCoverage, basalFieldsCollected, basalFieldsMissing.
+</FormatoSaida>`;
 
     const systemPrompt = [
       CORE_PERSONA,
@@ -530,6 +592,21 @@ Return ONLY valid JSON:
             }
           }
 
+          // ================================================================
+          // CIRCUIT BREAKER ENFORCEMENT — Force finish if limit reached
+          // ================================================================
+          if (forceFinish && !parsed.isFinished) {
+            console.warn(`[Briefing] Circuit breaker override: forcing isFinished=true (${questionCount} questions).`);
+            parsed.isFinished = true;
+            if (!parsed.assets) {
+              parsed.assets = {
+                score: { clareza_marca: 5, clareza_dono: 5, publico: 5, maturidade: 5 },
+                insights: ["Briefing finalizado automaticamente pelo limite de perguntas."]
+              };
+            }
+            parsed.session_quality_score = parsed.session_quality_score || Math.round(currentBasalCoverage * 100);
+          }
+
           // Safety auto-fill for UI components
           if (parsed.nextQuestion) {
             // Validation: force fallback to text if AI generated a disabled format
@@ -611,24 +688,30 @@ Return ONLY valid JSON:
     // ================================================================
     console.error("[Briefing] All retries exhausted. Returning graceful fallback.", lastError);
 
-    const langMap2: Record<string, { fallbackQ: string }> = {
-      'en': { fallbackQ: "Could you elaborate a bit more on that?" },
-      'es': { fallbackQ: "¿Podrías elaborar un poco más sobre eso?" },
-      'pt': { fallbackQ: "Pode elaborar um pouco mais sobre isso?" },
+    const langMap2: Record<string, { fallbackQ: string; errorFeedback: string }> = {
+      'en': {
+        fallbackQ: "I had a small hiccup processing your answer. Could you rephrase or add a bit more detail?",
+        errorFeedback: "Our AI needed a moment — your previous answer was saved."
+      },
+      'es': {
+        fallbackQ: "Tuve un pequeño problema procesando tu respuesta. ¿Podrías reformularla o agregar más detalle?",
+        errorFeedback: "Nuestra IA necesitó un momento — tu respuesta anterior fue guardada."
+      },
+      'pt': {
+        fallbackQ: "Tive uma pequena dificuldade processando sua resposta. Pode reformular ou adicionar mais detalhes?",
+        errorFeedback: "Nossa IA precisou de um momento — sua resposta anterior foi salva."
+      },
     };
     const fallbackLang = langMap2[chosenLanguage || 'pt'] || langMap2['pt'];
 
     return NextResponse.json({
       intent: { mode: 'CREATE', confidence: 0.5, target_fields: [] },
       updates: {},
-      diff_summary: null,
-      question_efficiency: { fields_advanced: 0, inferences_generated: 0 },
-      inferences: { extracted: [], skipped_topics: [], depth_decision: "move_on" },
-      basalCoverage: Object.keys(currentState || {}).length / Math.max(UNIVERSAL_BASAL_FIELDS.length, 1),
+      inferences: { extracted: [] },
+      basalCoverage: calculateQualityBasalCoverage(currentState || {}, basalFields),
       currentSection: "company",
-      basalFieldsCollected: Object.keys(currentState || {}).filter(k => UNIVERSAL_BASAL_FIELDS.includes(k)),
-      basalFieldsMissing: UNIVERSAL_BASAL_FIELDS.filter(f => !currentState?.[f]),
-      plannedNextQuestions: [],
+      basalFieldsCollected: Object.keys(currentState || {}).filter((k: string) => basalFields.includes(k)),
+      basalFieldsMissing: basalFields.filter((f: string) => !currentState?.[f]),
       nextQuestion: {
         text: fallbackLang.fallbackQ,
         questionType: "text",
@@ -637,13 +720,10 @@ Return ONLY valid JSON:
       },
       isFinished: false,
       assets: null,
-      micro_feedback: null,
-      engagement_level: "medium",
+      micro_feedback: fallbackLang.errorFeedback,
+      engagement_level: backendEngagement,
       active_listening: { signals: [], depth_question: null },
-      pre_finalization_review: false,
       session_quality_score: null,
-      engagement_summary: null,
-      data_completeness: null,
     });
 
   } catch (error) {

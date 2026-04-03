@@ -1,7 +1,7 @@
 "use client";
 
 import { useBriefing } from "@/lib/BriefingContext";
-import { useState, useRef, useEffect, memo, useMemo } from "react";
+import { useState, useRef, useEffect, memo, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AILoadingSplash } from "./AILoadingSplash";
 import { Button } from "@/components/ui/button";
@@ -323,7 +323,12 @@ const AIThinkingAnimation = memo(function AIThinkingAnimation({
   );
 });
 
-export function TypeformWizard() {
+interface TypeformWizardProps {
+  hasAccessPassword?: boolean;
+  accessSessionId?: string;
+}
+
+export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: TypeformWizardProps) {
   const {
     messages,
     currentStepIndex,
@@ -364,25 +369,33 @@ export function TypeformWizard() {
   const mainRef = useRef<HTMLElement>(null);
 
   // ─── AI Splash Screen on First Load ───
-  // Skip splash for resumed sessions (there are already saved interactions)
   const isResumedSession = messages.length > 1 && currentStepIndex > 0;
   const [showSplash, setShowSplash] = useState(!isResumedSession);
   const [justExitedSplash, setJustExitedSplash] = useState(false);
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [accessUnlocked, setAccessUnlocked] = useState(!hasAccessPassword);
+
+  const dismissSplash = useCallback(() => {
+    setShowSplash(false);
+    setJustExitedSplash(true);
+    setTimeout(() => setJustExitedSplash(false), 800);
+  }, []);
 
   useEffect(() => {
     if (!showSplash) return;
-    // Splash: base 1.8s + 0.2s per skill, capped at 2.8s (was 4-8s — reduced for UX)
+    // If password is required and not yet unlocked, don't auto-dismiss
+    if (hasAccessPassword && !accessUnlocked) return;
+
     const splashDuration = Math.min(1800 + (selectedPackageDetails?.length || 0) * 200, 2800);
-    splashTimerRef.current = setTimeout(() => {
-      setShowSplash(false);
-      setJustExitedSplash(true);
-      setTimeout(() => setJustExitedSplash(false), 800);
-    }, splashDuration);
+    splashTimerRef.current = setTimeout(dismissSplash, splashDuration);
     return () => {
       if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessUnlocked]);
+
+  const handleAccessUnlocked = useCallback(() => {
+    setAccessUnlocked(true);
   }, []);
 
   // Track navigation direction for directional slide animations
@@ -398,25 +411,25 @@ export function TypeformWizard() {
     prevStepRef.current = currentStepIndex;
   }, [currentStepIndex]);
 
-  // AQUI calculamos previas dinâmicas
-  const colorPickerMsg = messages.find(m => m.questionType === 'color_picker' && m.userAnswer && Array.isArray(m.userAnswer) && m.userAnswer.length > 0);
-  const activeColor = colorPickerMsg 
-    ? (colorPickerMsg.userAnswer as string[])[0] 
-    : (briefingState.brand_color as string) || branding.brand_color || '#171717';
+  const activeColor = useMemo(() => {
+    const colorPickerMsg = messages.find(m => m.questionType === 'color_picker' && m.userAnswer && Array.isArray(m.userAnswer) && m.userAnswer.length > 0);
+    return colorPickerMsg 
+      ? (colorPickerMsg.userAnswer as string[])[0] 
+      : (briefingState.brand_color as string) || branding.brand_color || '#171717';
+  }, [messages, briefingState.brand_color, branding.brand_color]);
 
-  const fontMsg = messages.find(m => {
-    const txt = m.content?.toLowerCase() || '';
-    const isFontQ = txt.includes('tipografi') || (txt.includes('fonte') && !txt.includes('inspiraç'));
-    return isFontQ && typeof m.userAnswer === 'string';
-  });
-  
-  const fontChoiceResult = fontMsg ? (fontMsg.userAnswer as string).split(' - ')[0].trim() : null;
-  const fontChoice = fontChoiceResult && !fontChoiceResult.toLowerCase().includes('nenhuma') && !fontChoiceResult.toLowerCase().includes('none') && !fontChoiceResult.toLowerCase().includes('padrão')
-    ? fontChoiceResult.replace(/[^a-zA-Z0-9 ]/g, '') 
-    : null;
-    
-  // Default to Outfit se nada for escolhido, e também respeita se veio do DB settings
-  const activeFont = fontChoice || branding.brand_font || 'Outfit';
+  const activeFont = useMemo(() => {
+    const fontMsg = messages.find(m => {
+      const txt = m.content?.toLowerCase() || '';
+      const isFontQ = txt.includes('tipografi') || (txt.includes('fonte') && !txt.includes('inspiraç'));
+      return isFontQ && typeof m.userAnswer === 'string';
+    });
+    const fontChoiceResult = fontMsg ? (fontMsg.userAnswer as string).split(' - ')[0].trim() : null;
+    const fontChoice = fontChoiceResult && !fontChoiceResult.toLowerCase().includes('nenhuma') && !fontChoiceResult.toLowerCase().includes('none') && !fontChoiceResult.toLowerCase().includes('padrão')
+      ? fontChoiceResult.replace(/[^a-zA-Z0-9 ]/g, '') 
+      : null;
+    return fontChoice || branding.brand_font || 'Outfit';
+  }, [messages, branding.brand_font]);
 
   useEffect(() => {
     // BUG-08 FIX: Track how many wizards are using the same font with a ref-count
@@ -453,13 +466,14 @@ export function TypeformWizard() {
     };
   }, [activeFont]);
 
-  const dynamicName = (briefingState.nome_empresa as string) || 
-                      (briefingState.company_name as string) || 
-                      (briefingState.empresa as string) || 
-                      (branding.company_name && branding.company_name !== 'Smart Briefing' ? branding.company_name : '');
-  const activeCompanyName = dynamicName || 'Sua Empresa';
+  const activeCompanyName = useMemo(() => {
+    const dynamicName = (briefingState.nome_empresa as string) || 
+                        (briefingState.company_name as string) || 
+                        (briefingState.empresa as string) || 
+                        (branding.company_name && branding.company_name !== 'Smart Briefing' ? branding.company_name : '');
+    return dynamicName || 'Sua Empresa';
+  }, [briefingState.nome_empresa, briefingState.company_name, briefingState.empresa, branding.company_name]);
 
-  // Discovery phase detection: steps 1-3 after language selection (step 0)
   const isDiscoveryPhase = currentStepIndex >= 1 && currentStepIndex <= 3;
 
   // Focus input on step change se for open text question foi movido para o DynamicInput para ter controle melhor (com preventScroll)
@@ -482,10 +496,7 @@ export function TypeformWizard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLoading, currentStepIndex, submitAnswer]);
 
-  // Se o usuário der "Avançar" ou "Enviar"
-  const handleSend = () => {
-    // BUG-12 FIX: also check type — for interactive types, userAnswer lives in DynamicInput state,
-    // so if inputText is empty AND there's a prior userAnswer, allow advancing via goNext.
+  const handleSend = useCallback(() => {
     const currentMsg = messages[currentStepIndex];
     const isInteractiveType = (
       currentMsg?.questionType === 'single_choice' ||
@@ -496,21 +507,17 @@ export function TypeformWizard() {
       currentMsg?.questionType === 'multi_slider'
     );
 
-    // For interactive types, DynamicInput handles submission directly;
-    // handleSend should only be called for text inputs.
     if (!inputText.trim() && !currentMsg?.userAnswer && !isInteractiveType) {
       return; 
     }
     
-    // Se ele digitou algo novo, ele faz update via API
     if (inputText.trim()) {
       submitAnswer(inputText.trim());
       setInputText("");
     } else {
-      // Apenas avançar (temos userAnswer mas ele só quis passar o step pra frente)
       goNext();
     }
-  };
+  }, [messages, currentStepIndex, inputText, submitAnswer, goNext]);
 
   const activeMessage = messages[currentStepIndex];
 
@@ -887,6 +894,9 @@ export function TypeformWizard() {
           }}
           language={chosenLanguage}
           skillCount={selectedPackageDetails?.length || 0}
+          requirePassword={hasAccessPassword && !accessUnlocked}
+          sessionId={accessSessionId}
+          onAccessUnlocked={handleAccessUnlocked}
         />
       </AnimatePresence>
     );

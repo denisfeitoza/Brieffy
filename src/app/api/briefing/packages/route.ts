@@ -5,6 +5,32 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+async function requireAdmin() {
+  const adminSupabase = await createServerSupabaseClient();
+  const { data: { user }, error } = await adminSupabase.auth.getUser();
+
+  if (error || !user) {
+    return { supabase: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+
+  const isAdmin = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin';
+  if (!isAdmin) {
+    const { data: profile } = await adminSupabase
+      .from("briefing_profiles")
+      .select("is_admin")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!profile?.is_admin) {
+      return { supabase: null, error: NextResponse.json({ error: "Forbidden: admin access required" }, { status: 403 }) };
+    }
+  }
+
+  return { supabase: adminSupabase, error: null };
+}
+
 // GET - List all packages (ordered by sort_order)
 export async function GET(req: Request) {
   try {
@@ -36,6 +62,8 @@ export async function GET(req: Request) {
 
 // POST - Create a new package (admin)
 export async function POST(req: Request) {
+  const { supabase: adminSupabase, error: authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const body = await req.json();
     const { slug, name, description, icon, system_prompt_fragment, max_questions, is_default_enabled, sort_order, department } = body;
@@ -44,7 +72,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "slug and name are required" }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase!
       .from("briefing_category_packages")
       .insert([{
         slug,
@@ -74,6 +102,8 @@ export async function POST(req: Request) {
 
 // PUT - Update a package (admin)
 export async function PUT(req: Request) {
+  const { supabase: adminSupabase, error: authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const body = await req.json();
     const { id, ...updates } = body;
@@ -82,7 +112,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase!
       .from("briefing_category_packages")
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq("id", id)
@@ -103,6 +133,8 @@ export async function PUT(req: Request) {
 
 // DELETE - Delete a package (admin)
 export async function DELETE(req: Request) {
+  const { supabase: adminSupabase, error: authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -111,7 +143,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const { error } = await adminSupabase!
       .from("briefing_category_packages")
       .delete()
       .eq("id", id);

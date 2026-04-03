@@ -66,6 +66,9 @@ Rules:
     const overrides = await getDBSettings();
     const llmConfig = getLLMConfig(overrides);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
     const response = await fetch(llmConfig.baseUrl, {
       method: "POST",
       headers: {
@@ -74,6 +77,7 @@ Rules:
       },
       body: JSON.stringify({
         model: llmConfig.model,
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -81,7 +85,10 @@ Rules:
         temperature: 0.3,
         max_tokens: 500,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error("LLM API error:", await response.text());

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Package, Plus, Pencil, Trash2, Save, X, GripVertical, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, Save, X, GripVertical, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { SKILL_TEMPLATES, type SkillTemplate } from '@/lib/skill-templates';
 
 const ICON_OPTIONS = [
   'Package', 'Brain', 'Palette', 'Cpu', 'Megaphone', 'Headphones', 
@@ -43,12 +44,40 @@ export default function PackagesPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   const [form, setForm] = useState<Partial<CategoryPackage>>({});
+
+  const checkAdmin = useCallback(async () => {
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsAdmin(false);
+        return false;
+      }
+      const { data: profile } = await supabase
+        .from('briefing_profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+      const admin = !!profile?.is_admin;
+      setIsAdmin(admin);
+      return admin;
+    } catch (err) {
+      console.error('Error checking admin:', err);
+      setIsAdmin(false);
+      return false;
+    }
+  }, []);
 
   const fetchPackages = useCallback(async () => {
     setLoading(true);
     try {
+      const admin = await checkAdmin();
+      if (!admin) return; // Stop loading if not admin
+
       const res = await fetch('/api/briefing/packages');
       const data = await res.json();
       setPackages(Array.isArray(data) ? data : []);
@@ -58,9 +87,19 @@ export default function PackagesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [checkAdmin]);
 
   useEffect(() => { fetchPackages(); }, [fetchPackages]);
+
+  if (isAdmin === false) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <Shield className="w-16 h-16 text-red-500/50" />
+        <h2 className="text-xl font-bold text-white">Acesso Negado</h2>
+        <p className="text-zinc-400">Você precisa ser administrador para acessar o gerenciamento de pacotes.</p>
+      </div>
+    );
+  }
 
   const startCreate = () => {
     setCreating(true);
@@ -127,11 +166,55 @@ export default function PackagesPage() {
     }
   };
 
+  const applySkillTemplate = (template: SkillTemplate) => {
+    setForm({
+      ...form,
+      slug: template.suggested_slug,
+      name: template.name,
+      description: template.description,
+      icon: template.icon,
+      department: template.department,
+      max_questions: template.max_questions,
+      system_prompt_fragment: template.system_prompt_fragment,
+    });
+  };
+
   const renderForm = () => (
     <div className="space-y-4 p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300">
       <h3 className="text-lg font-bold text-white">
         {creating ? '✨ Novo Pacote de IA' : '✏️ Editar Pacote'}
       </h3>
+
+      {creating && (
+        <div className="space-y-2">
+          <Label className="text-zinc-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Começar a partir de um Skill Template
+          </Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {SKILL_TEMPLATES.map((tpl) => {
+              const TplIcon = ICON_MAP[tpl.icon] || Package;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => applySkillTemplate(tpl)}
+                  className="flex items-start gap-3 p-3 rounded-xl border border-zinc-800 hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all text-left group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-zinc-800 group-hover:bg-cyan-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <TplIcon className="w-4 h-4 text-zinc-500 group-hover:text-cyan-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-zinc-300 group-hover:text-white">{tpl.name}</p>
+                    <p className="text-[10px] text-zinc-600 leading-tight mt-0.5">{tpl.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-zinc-600">Selecione um template para pré-preencher os campos, ou comece do zero abaixo.</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

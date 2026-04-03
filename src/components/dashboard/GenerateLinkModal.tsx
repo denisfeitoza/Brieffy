@@ -6,7 +6,7 @@ import {
   Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu,
   Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck,
   Lightbulb, Shield, Server, ShoppingCart, Video,
-  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2,
+  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2, ShieldCheck, Eye, EyeOff,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -86,6 +86,8 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
   const [sessionName, setSessionName] = useState('');
   const [initialContext, setInitialContext] = useState('');
   const [editPassphrase, setEditPassphrase] = useState('');
+  const [accessPassword, setAccessPassword] = useState('');
+  const [showAccessPassword, setShowAccessPassword] = useState(false);
   const [showContext, setShowContext] = useState(false);
 
   // Package state
@@ -161,6 +163,8 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
           setSessionName('');
           setInitialContext('');
           setEditPassphrase('');
+          setAccessPassword('');
+          setShowAccessPassword(false);
           setGeneratedLink('');
           setCopied(false);
           setShowContext(false);
@@ -235,6 +239,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
           initial_context: initialContext.trim() || null,
           selected_packages: selectedSlugs,
           edit_passphrase: editPassphrase.trim() || null,
+          access_password: accessPassword.trim() || null,
           status: 'pending',
           user_id: user?.id || null,
         }])
@@ -255,10 +260,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
   };
 
   const copyToClipboard = () => {
-    const text = `🔗 Link do Briefing:
-${generatedLink}
-${editPassphrase ? `\n🔑 Palavra-chave: ${editPassphrase}` : ''}`;
-    navigator.clipboard.writeText(text);
+    const parts = [`🔗 Link do Briefing:\n${generatedLink}`];
+    if (accessPassword) parts.push(`🔒 Senha de Acesso: ${accessPassword}`);
+    if (editPassphrase) parts.push(`🔑 Palavra-chave do Documento: ${editPassphrase}`);
+    navigator.clipboard.writeText(parts.join('\n\n'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -494,11 +499,54 @@ ${editPassphrase ? `\n🔑 Palavra-chave: ${editPassphrase}` : ''}`;
                 )}
               </div>
 
+              {/* ── Access Password (optional, recommended) ─────── */}
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAccessPassword(!showAccessPassword)}
+                  className="flex items-center gap-2 text-sm font-semibold text-zinc-300 hover:text-white transition-colors w-full"
+                >
+                  <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">4</span>
+                  Senha de Acesso ao Briefing
+                  <span className="text-amber-400/80 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                    Recomendado
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-zinc-500 ml-auto transition-transform duration-300 ${showAccessPassword ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showAccessPassword && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-2">
+                        <p className="text-[11px] text-zinc-500 leading-relaxed">
+                          O cliente precisará digitar esta senha antes de começar o briefing. Protege o link contra acessos indesejados.
+                        </p>
+                        <div className="relative">
+                          <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" />
+                          <Input
+                            value={accessPassword}
+                            onChange={(e) => setAccessPassword(e.target.value)}
+                            className="bg-black/40 border-white/10 focus-visible:ring-amber-500/40 h-11 text-sm rounded-xl pl-10 placeholder:text-zinc-600"
+                            placeholder="Ex: acme2026"
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               {/* ── Passphrase ────────────────────────────────────── */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">4</span>
+                    <span className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center text-xs font-bold text-zinc-400">5</span>
                     Senha do Documento
                   </label>
                   <button
@@ -590,21 +638,37 @@ ${editPassphrase ? `\n🔑 Palavra-chave: ${editPassphrase}` : ''}`;
                 </Button>
               </div>
 
+              {/* Access Password Display */}
+              {accessPassword && (
+                <div className="w-full flex flex-col items-center p-4 bg-gradient-to-b from-amber-950/20 to-zinc-950/50 border border-amber-500/15 rounded-xl">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <ShieldCheck className="w-3 h-3 text-amber-400" />
+                    <span className="text-[10px] text-amber-400/80 uppercase tracking-[0.15em] font-bold">
+                      Senha de Acesso
+                    </span>
+                  </div>
+                  <span className="text-xl font-mono font-bold tracking-wider text-amber-400">
+                    {accessPassword}
+                  </span>
+                  <p className="text-[10px] text-zinc-600 text-center mt-2 max-w-[250px] leading-relaxed">
+                    O cliente precisará digitar esta senha para iniciar o briefing.
+                  </p>
+                </div>
+              )}
+
               {/* Passphrase Display */}
               <div className="w-full flex flex-col items-center p-4 bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Lock className="w-3 h-3 text-zinc-500" />
                   <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-bold">
-                    Palavra-Chave
+                    Senha do Documento
                   </span>
                 </div>
                 <span className={`text-xl font-mono font-bold tracking-wider ${editPassphrase ? 'text-cyan-400' : 'text-zinc-500 italic text-sm'}`}>
-                  {editPassphrase || 'Não definida (Acesso direto)'}
+                  {editPassphrase || 'Não definida'}
                 </span>
                 <p className="text-[10px] text-zinc-600 text-center mt-2 max-w-[250px] leading-relaxed">
-                  {editPassphrase 
-                    ? 'O cliente usará esta senha para acessar e editar o documento final.' 
-                    : 'O cliente poderá acessar o briefing sem necessidade de senha.'}
+                  Usada pelo cliente para acessar e editar o documento final.
                 </p>
               </div>
 

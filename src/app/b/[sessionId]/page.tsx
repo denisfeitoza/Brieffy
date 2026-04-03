@@ -105,6 +105,8 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     ? session.current_step_index
     : undefined;
 
+  const hasAccessPassword = !!session.access_password;
+
   return (
     <BriefingProvider 
        activeTemplate={template} 
@@ -124,7 +126,10 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        initialTimeoutMs={perfConfig.timeoutMs}
     >
       <main className="h-screen w-full bg-neutral-950 font-inter">
-        <TypeformWizard />
+        <TypeformWizard 
+          hasAccessPassword={hasAccessPassword}
+          accessSessionId={session.id}
+        />
       </main>
     </BriefingProvider>
   );

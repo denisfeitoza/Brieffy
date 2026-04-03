@@ -2,7 +2,6 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
-import { BriefingProvider } from "@/lib/BriefingContext";
 
 if (typeof window !== "undefined") {
   const originalConsoleError = console.error;
@@ -15,7 +14,6 @@ if (typeof window !== "undefined") {
        rawMessage.includes("data-new-gr-c-s-check-loaded") ||
        rawMessage.includes("data-gr-ext-installed"))
     ) {
-      // Suppress hydration warnings specifically caused by browser extensions
       return;
     }
     originalConsoleError.apply(console, args);
@@ -27,7 +25,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BriefingProvider>{children}</BriefingProvider>
+      {children}
     </QueryClientProvider>
   );
 }

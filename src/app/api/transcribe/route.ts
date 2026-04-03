@@ -35,13 +35,19 @@ export async function POST(req: Request) {
 
     console.log(`[Voice] Using ${voiceConfig.provider} / ${voiceConfig.model}`);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
     const res = await fetch(voiceConfig.baseUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${voiceConfig.apiKey}`,
       },
       body: whisperForm,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const errorText = await res.text();

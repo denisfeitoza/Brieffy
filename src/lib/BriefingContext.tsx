@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail, BriefingSignal, SignalCategory } from "./types";
 
 const DEFAULT_BRANDING: BrandingInfo = {
@@ -212,16 +212,15 @@ export function BriefingProvider({
     }
   };
 
-  const restoredMessages = buildRestoredMessages();
-  const [messages, setMessages] = useState<Message[]>(restoredMessages);
+  const [messages, setMessages] = useState<Message[]>(() => buildRestoredMessages());
 
   // On resume: start from the LAST answered step + 1 so user sees a "Continue" prompt
   // On new session: start at step 0 (language selection)
-  const [currentStepIndex, setCurrentStepIndex] = useState(
-    isResume
-      ? (typeof savedStepIndex === 'number' ? savedStepIndex : restoredMessages.length - 1)
-      : 0
-  );
+  const [currentStepIndex, setCurrentStepIndex] = useState(() => {
+    if (!isResume) return 0;
+    if (typeof savedStepIndex === 'number') return savedStepIndex;
+    return buildRestoredMessages().length - 1;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [chosenLanguage, setChosenLanguage] = useState(savedLanguage || "pt"); // Default: Portuguese
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
@@ -239,8 +238,7 @@ export function BriefingProvider({
     basalFieldsMissing: [],
   });
 
-  // Performance settings — prefer server-injected value, no client-side fetch needed
-  const perfSettings = { timeoutMs: initialTimeoutMs || 30000 };
+  const perfSettings = useMemo(() => ({ timeoutMs: initialTimeoutMs || 30000 }), [initialTimeoutMs]);
 
   // ================================================================
   // RESUME — After restoring, immediately ask the AI for the next question
@@ -352,43 +350,35 @@ export function BriefingProvider({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isResume, hasRequestedResumeContinuation]);
 
-  const updateBriefingState = (updates: Partial<BriefingState>) => {
+  const updateBriefingState = useCallback((updates: Partial<BriefingState>) => {
     setBriefingState((prev) => {
       const next = { ...prev, ...updates };
       briefingStateRef.current = next;
       return next;
     });
-  };
+  }, []);
 
-  const goBack = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex((prev) => prev - 1);
-    }
-  };
+  const goBack = useCallback(() => {
+    setCurrentStepIndex((prev) => (prev > 0 ? prev - 1 : prev));
+  }, []);
 
-  const goNext = () => {
-    // Só deixa avançar se a pergunta atual já tem resposta ou se já encerrou e quer ver a tela de final
-    if (currentStepIndex < messages.length - 1) {
-      setCurrentStepIndex((prev) => prev + 1);
-    } else if (isFinished && !isUploadStep) {
-      setIsUploadStep(true);
-    }
-  };
+  const goNext = useCallback(() => {
+    setCurrentStepIndex((prev) => prev + 1);
+  }, []);
 
-  const addMessage = (msg: Omit<Message, "id">) => {
+  const addMessage = useCallback((msg: Omit<Message, "id">) => {
     const id = crypto.randomUUID();
     setMessages((prev) => [...prev, { ...msg, id }]);
-  };
+  }, []);
 
   // ================================================================
   // SNAPSHOT PERSISTENCE — Save full messages + step index to DB
   // Enables seamless resume with all metadata (questionType, options, microFeedback, etc.)
   // ================================================================
-  const persistSnapshot = (updatedMessages: Message[], newStepIndex: number) => {
+  const persistSnapshot = useCallback((updatedMessages: Message[], newStepIndex: number) => {
     const sid = existingSessionId || sessionId;
     if (!sid) return;
     
-    // Strip functions/refs and keep only serializable data
     const snapshot = updatedMessages.map(m => ({
       id: m.id,
       role: m.role,
@@ -410,10 +400,10 @@ export function BriefingProvider({
       updated_at: new Date().toISOString(),
     })
     .eq('id', sid)
-    .then(({ error }) => {
+    .then(({ error }: { error: unknown }) => {
       if (error) console.error('[Snapshot] Failed to persist:', error);
     });
-  };
+  }, [existingSessionId, sessionId]);
 
   const submitAnswer = async (answer: string | string[] | number) => {
     // Validação flexível dependendo do tipo da resposta
@@ -477,7 +467,7 @@ export function BriefingProvider({
             .delete()
             .eq('session_id', activeSessionId)
             .gt('step_order', currentStepIndex)
-            .then(({ error }) => {
+            .then(({ error }: { error: unknown }) => {
               if (error) console.error('Erro ao limpar interações futuras:', error);
             });
         }
@@ -603,11 +593,10 @@ export function BriefingProvider({
 
         supabase.from('briefing_sessions').update(sessionUpdate)
           .eq('id', activeSessionId)
-          .then(({ error }) => {
+          .then(({ error }: { error: unknown }) => {
             if (error) console.error('Erro ao salvar progresso da sessão:', error);
           });
 
-        // Consolidated interaction update (inferences + signal in one write)
         if (interactionId) {
           const interactionUpdate: Record<string, unknown> = {};
           if (data.inferences) interactionUpdate.inferences = data.inferences;
@@ -616,7 +605,7 @@ export function BriefingProvider({
             supabase.from('briefing_interactions')
               .update(interactionUpdate)
               .eq('id', interactionId)
-              .then(({ error }) => {
+              .then(({ error }: { error: unknown }) => {
                 if (error) console.error('Erro ao atualizar interação:', error);
               });
           }
@@ -644,7 +633,7 @@ export function BriefingProvider({
               updated_at: new Date().toISOString()
             })
             .eq('id', activeSessionId)
-            .then(({error}) => {
+            .then(({error}: {error: unknown}) => {
               if (error) console.error("Erro ao fechar sessão no DB:", error);
             })
           : Promise.resolve();
@@ -764,9 +753,13 @@ export function BriefingProvider({
         content: m.content + (m.userAnswer ? `\n\nRespondi: ${m.userAnswer}` : "")
       }));
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), perfSettings.timeoutMs);
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           answer: "Gere mais opções diferentes das atuais para a última pergunta.",
           currentState: briefingState,
@@ -774,12 +767,13 @@ export function BriefingProvider({
           generateMore: true,
           chosenLanguage,
           selectedPackages,
-          // BUG-11 FIX: include template context and session signals so AI generates relevant options
           activeTemplate,
           sessionId,
           detectedSignals: detectedSignalsRef.current.map(s => s.summary),
         }),
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) throw new Error("Erro na API");
       const data = await res.json();
@@ -800,10 +794,9 @@ export function BriefingProvider({
     }
   };
 
-  const finishBriefing = () => {
-    // Redireciona via JS para o Dashboard após upload ou cancelamento do upload
+  const finishBriefing = useCallback(() => {
     window.location.href = '/dashboard';
-  };
+  }, []);
 
   // ================================================================
   // DOCUMENT GENERATION — Uses FULL conversation to create a deliverable
@@ -827,19 +820,24 @@ export function BriefingProvider({
         };
       });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
       const res = await fetch("/api/briefing/document", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           history: fullHistory,
           briefingState,
           assets,
           activeTemplate,
           chosenLanguage,
-          // Pass detected signals so the document includes them
           detectedSignals,
         }),
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) throw new Error("Failed to generate document");
       
@@ -870,7 +868,7 @@ export function BriefingProvider({
           updated_at: new Date().toISOString()
         })
         .eq('id', docSessionId)
-        .then(({ error }) => {
+        .then(({ error }: { error: unknown }) => {
           if (error) console.error("Erro ao salvar documento no DB:", error);
         });
       }
@@ -883,44 +881,52 @@ export function BriefingProvider({
     }
   };
 
+  const contextValue = useMemo(() => ({
+    briefingState,
+    updateBriefingState,
+    messages,
+    currentStepIndex,
+    goBack,
+    goNext,
+    addMessage,
+    isLoading,
+    setIsLoading,
+    isGeneratingMore,
+    isFinished,
+    isUploadStep,
+    setIsFinished,
+    finishBriefing,
+    assets,
+    setAssets,
+    submitAnswer,
+    generateMoreOptions,
+    basalInfo,
+    chosenLanguage,
+    generatedDocument,
+    isGeneratingDocument,
+    documentError,
+    generateDocument,
+    selectedPackages,
+    selectedPackageDetails,
+    branding,
+    editToken,
+    editPassphrase,
+    isOnboarding,
+    isOwner,
+    detectedSignals,
+    engagementLevel,
+  }), [
+    briefingState, messages, currentStepIndex, isLoading, isGeneratingMore,
+    isFinished, isUploadStep, assets, basalInfo, chosenLanguage,
+    generatedDocument, isGeneratingDocument, documentError, editToken,
+    editPassphrase, detectedSignals, engagementLevel,
+    updateBriefingState, goBack, goNext, addMessage, finishBriefing,
+    submitAnswer, generateMoreOptions, generateDocument,
+    selectedPackages, selectedPackageDetails, branding, isOnboarding, isOwner,
+  ]);
+
   return (
-    <BriefingContext.Provider
-      value={{
-        briefingState,
-        updateBriefingState,
-        messages,
-        currentStepIndex,
-        goBack,
-        goNext,
-        addMessage,
-        isLoading,
-        setIsLoading,
-        isGeneratingMore,
-        isFinished,
-        isUploadStep,
-        setIsFinished,
-        finishBriefing,
-        assets,
-        setAssets,
-        submitAnswer,
-        generateMoreOptions,
-        basalInfo,
-        chosenLanguage,
-        generatedDocument,
-        isGeneratingDocument,
-        documentError,
-        generateDocument,
-        selectedPackages,
-        selectedPackageDetails,
-        branding,
-        editToken,
-        editPassphrase,
-        isOnboarding,
-        isOwner,
-        detectedSignals,
-        engagementLevel,
-      }}
-    >
+    <BriefingContext.Provider value={contextValue}>
       {children}
     </BriefingContext.Provider>
   );

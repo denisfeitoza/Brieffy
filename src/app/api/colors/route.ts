@@ -97,6 +97,9 @@ Return ONLY valid JSON: {"colors": [${Array.from({length: numToGenerate}, (_, i)
 
     console.log(`[Colors API] type=${type}, num=${numToGenerate}, hint="${hint || ''}", kept=${JSON.stringify(kept)}`);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
     const res = await fetch(llmConfig.baseUrl, {
       method: "POST",
       headers: {
@@ -110,7 +113,10 @@ Return ONLY valid JSON: {"colors": [${Array.from({length: numToGenerate}, (_, i)
         max_tokens: 500,
         messages,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const errText = await res.text();

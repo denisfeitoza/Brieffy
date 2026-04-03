@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { memo, useMemo, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { memo, useMemo, useState, useEffect, useCallback } from "react";
 import { getContrastColor } from "@/lib/utils";
 
 interface AILoadingSplashProps {
@@ -13,26 +13,47 @@ interface AILoadingSplashProps {
     tagline?: string;
   };
   language?: string;
-  /** Number of selected skill packages — influences progress bar duration */
   skillCount?: number;
+  requirePassword?: boolean;
+  sessionId?: string;
+  onAccessUnlocked?: () => void;
 }
 
 // ─── i18n messages ──────────────────────────────────────
-const SPLASH_I18N: Record<string, { generating: string; subtitle: string; footer: string }> = {
+const SPLASH_I18N: Record<string, {
+  generating: string; subtitle: string; footer: string;
+  passwordTitle: string; passwordPlaceholder: string; passwordButton: string;
+  passwordError: string; passwordHint: string;
+}> = {
   pt: {
     generating: "Gerando seu briefing personalizado",
     subtitle: "Vamos começar com uma conversa aberta sobre você e seu negócio — depois aprofundamos juntos",
     footer: "Com a Brief.i, responda briefings mais rápido e de forma inteligente. Aprendemos com suas respostas para gerar as próximas com base nelas.",
+    passwordTitle: "Acesso Protegido",
+    passwordPlaceholder: "Digite a senha de acesso",
+    passwordButton: "Entrar",
+    passwordError: "Senha incorreta. Tente novamente.",
+    passwordHint: "Solicite a senha ao responsável pelo briefing.",
   },
   en: {
     generating: "Generating your personalized briefing",
     subtitle: "We'll start with an open conversation about you and your business — then dive deeper together",
     footer: "With Brief.i, answer briefings faster and smarter. We learn from your responses to generate even better ones next time.",
+    passwordTitle: "Protected Access",
+    passwordPlaceholder: "Enter the access password",
+    passwordButton: "Enter",
+    passwordError: "Incorrect password. Please try again.",
+    passwordHint: "Ask the briefing owner for the password.",
   },
   es: {
     generating: "Generando su briefing personalizado",
     subtitle: "Comenzaremos con una conversación abierta sobre usted y su negocio — después profundizamos juntos",
     footer: "Con Brief.i, responda briefings más rápido e inteligente. Aprendemos de sus respuestas para generar las próximas basándonos en ellas.",
+    passwordTitle: "Acceso Protegido",
+    passwordPlaceholder: "Ingrese la contraseña de acceso",
+    passwordButton: "Entrar",
+    passwordError: "Contraseña incorrecta. Intente de nuevo.",
+    passwordHint: "Solicite la contraseña al responsable del briefing.",
   },
 };
 
@@ -253,10 +274,50 @@ export const AILoadingSplash = memo(function AILoadingSplash({
   branding,
   language = "pt",
   skillCount = 0,
+  requirePassword = false,
+  sessionId,
+  onAccessUnlocked,
 }: AILoadingSplashProps) {
-  // Progress bar synced with splash dismiss: base 1.6s + 0.2s per skill, capped at 2.6s
   const progressDuration = Math.min(1.6 + skillCount * 0.2, 2.6);
   const t = SPLASH_I18N[language] || SPLASH_I18N.pt;
+
+  // Password gate state
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [unlocked, setUnlocked] = useState(!requirePassword);
+
+  const handleVerifyPassword = useCallback(async () => {
+    if (!password.trim() || isVerifying) return;
+    setIsVerifying(true);
+    setPasswordError("");
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
+      const res = await fetch("/api/briefing/verify-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({ sessionId, password: password.trim() }),
+      });
+
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      if (data.valid) {
+        setUnlocked(true);
+        onAccessUnlocked?.();
+      } else {
+        setPasswordError(data.error || t.passwordError);
+      }
+    } catch {
+      setPasswordError(t.passwordError);
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [password, isVerifying, sessionId, onAccessUnlocked, t.passwordError]);
   const brandColor = branding.brand_color || "#6366f1";
   const accentColor = branding.brand_accent || "#06b6d4";
   const contrastColor = getContrastColor(brandColor);
@@ -534,55 +595,153 @@ export const AILoadingSplash = memo(function AILoadingSplash({
           ))}
         </div>
 
-        {/* Loading Text with Typewriter */}
-        <div className="text-center space-y-2.5 max-w-xs md:max-w-sm px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-          >
-            <h1
-              className="text-lg md:text-xl font-medium text-white tracking-tight"
-              style={{ fontFamily: '"Outfit", sans-serif' }}
+        {/* Loading Text / Password Gate */}
+        <AnimatePresence mode="wait">
+          {requirePassword && !unlocked ? (
+            <motion.div
+              key="password-gate"
+              className="text-center space-y-4 max-w-xs md:max-w-sm px-4 w-full"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12, scale: 0.95 }}
+              transition={{ delay: 0.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TypewriterText text={t.generating} />
-            </h1>
-          </motion.div>
-          <motion.p
-            className="text-xs md:text-sm text-neutral-500 leading-relaxed"
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: `${brandColor}20`, border: `1px solid ${brandColor}30` }}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke={brandColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </div>
+                <h2
+                  className="text-lg md:text-xl font-semibold text-white tracking-tight"
+                  style={{ fontFamily: '"Outfit", sans-serif' }}
+                >
+                  {t.passwordTitle}
+                </h2>
+              </div>
+
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                {t.passwordHint}
+              </p>
+
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (passwordError) setPasswordError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleVerifyPassword();
+                    }}
+                    placeholder={t.passwordPlaceholder}
+                    autoFocus
+                    className="w-full h-12 px-4 bg-white/[0.06] border border-white/10 rounded-xl text-white text-sm placeholder:text-neutral-600 outline-none transition-all duration-200 focus:border-white/20 focus:bg-white/[0.08] focus:ring-2 focus:ring-white/5"
+                    style={{ fontFamily: '"Inter", sans-serif' }}
+                  />
+                </div>
+
+                <AnimatePresence>
+                  {passwordError && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -4, height: 0 }}
+                      className="text-xs text-red-400 font-medium"
+                    >
+                      {passwordError}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+
+                <motion.button
+                  onClick={handleVerifyPassword}
+                  disabled={!password.trim() || isVerifying}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full h-11 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{
+                    background: `linear-gradient(135deg, ${brandColor}, ${accentColor || brandColor})`,
+                    color: contrastColor,
+                    boxShadow: `0 4px 20px ${brandColor}30`,
+                  }}
+                >
+                  {isVerifying ? (
+                    <motion.div
+                      className="w-4 h-4 border-2 rounded-full"
+                      style={{ borderColor: `${contrastColor}40`, borderTopColor: contrastColor }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                    />
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                      {t.passwordButton}
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="loading-text"
+              className="text-center space-y-2.5 max-w-xs md:max-w-sm px-4"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: requirePassword ? 0.2 : 0.6, duration: 0.5 }}
+            >
+              <h1
+                className="text-lg md:text-xl font-medium text-white tracking-tight"
+                style={{ fontFamily: '"Outfit", sans-serif' }}
+              >
+                <TypewriterText text={t.generating} />
+              </h1>
+              <motion.p
+                className="text-xs md:text-sm text-neutral-500 leading-relaxed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: requirePassword ? 1.0 : 1.8, duration: 0.8 }}
+              >
+                {t.subtitle}
+              </motion.p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Loading Dots Bar — only show when not in password mode */}
+        {(!requirePassword || unlocked) && (
+          <motion.div
+            className="flex gap-1.5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.8, duration: 0.8 }}
+            transition={{ delay: requirePassword ? 0.3 : 0.8 }}
           >
-            {t.subtitle}
-          </motion.p>
-        </div>
-
-        {/* Loading Dots Bar */}
-        <motion.div
-          className="flex gap-1.5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
-          {[0, 1, 2, 3, 4].map((i) => (
-            <motion.div
-              key={`dot-${i}`}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: i % 2 === 0 ? brandColor : accentColor }}
-              animate={{
-                scale: [1, 2, 1],
-                opacity: [0.3, 1, 0.3],
-              }}
-              transition={{
-                duration: 1.4,
-                delay: i * 0.12,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </motion.div>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <motion.div
+                key={`dot-${i}`}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ background: i % 2 === 0 ? brandColor : accentColor }}
+                animate={{
+                  scale: [1, 2, 1],
+                  opacity: [0.3, 1, 0.3],
+                }}
+                transition={{
+                  duration: 1.4,
+                  delay: i * 0.12,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </motion.div>
+        )}
       </motion.div>
 
       {/* ══════════════════════════════════════════

@@ -8,7 +8,7 @@ import {
   CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2,
   Brain, Palette, Cpu, Megaphone, Headphones, DollarSign,
   Users, TrendingUp, Truck, Lightbulb, Shield, Server,
-  ShoppingCart, Video, ChevronDown,
+  ShoppingCart, Video, ChevronDown, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -125,6 +125,7 @@ export default function NewBriefingWizard() {
   const [aiSuggestedSlugs, setAiSuggestedSlugs] = useState<string[]>([]);
   const [aiReasoning, setAiReasoning] = useState('');
   const [editPassphrase, setEditPassphrase] = useState(() => generatePassphrase());
+  const [accessPassword, setAccessPassword] = useState('');
   
   // ── Step 3: Done ────────────────
   const [generatedLink, setGeneratedLink] = useState('');
@@ -264,6 +265,7 @@ export default function NewBriefingWizard() {
           initial_context: initialContext.trim() || null,
           selected_packages: selectedSlugs,
           edit_passphrase: editPassphrase.trim() || undefined,
+          access_password: accessPassword.trim() || null,
           status: 'pending',
           user_id: user?.id || null,
         }])
@@ -294,7 +296,10 @@ export default function NewBriefingWizard() {
   // ── Share (link + passphrase) ───
   const [shared, setShared] = useState(false);
   const shareAll = useCallback(() => {
-    const text = `🔗 Link do Briefing:\n${generatedLink}${editPassphrase ? `\n\n🔑 Senha: ${editPassphrase}` : ''}`;
+    const parts = [`🔗 Link do Briefing:\n${generatedLink}`];
+    if (accessPassword) parts.push(`🔒 Senha de Acesso: ${accessPassword}`);
+    if (editPassphrase) parts.push(`🔑 Palavra-chave do Documento: ${editPassphrase}`);
+    const text = parts.join('\n\n');
     navigator.clipboard.writeText(text);
     setShared(true);
     setTimeout(() => setShared(false), 2500);
@@ -647,6 +652,29 @@ export default function NewBriefingWizard() {
                 ))}
               </div>
               
+              {/* ── Access Password (optional, recommended) ───── */}
+              <div className="pt-4 border-t border-white/5 space-y-2.5">
+                <label className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  Senha de Acesso ao Briefing
+                  <span className="text-amber-400/80 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                    Recomendado
+                  </span>
+                </label>
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  O cliente precisará digitar esta senha antes de começar. Protege o link contra acessos indesejados.
+                </p>
+                <div className="relative">
+                  <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" />
+                  <Input
+                    value={accessPassword}
+                    onChange={e => setAccessPassword(e.target.value)}
+                    className="bg-black/40 border-white/10 focus-visible:ring-amber-500/40 h-11 text-sm rounded-xl pl-10 placeholder:text-zinc-600"
+                    placeholder="Ex: acme2026"
+                  />
+                </div>
+              </div>
+
               {/* ── Passphrase ──────────────── */}
               <div className="pt-4 border-t border-white/5 space-y-2.5">
                 <div className="flex items-center justify-between">
