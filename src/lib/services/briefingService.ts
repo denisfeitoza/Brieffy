@@ -176,7 +176,10 @@ export async function getTemplates() {
 
   const { data, error } = await supabase
     .from('briefing_templates')
-    .select('*')
+    .select(`
+      *,
+      briefing_sessions(id, edit_passphrase, status)
+    `)
     .order('created_at', { ascending: false });
 
   if (error) {

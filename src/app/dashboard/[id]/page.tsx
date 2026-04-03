@@ -430,18 +430,26 @@ async function SessionContent({ id }: { id: string }) {
                         <div className="flex-1 flex flex-col items-end">
                            <div className="inline-block px-5 py-3.5 rounded-2xl rounded-tr-sm border border-emerald-500/20 bg-emerald-950/20 max-w-[90%]">
                               {inputType === 'file_upload' && (
-                                <div className="space-y-3">
-                                  {String(answerRaw).match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                    <img src={String(answerRaw)} alt="Upload do cliente" className="max-h-60 rounded-xl border border-white/10" />
-                                  ) : (
-                                    <div className="flex items-center gap-3 bg-black/40 p-3 rounded-lg border border-white/5">
-                                      <FileText className="w-6 h-6 text-emerald-400" />
-                                      <span className="text-xs font-medium text-emerald-200 break-all">{String(answerRaw).split('/').pop()}</span>
-                                    </div>
-                                  )}
-                                  <a href={String(answerRaw)} target="_blank" rel="noopener noreferrer" className="block w-full">
-                                    <Button variant="secondary" size="sm" className="w-full h-8 text-xs font-medium bg-emerald-900/50 hover:bg-emerald-800/80 text-emerald-300">BAIXAR</Button>
-                                  </a>
+                                <div className="space-y-3 flex flex-wrap gap-2">
+                                  {(Array.isArray(answerRaw) ? answerRaw : [answerRaw]).map((url: any, i: number) => {
+                                    const strUrl = String(url);
+                                    if (!strUrl) return null;
+                                    return (
+                                      <div key={i} className="flex flex-col gap-2 max-w-full">
+                                        {strUrl.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                          <img src={strUrl} alt={`Upload ${i}`} className="max-h-60 rounded-xl border border-white/10" />
+                                        ) : (
+                                          <div className="flex items-center gap-3 bg-black/40 p-3 rounded-lg border border-white/5 w-full">
+                                            <FileText className="w-6 h-6 text-emerald-400 shrink-0" />
+                                            <span className="text-xs font-medium text-emerald-200 break-all truncate">{strUrl.split('/').pop()}</span>
+                                          </div>
+                                        )}
+                                        <a href={strUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                                          <Button variant="secondary" size="sm" className="w-full h-8 text-xs font-medium bg-emerald-900/50 hover:bg-emerald-800/80 text-emerald-300">BAIXAR</Button>
+                                        </a>
+                                      </div>
+                                    )
+                                  })}
                                 </div>
                               )}
                               
@@ -521,7 +529,7 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
   return (
     <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto pb-20">
       {/* Back navigation */}
-      <Link href="/dashboard" className="inline-block group mb-2">
+      <Link href="/dashboard/templates" className="inline-block group mb-2">
         <div className="flex items-center text-sm font-medium text-zinc-400 group-hover:text-cyan-400 transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5">
           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
           Voltar para Meus Briefings

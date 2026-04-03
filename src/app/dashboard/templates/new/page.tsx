@@ -128,6 +128,7 @@ export default function NewBriefingWizard() {
   
   // ── Step 3: Done ────────────────
   const [generatedLink, setGeneratedLink] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const [copied, setCopied] = useState(false);
   
   // ── Loading States ──────────────
@@ -273,6 +274,7 @@ export default function NewBriefingWizard() {
       
       const host = window.location.origin;
       setGeneratedLink(`${host}/b/${data.id}`);
+      setSessionId(data.id);
       setStep(3);
     } catch (err) {
       console.error('Error generating session:', err);
@@ -292,7 +294,7 @@ export default function NewBriefingWizard() {
   // ── Share (link + passphrase) ───
   const [shared, setShared] = useState(false);
   const shareAll = useCallback(() => {
-    const text = `🔗 Link do Briefing:\n${generatedLink}\n\n🔑 Senha: ${editPassphrase}`;
+    const text = `🔗 Link do Briefing:\n${generatedLink}${editPassphrase ? `\n\n🔑 Senha: ${editPassphrase}` : ''}`;
     navigator.clipboard.writeText(text);
     setShared(true);
     setTimeout(() => setShared(false), 2500);
@@ -760,8 +762,8 @@ export default function NewBriefingWizard() {
                     <Lock className="w-3 h-3 text-zinc-500" />
                     <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-bold">Senha</span>
                   </div>
-                  <span className="text-2xl font-mono font-bold text-cyan-400 tracking-wider">
-                    {editPassphrase}
+                  <span className={`text-2xl font-mono font-bold tracking-wider ${editPassphrase ? 'text-cyan-400' : 'text-zinc-500 italic text-lg'}`}>
+                    {editPassphrase || 'Não definida (Acesso direto)'}
                   </span>
                 </div>
                 
@@ -783,10 +785,10 @@ export default function NewBriefingWizard() {
                 <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
                   <Button
                     variant="outline"
-                    onClick={() => router.push('/dashboard/templates')}
-                    className="flex-1 border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl h-11"
+                    onClick={() => router.push(`/dashboard/${sessionId}`)}
+                    className="flex-1 border-white/10 text-cyan-400 hover:text-cyan-300 hover:bg-white/5 rounded-xl h-11"
                   >
-                    Ver Meus Briefings
+                    Ver Dados Deste Briefing
                   </Button>
                   <Button
                     onClick={() => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu,
   Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck,
@@ -73,11 +74,13 @@ interface CategoryPackage {
 interface GenerateLinkModalProps {
   templateId: string;
   templateName: string;
+  existingSession?: { id: string; edit_passphrase?: string | null };
 }
 
-export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModalProps) {
+export function GenerateLinkModal({ templateId, templateName, existingSession }: GenerateLinkModalProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<'create' | 'done'>('create');
+  const [step, setStep] = useState<'create' | 'done'>(existingSession ? 'done' : 'create');
 
   // Form state
   const [sessionName, setSessionName] = useState('');
@@ -101,11 +104,18 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
   // Fetch packages on open
   useEffect(() => {
     if (open) {
-      if (packages.length === 0) fetchPackages();
-      if (!editPassphrase) generateCoolPassphrase();
+      if (existingSession) {
+        setStep('done');
+        const host = window.location.origin;
+        setGeneratedLink(`${host}/b/${existingSession.id}`);
+        if (existingSession.edit_passphrase) setEditPassphrase(existingSession.edit_passphrase);
+      } else {
+        if (packages.length === 0) fetchPackages();
+        if (!editPassphrase) generateCoolPassphrase();
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, existingSession]);
 
   const generateCoolPassphrase = () => {
     const words = [
@@ -140,20 +150,27 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
+      if (!existingSession && generatedLink) {
+        router.refresh();
+      }
       setTimeout(() => {
-        setStep('create');
-        setSessionName('');
-        setInitialContext('');
-        setEditPassphrase('');
-        setGeneratedLink('');
-        setCopied(false);
-        setShowContext(false);
-        setAiSuggestedSlugs([]);
-        setAiReasoning('');
-        const defaults = packages
-          .filter(p => p.is_default_enabled)
-          .map(p => p.slug);
-        setSelectedSlugs(defaults);
+        if (existingSession) {
+          setStep('done');
+        } else {
+          setStep('create');
+          setSessionName('');
+          setInitialContext('');
+          setEditPassphrase('');
+          setGeneratedLink('');
+          setCopied(false);
+          setShowContext(false);
+          setAiSuggestedSlugs([]);
+          setAiReasoning('');
+          const defaults = packages
+            .filter(p => p.is_default_enabled)
+            .map(p => p.slug);
+          setSelectedSlugs(defaults);
+        }
       }, 300);
     }
   };
@@ -240,8 +257,7 @@ export function GenerateLinkModal({ templateId, templateName }: GenerateLinkModa
   const copyToClipboard = () => {
     const text = `🔗 Link do Briefing:
 ${generatedLink}
-
-🔑 Palavra-chave: ${editPassphrase}`;
+${editPassphrase ? `\n🔑 Palavra-chave: ${editPassphrase}` : ''}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -582,11 +598,13 @@ ${generatedLink}
                     Palavra-Chave
                   </span>
                 </div>
-                <span className="text-xl font-mono font-bold text-cyan-400 tracking-wider">
-                  {editPassphrase}
+                <span className={`text-xl font-mono font-bold tracking-wider ${editPassphrase ? 'text-cyan-400' : 'text-zinc-500 italic text-sm'}`}>
+                  {editPassphrase || 'Não definida (Acesso direto)'}
                 </span>
                 <p className="text-[10px] text-zinc-600 text-center mt-2 max-w-[250px] leading-relaxed">
-                  O cliente usará esta senha para acessar e editar o documento final.
+                  {editPassphrase 
+                    ? 'O cliente usará esta senha para acessar e editar o documento final.' 
+                    : 'O cliente poderá acessar o briefing sem necessidade de senha.'}
                 </p>
               </div>
 

@@ -71,7 +71,14 @@ async function TemplatesList() {
 
           <div className="px-6 pb-6 pt-0">
             <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-              <GenerateLinkModal templateId={template.id} templateName={template.name} />
+              <GenerateLinkModal 
+                templateId={template.id} 
+                templateName={template.name} 
+                existingSession={template.briefing_sessions?.[0] ? {
+                  id: template.briefing_sessions[0].id,
+                  edit_passphrase: template.briefing_sessions[0].edit_passphrase
+                } : undefined}
+              />
             </div>
           </div>
         </div>
