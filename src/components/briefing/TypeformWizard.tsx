@@ -191,7 +191,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     // If password is required and not yet unlocked, don't auto-dismiss
     if (hasAccessPassword && !accessUnlocked) return;
 
-    const splashDuration = Math.min(1800 + (selectedPackageDetails?.length || 0) * 200, 2800);
+    const splashDuration = 800; // Fast 800ms loading duration for highly fluid UX
     splashTimerRef.current = setTimeout(dismissSplash, splashDuration);
     return () => {
       if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
