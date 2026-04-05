@@ -341,7 +341,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     } else {
       goNext();
     }
-  }, [messages, currentStepIndex, inputText, submitAnswer, goNext]);
+  }, [messages, currentStepIndex, inputText, submitAnswer, goNext, draftKey]);
 
   const activeMessage = messages[currentStepIndex];
 
@@ -382,7 +382,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
           >
             <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
             <div className="hidden sm:flex flex-col justify-center">
-              <span className="font-outfit font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
+              <span className="font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
                 {activeCompanyName}
               </span>
               {branding.tagline && (
@@ -435,7 +435,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                     <Sparkles className="w-10 h-10" style={{ color: activeColor }} />
                   </div>
                   <div className="space-y-3">
-                    <h2 className="text-3xl font-outfit font-medium text-[var(--text)]">{(I18N[chosenLanguage] || I18N.pt).generatingDoc}</h2>
+                    <h2 className="text-3xl font-medium text-[var(--text)]" style={{ fontFamily: '"Outfit", sans-serif' }}>{(I18N[chosenLanguage] || I18N.pt).generatingDoc}</h2>
                     <p className="text-lg text-gray-500">{(I18N[chosenLanguage] || I18N.pt).analyzingResponses.replace('{count}', String(messages.length))}</p>
                     {/* Animated dots indicator */}
                     <div className="flex gap-1.5 justify-center pt-2">
@@ -464,7 +464,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   className="w-full max-w-5xl flex flex-col space-y-6 shrink-0 py-8"
                 >
                   <div className="flex flex-col space-y-2 text-center mb-4">
-                    <h2 className="text-3xl font-outfit text-[var(--text)]">{t.docReadyTitle}</h2>
+                    <h2 className="text-3xl text-[var(--text)]" style={{ fontFamily: '"Outfit", sans-serif' }}>{t.docReadyTitle}</h2>
                     <p className="text-gray-500">{t.docReadyDesc}</p>
                   </div>
 
@@ -533,7 +533,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   className="w-full max-w-2xl flex flex-col items-center text-center space-y-8 shrink-0 py-8"
                 >
                   <div className="space-y-4">
-                     <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-[var(--text)] leading-tight">
+                     <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-[var(--text)] leading-tight" style={{ fontFamily: '"Outfit", sans-serif' }}>
                       {/* BUG-07 FIX: Show error title when document generation failed */}
                       {documentError
                         ? (chosenLanguage === 'en' ? 'Something went wrong' : chosenLanguage === 'es' ? 'Algo salió mal' : 'Algo deu errado')
@@ -610,7 +610,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
             >
               <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
               <div className="hidden sm:flex flex-col justify-center">
-                <span className="font-outfit font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
+                <span className="font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
                   {activeCompanyName}
                 </span>
                 {branding.tagline && (
@@ -704,7 +704,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
       <main ref={mainRef} className="flex-1 w-full overflow-y-auto overflow-x-hidden">
         <div className="min-h-full w-full flex flex-col relative px-6 lg:px-12">
           
-          <div className="flex-[1_0_auto]" />
+          <div className="flex-1 min-h-0" />
 
           <div className="w-full max-w-3xl mx-auto flex flex-col shrink-0">
             <AnimatePresence mode="wait">
@@ -756,7 +756,8 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
                 {/* The IA Formatted Question — stagger entrance for premium feel */}
                 <motion.h1
-                  className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-[var(--text)] leading-tight"
+                  className="text-2xl md:text-5xl font-medium tracking-tight text-[var(--text)] leading-tight"
+                  style={{ fontFamily: `"${activeFont}", "Outfit", sans-serif` }}
                   initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
@@ -875,7 +876,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   );
 
   return (
-    <>
+    <div className="h-full w-full relative overflow-hidden">
       <AnimatePresence mode="wait">
         {showSplash && (
           <AILoadingSplash
@@ -903,6 +904,6 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
           <div className="w-6 h-6 border-b-2 border-current rounded-full animate-spin text-[var(--orange)]" />
         </div>
       )}
-    </>
+    </div>
   );
 }

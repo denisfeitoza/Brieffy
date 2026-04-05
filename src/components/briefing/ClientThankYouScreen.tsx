@@ -108,7 +108,7 @@ export function ClientThankYouScreen({
             transition={{ delay: 1.2, duration: 0.6 }}
             className="space-y-3"
           >
-            <h1 className="text-3xl md:text-4xl font-outfit font-medium tracking-tight text-[var(--text)]">
+            <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-[var(--text)]" style={{ fontFamily: '"Outfit", sans-serif' }}>
               {t.thankYouTitle}
             </h1>
             <p className="text-lg text-gray-500 font-medium">
@@ -205,7 +205,7 @@ export function ClientThankYouScreen({
                     <path d="M1 1L13 13" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-                <h2 className="text-2xl font-outfit font-semibold mb-6 text-gray-800">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-800" style={{ fontFamily: '"Outfit", sans-serif' }}>
                   {t.reviewAnswers}
                 </h2>
                 <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar text-left text-sm">
