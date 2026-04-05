@@ -191,7 +191,11 @@ export async function getTemplates() {
 }
 
 export async function getTemplateById(id: string) {
-  const supabase = await createServerSupabaseClient();
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
   const { data, error } = await supabase
     .from('briefing_templates')
@@ -200,7 +204,7 @@ export async function getTemplateById(id: string) {
     .single();
 
   if (error) {
-    console.error(`Error fetching template ${id}:`, error);
+    console.error(`Error fetching template ${id}:`, error?.message || JSON.stringify(error));
     throw new Error('Template not found');
   }
 

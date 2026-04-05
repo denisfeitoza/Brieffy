@@ -180,7 +180,7 @@ export async function POST(req: Request) {
         .from("briefing_profiles")
         .select("company_summary, brand_color")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
         
       if (profile?.company_summary) agencySummary = profile.company_summary;
       if (profile?.brand_color) agencyBrandColor = profile.brand_color;

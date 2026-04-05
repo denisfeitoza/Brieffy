@@ -41,7 +41,12 @@ export function SingleChoiceInput({
 }: SingleChoiceInputProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [highlightInput, setHighlightInput] = useState(false);
+  const [showTextInput, setShowTextInput] = useState(false);
   const textInputRef = useRef<TextAudioInputHandle>(null);
+
+  useEffect(() => {
+    if (inputText.trim().length > 0) setShowTextInput(true);
+  }, [inputText]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -90,9 +95,10 @@ export function SingleChoiceInput({
   const handleOptionClick = (optText: string) => {
     if (isOtherOption(optText)) {
       // Redirect to text/voice input instead of submitting
+      setShowTextInput(true);
       setHighlightInput(true);
       setTimeout(() => setHighlightInput(false), 2000);
-      textInputRef.current?.scrollIntoView();
+      setTimeout(() => textInputRef.current?.scrollIntoView(), 100);
       return;
     }
     doSubmit(optText);
@@ -101,6 +107,7 @@ export function SingleChoiceInput({
   // Handler for BottomSheet "Other" option — close sheet then redirect
   const handleBottomSheetSelect = (optText: string) => {
     if (isOtherOption(optText)) {
+      setShowTextInput(true);
       setHighlightInput(true);
       setTimeout(() => setHighlightInput(false), 2000);
       // Small delay to allow bottom sheet close animation
@@ -187,20 +194,35 @@ export function SingleChoiceInput({
             </div>
           )}
         </div>
-        {highlightInput && (
-          <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300">
-            ↓ {specifyLabel}
-          </p>
+        {showTextInput ? (
+          <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            {highlightInput && (
+              <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">
+                ↓ {specifyLabel}
+              </p>
+            )}
+            <TextAudioInput
+              ref={textInputRef}
+              inputText={inputText}
+              setInputText={setInputText}
+              onSubmit={handleLocalSend}
+              isLoading={isLoading}
+              isSubmittingLocal={isSubmittingLocal}
+              voiceLanguage={voiceLanguage}
+            />
+          </div>
+        ) : (
+          <div className="flex justify-center mt-2 animate-in fade-in">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTextInput(true)}
+              className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
+            >
+              + {t.moreDetails || "Adicionar detalhes"}
+            </Button>
+          </div>
         )}
-        <TextAudioInput
-          ref={textInputRef}
-          inputText={inputText}
-          setInputText={setInputText}
-          onSubmit={handleLocalSend}
-          isLoading={isLoading}
-          isSubmittingLocal={isSubmittingLocal}
-          voiceLanguage={voiceLanguage}
-        />
       </div>
     );
   }
@@ -219,20 +241,35 @@ export function SingleChoiceInput({
           isDisabled={isLoading || isSubmittingLocal}
           label={t.viewOptions}
         />
-        {highlightInput && (
-          <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300">
-            ↓ {specifyLabel}
-          </p>
+        {showTextInput ? (
+          <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            {highlightInput && (
+              <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">
+                ↓ {specifyLabel}
+              </p>
+            )}
+            <TextAudioInput
+              ref={textInputRef}
+              inputText={inputText}
+              setInputText={setInputText}
+              onSubmit={handleLocalSend}
+              isLoading={isLoading}
+              isSubmittingLocal={isSubmittingLocal}
+              voiceLanguage={voiceLanguage}
+            />
+          </div>
+        ) : (
+          <div className="flex justify-center mt-2 animate-in fade-in">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTextInput(true)}
+              className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
+            >
+              + {t.moreDetails || "Adicionar detalhes"}
+            </Button>
+          </div>
         )}
-        <TextAudioInput
-          ref={textInputRef}
-          inputText={inputText}
-          setInputText={setInputText}
-          onSubmit={handleLocalSend}
-          isLoading={isLoading}
-          isSubmittingLocal={isSubmittingLocal}
-          voiceLanguage={voiceLanguage}
-        />
       </div>
     );
   }
@@ -273,20 +310,35 @@ export function SingleChoiceInput({
           </Button>
         )}
       </div>
-      {highlightInput && (
-        <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300">
-          ↓ {specifyLabel}
-        </p>
+      {showTextInput ? (
+        <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+          {highlightInput && (
+            <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">
+              ↓ {specifyLabel}
+            </p>
+          )}
+          <TextAudioInput
+            ref={textInputRef}
+            inputText={inputText}
+            setInputText={setInputText}
+            onSubmit={handleLocalSend}
+            isLoading={isLoading}
+            isSubmittingLocal={isSubmittingLocal}
+            voiceLanguage={voiceLanguage}
+          />
+        </div>
+      ) : (
+        <div className="flex justify-center mt-2 animate-in fade-in">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowTextInput(true)}
+            className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
+          >
+            + {t.moreDetails || "Adicionar detalhes"}
+          </Button>
+        </div>
       )}
-      <TextAudioInput
-        ref={textInputRef}
-        inputText={inputText}
-        setInputText={setInputText}
-        onSubmit={handleLocalSend}
-        isLoading={isLoading}
-        isSubmittingLocal={isSubmittingLocal}
-        voiceLanguage={voiceLanguage}
-      />
     </div>
   );
 }

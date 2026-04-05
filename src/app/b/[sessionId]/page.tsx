@@ -124,8 +124,10 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        savedMessagesSnapshot={savedMessagesSnapshot}
        savedStepIndex={savedStepIndex}
        initialTimeoutMs={perfConfig.timeoutMs}
+       initialIsFinished={session.status === 'finished'}
+       initialGeneratedDocument={session.final_assets?.document || null}
     >
-      <main className="h-screen w-full bg-neutral-950 font-inter">
+      <main className="h-screen w-full bg-[var(--bg)] font-inter">
         <TypeformWizard 
           hasAccessPassword={hasAccessPassword}
           accessSessionId={session.id}

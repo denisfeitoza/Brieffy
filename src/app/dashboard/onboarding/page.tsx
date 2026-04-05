@@ -16,7 +16,7 @@ export default async function OnboardingPage() {
        isOnboarding={true}
        initialContext="Onboarding inicial da agência/empresa para capturar perfil e identidade visual."
     >
-      <main className="h-screen w-full bg-neutral-950 font-inter">
+      <main className="h-screen w-full bg-[var(--bg)] font-inter">
         <TypeformWizard />
       </main>
     </BriefingProvider>

@@ -16,7 +16,8 @@ export async function supabaseRetry<T>(
       console.warn(`[Supabase] Retry ${attempt + 1}/${maxRetries}`);
       await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
     } else {
-      console.error('[Supabase] All retries exhausted:', result.error);
+      const errObj = result.error as { message?: string } | null;
+      console.error('[Supabase] All retries exhausted:', errObj?.message || String(result.error));
       return result;
     }
   }
@@ -37,11 +38,11 @@ export async function ensureSessionInDb(templateId: string | null): Promise<stri
     if (!error && data) {
       return data.id;
     } else {
-      console.error("Failed to start session in Supabase:", error);
+      console.error("Failed to start session in Supabase:", (error as any)?.message || JSON.stringify(error));
       return null;
     }
-  } catch (err) {
-    console.error("Failed to start session:", err);
+  } catch (err: any) {
+    console.error("Failed to start session:", err?.message || JSON.stringify(err));
     return null;
   }
 }
@@ -60,7 +61,7 @@ export async function persistSnapshotInDb(
     .eq('id', sessionId)
   );
 
-  if (error) console.error('[Snapshot] Failed to persist after retries:', error);
+  if (error) console.error('[Snapshot] Failed to persist after retries:', (error as any)?.message || JSON.stringify(error));
 }
 
 export async function logInteractionInDb(
@@ -91,10 +92,12 @@ export async function logInteractionInDb(
     );
 
     if (!error && data) return data.id;
-    console.error("Erro ao salvar interação após retries:", error);
+    const errObj = error as { message?: string } | null;
+    console.error("Erro ao salvar interação após retries:", errObj?.message || String(error));
     return null;
-  } catch (dbErr) {
-    console.error("Erro ao inserir interação:", dbErr);
+  } catch (dbErr: unknown) {
+    const errObj = dbErr as { message?: string } | null;
+    console.error("Erro ao inserir interação:", errObj?.message || String(dbErr));
     return null;
   }
 }
@@ -108,21 +111,21 @@ export async function clearFutureInteractionsInDb(
     .eq('session_id', sessionId)
     .gt('step_order', currentStepIndex);
     
-  if (error) console.error('Erro ao limpar interações futuras:', error);
+  if (error) console.error('Erro ao limpar interações futuras:', (error as any)?.message || JSON.stringify(error));
 }
 
 export async function updateSessionStateInDb(sessionId: string, sessionUpdate: Record<string, unknown>): Promise<void> {
   const { error } = await supabaseRetry(async () =>
     supabase.from('briefing_sessions').update(sessionUpdate).eq('id', sessionId)
   );
-  if (error) console.error('Erro ao atualizar progresso da sessão após retries:', error);
+  if (error) console.error('Erro ao atualizar progresso da sessão após retries:', (error as any)?.message || JSON.stringify(error));
 }
 
 export async function updateInteractionSignalInDb(interactionId: string, interactionUpdate: Record<string, unknown>): Promise<void> {
   const { error } = await supabaseRetry(async () =>
     supabase.from('briefing_interactions').update(interactionUpdate).eq('id', interactionId)
   );
-  if (error) console.error('Erro ao atualizar interação após retries:', error);
+  if (error) console.error('Erro ao atualizar interação após retries:', (error as any)?.message || JSON.stringify(error));
 }
 
 export async function markSessionAsFinishedInDb(
@@ -132,7 +135,7 @@ export async function markSessionAsFinishedInDb(
   const { error } = await supabase.from('briefing_sessions')
     .update(finishedPayload)
     .eq('id', sessionId);
-  if (error) console.error("Erro ao fechar sessão no DB:", error);
+  if (error) console.error("Erro ao fechar sessão no DB:", (error as any)?.message || JSON.stringify(error));
 }
 
 export async function finalizeDocumentInDb(
@@ -143,5 +146,5 @@ export async function finalizeDocumentInDb(
     .update(docPayload)
     .eq('id', sessionId);
 
-  if (error) console.error("Erro ao salvar documento no DB:", error);
+  if (error) console.error("Erro ao salvar documento no DB:", (error as any)?.message || JSON.stringify(error));
 }

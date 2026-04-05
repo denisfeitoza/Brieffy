@@ -175,7 +175,8 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
   // ─── AI Splash Screen on First Load ───
   const isResumedSession = messages.length > 1 && currentStepIndex > 0;
-  const [showSplash, setShowSplash] = useState(!isResumedSession);
+  // ALWAYS show splash on first load to mask API continuation latency and prevent initial flicker
+  const [showSplash, setShowSplash] = useState(true);
   const [justExitedSplash, setJustExitedSplash] = useState(false);
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [accessUnlocked, setAccessUnlocked] = useState(!hasAccessPassword);
@@ -191,13 +192,20 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     // If password is required and not yet unlocked, don't auto-dismiss
     if (hasAccessPassword && !accessUnlocked) return;
 
+    // If the briefing is currently loading (e.g. fetching the next question on resume),
+    // we hold the splash screen to prevent flickering questions.
+    if (isLoading) {
+      if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
+      return; 
+    }
+
     const splashDuration = 800; // Fast 800ms loading duration for highly fluid UX
     splashTimerRef.current = setTimeout(dismissSplash, splashDuration);
     return () => {
       if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessUnlocked]);
+  }, [accessUnlocked, isLoading, showSplash, dismissSplash]);
 
   const handleAccessUnlocked = useCallback(() => {
     setAccessUnlocked(true);
@@ -217,24 +225,31 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   }, [currentStepIndex]);
 
   const activeColor = useMemo(() => {
-    const colorPickerMsg = messages.find(m => m.questionType === 'color_picker' && m.userAnswer && Array.isArray(m.userAnswer) && m.userAnswer.length > 0);
-    return colorPickerMsg 
-      ? (colorPickerMsg.userAnswer as string[])[0] 
-      : (briefingState.brand_color as string) || branding.brand_color || '#171717';
-  }, [messages, briefingState.brand_color, branding.brand_color]);
+    if (isOnboarding) {
+      const colorPickerMsg = messages.find(m => m.questionType === 'color_picker' && m.userAnswer && Array.isArray(m.userAnswer) && m.userAnswer.length > 0);
+      const dynamicColor = colorPickerMsg 
+        ? (colorPickerMsg.userAnswer as string[])[0] 
+        : (briefingState.brand_color as string);
+      if (dynamicColor) return dynamicColor;
+    }
+    return branding.brand_color || '#171717';
+  }, [isOnboarding, messages, briefingState.brand_color, branding.brand_color]);
 
   const activeFont = useMemo(() => {
-    const fontMsg = messages.find(m => {
-      const txt = m.content?.toLowerCase() || '';
-      const isFontQ = txt.includes('tipografi') || (txt.includes('fonte') && !txt.includes('inspiraç'));
-      return isFontQ && typeof m.userAnswer === 'string';
-    });
-    const fontChoiceResult = fontMsg ? (fontMsg.userAnswer as string).split(' - ')[0].trim() : null;
-    const fontChoice = fontChoiceResult && !fontChoiceResult.toLowerCase().includes('nenhuma') && !fontChoiceResult.toLowerCase().includes('none') && !fontChoiceResult.toLowerCase().includes('padrão')
-      ? fontChoiceResult.replace(/[^a-zA-Z0-9 ]/g, '') 
-      : null;
-    return fontChoice || branding.brand_font || 'Outfit';
-  }, [messages, branding.brand_font]);
+    if (isOnboarding) {
+      const fontMsg = messages.find(m => {
+        const txt = m.content?.toLowerCase() || '';
+        const isFontQ = txt.includes('tipografi') || (txt.includes('fonte') && !txt.includes('inspiraç'));
+        return isFontQ && typeof m.userAnswer === 'string';
+      });
+      const fontChoiceResult = fontMsg ? (fontMsg.userAnswer as string).split(' - ')[0].trim() : null;
+      const fontChoice = fontChoiceResult && !fontChoiceResult.toLowerCase().includes('nenhuma') && !fontChoiceResult.toLowerCase().includes('none') && !fontChoiceResult.toLowerCase().includes('padrão')
+        ? fontChoiceResult.replace(/[^a-zA-Z0-9 ]/g, '') 
+        : null;
+      if (fontChoice) return fontChoice;
+    }
+    return branding.brand_font || 'Outfit';
+  }, [isOnboarding, messages, branding.brand_font]);
 
   useEffect(() => {
     // BUG-08 FIX: Track how many wizards are using the same font with a ref-count
@@ -272,12 +287,14 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   }, [activeFont]);
 
   const activeCompanyName = useMemo(() => {
-    const dynamicName = (briefingState.nome_empresa as string) || 
-                        (briefingState.company_name as string) || 
-                        (briefingState.empresa as string) || 
-                        (branding.company_name && branding.company_name !== 'Smart Briefing' ? branding.company_name : '');
-    return dynamicName || 'Sua Empresa';
-  }, [briefingState.nome_empresa, briefingState.company_name, briefingState.empresa, branding.company_name]);
+    if (isOnboarding) {
+      const dynamicName = (briefingState.nome_empresa as string) || 
+                          (briefingState.company_name as string) || 
+                          (briefingState.empresa as string);
+      if (dynamicName) return dynamicName;
+    }
+    return (branding.company_name && branding.company_name !== 'Smart Briefing') ? branding.company_name : 'Sua Empresa';
+  }, [isOnboarding, briefingState.nome_empresa, briefingState.company_name, briefingState.empresa, branding.company_name]);
 
   const isDiscoveryPhase = currentStepIndex >= 1 && currentStepIndex <= 3;
 
@@ -561,41 +578,12 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   }
 
   // ==========================
-  //  AI SPLASH SCREEN (first load)
+  //  TYPEFORM VIEW & HEADER
   // ==========================
-  if (showSplash) {
-    return (
-      <AnimatePresence mode="wait">
-        <AILoadingSplash
-          branding={{
-            logo_url: branding.logo_url,
-            company_name: activeCompanyName,
-            brand_color: branding.brand_color,
-            brand_accent: branding.brand_accent,
-            tagline: branding.tagline,
-          }}
-          language={chosenLanguage}
-          skillCount={selectedPackageDetails?.length || 0}
-          requirePassword={hasAccessPassword && !accessUnlocked}
-          sessionId={accessSessionId}
-          onAccessUnlocked={handleAccessUnlocked}
-        />
-      </AnimatePresence>
-    );
-  }
-
-  // ==========================
-  //  TYPEFORM VIEW
-  // ==========================
-  if (!activeMessage || activeMessage.role !== "assistant") {
-     // Safeguard for synchronization delays
-     return <div className="h-full flex items-center justify-center flex-col gap-4 text-[var(--text)]">{(I18N[chosenLanguage] || I18N.pt).loadingStep}</div>;
-  }
-
-  return (
+  const wizardContent = (
     <motion.div
-      className="flex flex-col h-full bg-[var(--bg)] text-[var(--text)] selection:bg-[#FF6029]/20"
-      style={{ '--brand-color': branding.brand_color, '--brand-accent': branding.brand_accent } as React.CSSProperties}
+      className="flex flex-col h-full bg-[var(--bg)] text-[var(--text)] selection:bg-[#FF6029]/20 flex-1 relative absolute inset-0 w-full"
+      style={{ '--brand-color': branding.brand_color, '--brand-accent': branding.brand_accent, zIndex: 10 } as React.CSSProperties}
       initial={justExitedSplash ? { opacity: 0, scale: 0.98, filter: 'blur(4px)' } : false}
       animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -605,31 +593,33 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
       <header className="flex items-center justify-between p-4 md:p-6 h-20 shrink-0">
         <div className="flex items-center gap-3">
           {currentStepIndex > 0 && (
-            <Button variant="ghost" size="icon" className="hover:bg-gray-100 shrink-0 border border-gray-200 bg-white shadow-sm rounded-full" onClick={goBack}>
-              <ArrowLeft className="w-5 h-5 text-gray-500" />
+            <Button variant="ghost" size="icon" className="hover:bg-gray-100 shrink-0 border border-gray-200 bg-white shadow-sm rounded-full w-10 h-10 transition-all text-gray-700" onClick={goBack}>
+              <ArrowLeft className="w-5 h-5" />
             </Button>
           )}
 
-          <div 
-            className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 transition-transform hover:scale-[1.02]"
-            style={{ 
-              backgroundColor: activeColor,
-              color: getContrastColor(activeColor),
-              fontFamily: `"${activeFont}", sans-serif`
-            }}
-          >
-            <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
-            <div className="hidden sm:flex flex-col justify-center">
-              <span className="font-outfit font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
-                {activeCompanyName}
-              </span>
-              {branding.tagline && (
-                <span className="text-[10px] uppercase font-semibold tracking-wider opacity-80 truncate max-w-[180px]">
-                  {branding.tagline}
+          {(isOnboarding || (activeCompanyName !== 'Brieffy' && activeCompanyName !== 'Smart Briefing')) && (
+            <div 
+              className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 transition-transform hover:scale-[1.02]"
+              style={{ 
+                backgroundColor: activeColor,
+                color: getContrastColor(activeColor),
+                fontFamily: `"${activeFont}", sans-serif`
+              }}
+            >
+              <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
+              <div className="hidden sm:flex flex-col justify-center">
+                <span className="font-outfit font-bold text-sm tracking-tight leading-tight" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
+                  {activeCompanyName}
                 </span>
-              )}
+                {branding.tagline && (
+                  <span className="text-[10px] uppercase font-semibold tracking-wider opacity-80 truncate max-w-[180px]">
+                    {branding.tagline}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right side: Packages, Progress and Logout */}
@@ -749,17 +739,6 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   </motion.div>
                 )}
 
-                {/* Depth Question Badge */}
-                {activeMessage.isDepthQuestion && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50/50 border border-orange-200/50 text-[#FF6029] text-xs font-semibold w-fit mb-2 shadow-sm"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6029] animate-pulse" />
-                    {chosenLanguage === 'en' ? 'Going deeper...' : chosenLanguage === 'es' ? 'Profundizando...' : 'Aprofundando...'}
-                  </motion.div>
-                )}
 
                 {/* Micro-feedback — subtle strategic insight from the AI (no emojis) */}
                 {activeMessage.microFeedback && (
@@ -871,5 +850,37 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
       {/* Active Listening Insights Panel — visible only to agency owner */}
       <InsightsPanel signals={detectedSignals} isOwner={isOwner} />
     </motion.div>
+  );
+
+  return (
+    <>
+      <AnimatePresence mode="wait">
+        {showSplash && (
+          <AILoadingSplash
+            key="splash"
+            branding={{
+              logo_url: branding.logo_url,
+              company_name: activeCompanyName,
+              brand_color: branding.brand_color,
+              brand_accent: branding.brand_accent,
+              tagline: branding.tagline,
+            }}
+            language={chosenLanguage}
+            skillCount={selectedPackageDetails?.length || 0}
+            requirePassword={hasAccessPassword && !accessUnlocked}
+            sessionId={accessSessionId}
+            onAccessUnlocked={handleAccessUnlocked}
+          />
+        )}
+      </AnimatePresence>
+
+      {!showSplash && activeMessage && activeMessage.role === "assistant" && wizardContent}
+      
+      {!showSplash && (!activeMessage || activeMessage.role !== "assistant") && (
+        <div className="h-screen w-full flex items-center justify-center flex-col gap-4 text-[var(--text)] absolute inset-0 bg-[var(--bg)]" style={{ zIndex: 10 }}>
+          <div className="w-6 h-6 border-b-2 border-current rounded-full animate-spin text-[var(--orange)]" />
+        </div>
+      )}
+    </>
   );
 }

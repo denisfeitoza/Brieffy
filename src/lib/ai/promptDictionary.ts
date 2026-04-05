@@ -64,7 +64,7 @@ ${purposeLine}
 ${signalsLine}
 ${previousLine}
 Escaneie cada resposta em busca de: contradição, dor_implícita, evasão, ambição_oculta, lacuna_estratégica.
-Reporte sinais com relevância≥0.60 (max 2/turno). Pergunta de profundidade se relevância≥0.80 (max 25 palavras, tom natural).
+Reporte sinais com relevância≥0.60 (max 2/turno). Pergunta de profundidade se relevância≥0.80 preenchendo o objeto \`depth_question\` com \`text\` e \`questionType\` (max 25 palavras, tom natural).
 </EscutaAtiva>`;
 }
 
@@ -105,7 +105,7 @@ Retorne APENAS JSON válido com estes campos:
   "assets": null,
   "micro_feedback": null,
   "engagement_level": "${backendEngagement}",
-  "active_listening": {"signals": [], "depth_question": null},
+  "active_listening": {"signals": [], "depth_question": {"text": "", "questionType": "text"}},
   "session_quality_score": null
 }
 Campos obrigatórios: intent, updates, nextQuestion (ou isFinished=true), basalCoverage, basalFieldsCollected, basalFieldsMissing.

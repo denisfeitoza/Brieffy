@@ -120,6 +120,10 @@ export function BriefingProvider({
   savedMessagesSnapshot?: Partial<Message>[];
   /** Step index for exact resume position */
   savedStepIndex?: number;
+  /** Pass finished session state */
+  initialIsFinished?: boolean;
+  /** Pass completed document */
+  initialGeneratedDocument?: string | null;
 }) {
   const endpoint = apiEndpoint || "/api/briefing";
   const branding = initialBranding || DEFAULT_BRANDING;
@@ -129,7 +133,7 @@ export function BriefingProvider({
   // ================================================================
   // RESUME SUPPORT — reconstruct messages from saved interactions or snapshot
   // ================================================================
-  const isResume = (savedMessagesSnapshot && savedMessagesSnapshot.length > 0) || (savedInteractions && savedInteractions.length > 0);
+  const isResume = (savedMessagesSnapshot && savedMessagesSnapshot.length > 0) || (savedInteractions && savedInteractions.length > 0) || initialIsFinished;
 
   const buildRestoredMessages = (): Message[] => {
     if (!isResume) return [
@@ -208,21 +212,36 @@ export function BriefingProvider({
   const [detectedSignals, setDetectedSignals] = useState<BriefingSignal[]>(savedSignals || []);
   const [engagementLevel, setEngagementLevel] = useState<'high' | 'medium' | 'low'>('high');
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [chosenLanguage, setChosenLanguage] = useState(savedLanguage || "pt"); // Default: Portuguese
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  
+  // Controle de estágios do final
+  const [isFinished, setIsFinished] = useState(initialIsFinished || false); // true quando a IA deu o verdict final
+  const [isUploadStep, setIsUploadStep] = useState(initialIsFinished || false); // Tela estática de upload
+  
+  const [assets, setAssets] = useState<FinalAssets | null>(null);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [basalInfo, setBasalInfo] = useState<BasalCoverageInfo>({
+    basalCoverage: savedBasalCoverage || 0,
+    currentSection: 'company',
+    basalFieldsCollected: [],
+    basalFieldsMissing: [],
+  });
+
+  const sessionPromiseRef = React.useRef<Promise<string | null> | null>(null);
+
   // Lazy session creation — only creates when user actually starts interacting
   const ensureSession = async (): Promise<string | null> => {
     if (sessionId) return sessionId;
-    if (sessionCreatedRef.current) return null; // Prevent race condition
-    sessionCreatedRef.current = true;
-
-    const newSessionId = await ensureSessionInDb(activeTemplate?.id || null);
+    if (sessionPromiseRef.current) return sessionPromiseRef.current;
     
-    if (newSessionId) {
-      setSessionId(newSessionId);
-      return newSessionId;
-    } else {
-      sessionCreatedRef.current = false;
-      return null;
-    }
+    sessionPromiseRef.current = ensureSessionInDb(activeTemplate?.id || null).then(newId => {
+      if (newId) setSessionId(newId);
+      return newId;
+    });
+    
+    return sessionPromiseRef.current;
   };
 
   const [messages, setMessages] = useState<Message[]>(() => buildRestoredMessages());
@@ -233,22 +252,6 @@ export function BriefingProvider({
     if (!isResume) return 0;
     if (typeof savedStepIndex === 'number') return savedStepIndex;
     return buildRestoredMessages().length - 1;
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [chosenLanguage, setChosenLanguage] = useState(savedLanguage || "pt"); // Default: Portuguese
-  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
-  
-  // Controle de estágios do final
-  const [isFinished, setIsFinished] = useState(false); // true quando a IA deu o verdict final
-  const [isUploadStep, setIsUploadStep] = useState(false); // Tela estática de upload
-  
-  const [assets, setAssets] = useState<FinalAssets | null>(null);
-  const [documentError, setDocumentError] = useState<string | null>(null);
-  const [basalInfo, setBasalInfo] = useState<BasalCoverageInfo>({
-    basalCoverage: savedBasalCoverage || 0,
-    currentSection: 'company',
-    basalFieldsCollected: [],
-    basalFieldsMissing: [],
   });
 
   const perfSettings = useMemo(() => ({ timeoutMs: initialTimeoutMs || 30000 }), [initialTimeoutMs]);
@@ -261,6 +264,13 @@ export function BriefingProvider({
   useEffect(() => {
     if (!isResume || hasRequestedResumeContinuation || isFinished) return;
     if (messages.length === 0) return;
+
+    // Se a última mensagem do histórico ainda não foi respondida pelo usuário,
+    // significa que estamos aguardando a interação dele (ex: tela de linguagem inicial
+    // para um link novo). Não devemos forçar continuação.
+    if (!messages[messages.length - 1].userAnswer) {
+      return;
+    }
 
     // Trigger continuation automatically
     const triggerResumeContinuation = async () => {
@@ -388,8 +398,8 @@ export function BriefingProvider({
   // SNAPSHOT PERSISTENCE — Save full messages + step index to DB
   // Enables seamless resume with all metadata (questionType, options, microFeedback, etc.)
   // ================================================================
-  const persistSnapshot = useCallback((updatedMessages: Message[], newStepIndex: number) => {
-    const sid = existingSessionId || sessionId;
+  const persistSnapshot = useCallback((updatedMessages: Message[], newStepIndex: number, currentSid?: string | null) => {
+    const sid = currentSid || existingSessionId || sessionId;
     if (!sid) return;
     
     const snapshot = updatedMessages.map(m => ({
@@ -660,21 +670,26 @@ export function BriefingProvider({
         const questionsToAdd: Omit<Message, 'id'>[] = [];
 
         if (data.active_listening?.depth_question) {
-          const dq = data.active_listening.depth_question;
-          questionsToAdd.push({
-            role: "assistant",
-            content: dq.text,
-            type: "question",
-            questionType: dq.questionType || 'text',
-            options: dq.options || [],
-            allowMoreOptions: false,
-            isDepthQuestion: true,
-            depthSignalCategory: dq.signal_category || 'implicit_pain',
-          });
-          console.log(`[ActiveListening] Depth question intercalated: "${dq.text}"`);
+          let dq = data.active_listening.depth_question;
+          if (typeof dq === 'string') {
+            dq = { text: dq, questionType: 'text', options: [] };
+          }
+          if (dq.text && dq.text.trim() !== '') {
+            questionsToAdd.push({
+              role: "assistant",
+              content: dq.text,
+              type: "question",
+              questionType: dq.questionType || 'text',
+              options: dq.options || [],
+              allowMoreOptions: false,
+              isDepthQuestion: true,
+              depthSignalCategory: dq.signal_category || 'implicit_pain',
+            });
+            console.log(`[ActiveListening] Depth question intercalated: "${dq.text}"`);
+          }
         }
 
-        if (data.nextQuestion) {
+        if (data.nextQuestion && data.nextQuestion.text && data.nextQuestion.text.trim() !== '') {
           questionsToAdd.push({
             role: "assistant",
             content: data.nextQuestion.text,
@@ -695,8 +710,8 @@ export function BriefingProvider({
               ...trunc,
               ...questionsToAdd.map(q => ({ ...q, id: crypto.randomUUID() }))
             ];
-            // Persist snapshot with the new messages array
-            persistSnapshot(updated, currentStepIndex + 1);
+            // Persist snapshot with the new messages array and explicitly passed activeSessionId
+            persistSnapshot(updated, currentStepIndex + 1, activeSessionId);
             return updated;
           });
           setCurrentStepIndex((prev) => prev + 1);
@@ -782,7 +797,7 @@ export function BriefingProvider({
             ...newMessages[currentStepIndex],
             options: [...existingOptions, ...data.nextQuestion.options],
           };
-          persistSnapshot(newMessages, currentStepIndex);
+          persistSnapshot(newMessages, currentStepIndex, activeSessionId);
           return newMessages;
         });
       }
@@ -800,7 +815,7 @@ export function BriefingProvider({
   // ================================================================
   // DOCUMENT GENERATION — Uses FULL conversation to create a deliverable
   // ================================================================
-  const [generatedDocument, setGeneratedDocument] = useState<string | null>(null);
+  const [generatedDocument, setGeneratedDocument] = useState<string | null>(initialGeneratedDocument || null);
   const [isGeneratingDocument, setIsGeneratingDocument] = useState(false);
   const [editToken, setEditToken] = useState<string | null>(null);
 

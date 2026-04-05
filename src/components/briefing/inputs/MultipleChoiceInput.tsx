@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRight, RefreshCw, Plus } from "lucide-react";
@@ -42,11 +42,16 @@ export function MultipleChoiceInput({
 }: MultipleChoiceInputProps) {
   const options = activeMessage.options || [];
   const [highlightInput, setHighlightInput] = useState(false);
+  const [showTextInput, setShowTextInput] = useState(false);
   const scrollTargetRef = useRef<HTMLDivElement>(null);
   const textInputRef = useRef<TextAudioInputHandle>(null);
 
   const optionTitles = options.map((opt) => parseOption(opt, 0).text);
   const customTexts = selectedMultiples.filter((item) => !optionTitles.includes(item));
+
+  useEffect(() => {
+    if (customTexts.length > 0 || inputText.trim().length > 0) setShowTextInput(true);
+  }, [customTexts.length, inputText]);
 
   const specifyLabel = voiceLanguage === "pt"
     ? "Especifique abaixo o que deseja:"
@@ -59,6 +64,7 @@ export function MultipleChoiceInput({
       setSelectedMultiples([...selectedMultiples, optText]);
       // If it's an "Other" option, redirect to text input
       if (isOtherOption(optText)) {
+        setShowTextInput(true);
         setHighlightInput(true);
         setTimeout(() => setHighlightInput(false), 2000);
         setTimeout(() => scrollTargetRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -110,37 +116,52 @@ export function MultipleChoiceInput({
       </div>
 
       <div ref={scrollTargetRef} className={`w-full transition-all mt-4 ${highlightInput ? 'opacity-100 ring-2 ring-[var(--orange)]/30 rounded-2xl p-2 bg-[var(--orange)]/5' : 'opacity-80 hover:opacity-100'}`}>
-        {highlightInput && (
-          <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300 mb-2">
-            ↓ {specifyLabel}
-          </p>
-        )}
-        <p className="text-sm text-center text-gray-500 mb-2">
-          {voiceLanguage === "pt"
-            ? "Adicione detalhes via texto ou áudio (opcional):"
-            : voiceLanguage === "es"
-            ? "Agregue detalles vía texto o audio (opcional):"
-            : "Add details via text or audio (optional):"}
-        </p>
         <CustomTextPills
           customTexts={customTexts}
           onRemove={(text) =>
             setSelectedMultiples(selectedMultiples.filter((t) => t !== text))
           }
         />
-        <TextAudioInput
-          ref={textInputRef}
-          inputText={inputText}
-          setInputText={setInputText}
-          onSubmit={handleLocalSend}
-          onAction={handleAddCustomText}
-          actionIcon={<Plus className="w-5 h-5" />}
-          isAddAction
-          isLoading={isLoading}
-          isSubmittingLocal={isSubmittingLocal}
-          selectedMultiplesCount={selectedMultiples.length}
-          voiceLanguage={voiceLanguage}
-        />
+        {showTextInput ? (
+          <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            {highlightInput && (
+              <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">
+                ↓ {specifyLabel}
+              </p>
+            )}
+            <p className="text-sm text-center text-gray-500 mb-2">
+              {voiceLanguage === "pt"
+                ? "Adicione detalhes via texto ou áudio (opcional):"
+                : voiceLanguage === "es"
+                ? "Agregue detalles vía texto o audio (opcional):"
+                : "Add details via text or audio (optional):"}
+            </p>
+            <TextAudioInput
+              ref={textInputRef}
+              inputText={inputText}
+              setInputText={setInputText}
+              onSubmit={handleLocalSend}
+              onAction={handleAddCustomText}
+              actionIcon={<Plus className="w-5 h-5" />}
+              isAddAction
+              isLoading={isLoading}
+              isSubmittingLocal={isSubmittingLocal}
+              selectedMultiplesCount={selectedMultiples.length}
+              voiceLanguage={voiceLanguage}
+            />
+          </div>
+        ) : (
+          <div className="flex justify-center mt-2 animate-in fade-in">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTextInput(true)}
+              className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
+            >
+              + {t.moreDetails || "Adicionar detalhes"}
+            </Button>
+          </div>
+        )}
       </div>
 
       <ScrollConfirmWrapper
