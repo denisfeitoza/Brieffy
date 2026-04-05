@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
 import { InsightsPanel } from "./InsightsPanel";
+import { BriefingActionsMenu } from "./BriefingActionsMenu";
 import { getContrastColor } from "@/lib/utils";
 
 const I18N: Record<string, Record<string, string>> = {
@@ -24,7 +25,7 @@ const I18N: Record<string, Record<string, string>> = {
     downloadDoc: "Baixar Documento (.md)",
     goToDashboard: "Ir para Dashboard",
     allSet: "Tudo Certo! Vamos gerar seu diagnóstico.",
-    uploadRef: "Analisamos todas as suas respostas para gerar um briefing completo e personalizado.",
+    uploadRef: "- Salvar progresso\n- Retomar depois\n- Histórico de respostas\n- **Resetar Briefing**: Permite apagar o histórico de interações e recomeçar a conversa mantendo os dados basais da empresa (Acesso via menu \"Mais Opções\").",
     generateDiag: "Gerar Diagnóstico",
     loadingStep: "Carregando etapa...",
     goBackAdjust: "Voltar e ajustar resposta anterior",
@@ -657,18 +658,12 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
              })()}%
           </div>
 
-          {/* Logout — only visible during onboarding */}
-          {isOnboarding && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              title="Sair da conta"
-              className="shrink-0 rounded-full w-9 h-9 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-200 bg-white shadow-sm"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          )}
+          {/* More Actions Menu */}
+          <BriefingActionsMenu 
+            sessionId={accessSessionId || briefingState.sessionId || ''} 
+            isOwner={!!isOwner} 
+            isOnboarding={!!isOnboarding} 
+          />
         </div>
       </header>
 

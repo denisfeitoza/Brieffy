@@ -146,6 +146,46 @@ export async function deleteSession(sessionId: string) {
   }
 }
 
+export async function resetSession(sessionId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  // 1. Delete all interactions
+  const { error: deleteError } = await supabase
+    .from('briefing_interactions')
+    .delete()
+    .eq('session_id', sessionId);
+
+  if (deleteError) {
+    console.error(`Error deleting interactions for session ${sessionId}:`, deleteError);
+    throw new Error('Failed to clear briefing history');
+  }
+
+  // 2. Reset session state
+  const { error: updateError } = await supabase
+    .from('briefing_sessions')
+    .update({
+      status: 'in_progress',
+      final_assets: null,
+      detected_signals: [],
+      document_content: null,
+      basal_coverage: 0,
+      basal_fields_collected: [],
+      current_section: 'company',
+      messages_snapshot: null,
+      current_step_index: 0,
+      session_quality_score: null,
+      engagement_summary: null,
+      data_completeness: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', sessionId);
+
+  if (updateError) {
+    console.error(`Error resetting session ${sessionId}:`, updateError);
+    throw new Error('Failed to reset session state');
+  }
+}
+
 // ========================
 // PACKAGES
 // ========================

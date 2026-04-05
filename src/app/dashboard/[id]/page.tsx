@@ -14,6 +14,7 @@ import { Suspense } from 'react';
 import CollectedBriefingData from '@/components/dashboard/CollectedBriefingData';
 import { humanizeFieldKey } from '@/lib/briefing/fieldLabels';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
 
 export const dynamic = 'force-dynamic';
 
@@ -407,6 +408,9 @@ async function SessionContent({ id }: { id: string }) {
                     </div>
                   </details>
                 )}
+
+                {/* ── ZONA DE PERIGO ────────────────────────────────────── */}
+                <SessionResetAction sessionId={session.id} />
               </div>
             </SheetContent>
           </Sheet>

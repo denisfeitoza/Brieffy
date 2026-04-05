@@ -122,6 +122,7 @@ export type PackageDetail = {
 };
 
 export type BriefingContextType = {
+  sessionId: string | null;
   briefingState: BriefingState;
   updateBriefingState: (updates: Partial<BriefingState>) => void;
   messages: Message[];
