@@ -200,6 +200,7 @@ O sistema deve permitir:
 - Salvar progresso
 - Retomar depois
 - Histórico de respostas
+- **Resetar Briefing**: Permite apagar o histórico de interações e recomeçar a conversa mantendo os dados basais da empresa (Acesso via menu "Mais Opções").
 
 ---
 

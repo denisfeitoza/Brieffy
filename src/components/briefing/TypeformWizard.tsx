@@ -660,7 +660,6 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
           {/* More Actions Menu */}
           <BriefingActionsMenu 
-            sessionId={accessSessionId || briefingState.sessionId || ''} 
             isOwner={!!isOwner} 
             isOnboarding={!!isOnboarding} 
           />
