@@ -96,8 +96,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   const navItems = [
-    { href: '/dashboard', icon: Home, labelKey: 'nav.dashboard', mobileLabel: 'Home', match: (p: string) => p === '/dashboard' || !!p.match(/^\/dashboard\/[0-9a-f]/) },
-    { href: '/dashboard/templates', icon: FileText, labelKey: 'nav.briefings', mobileLabel: 'Briefs', match: (p: string) => p.startsWith('/dashboard/templates') },
+    { href: '/dashboard/templates', icon: FileText, labelKey: 'nav.briefings', mobileLabel: 'Briefs', match: (p: string) => p === '/dashboard' || p.startsWith('/dashboard/templates') || !!p.match(/^\/dashboard\/[0-9a-f]/) },
     { href: '/dashboard/packages', icon: Package, labelKey: 'nav.aiPackages', mobileLabel: 'Skills', match: (p: string) => p.startsWith('/dashboard/packages') },
     { href: '/dashboard/profile', icon: User, labelKey: 'nav.myAccount', mobileLabel: 'Perfil', match: (p: string) => p.startsWith('/dashboard/profile') },
   ];

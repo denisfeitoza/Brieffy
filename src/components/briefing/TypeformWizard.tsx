@@ -206,7 +206,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
       if (splashTimerRef.current) clearTimeout(splashTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessUnlocked, isLoading, showSplash, dismissSplash]);
+  }, [accessUnlocked, hasAccessPassword, isLoading, showSplash, dismissSplash]);
 
   const handleAccessUnlocked = useCallback(() => {
     setAccessUnlocked(true);
@@ -581,9 +581,9 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   // ==========================
   //  TYPEFORM VIEW & HEADER
   // ==========================
-  const wizardContent = (
+  const wizardContent = (!activeMessage || activeMessage.role !== 'assistant') ? null : (
     <motion.div
-      className="flex flex-col h-full bg-[var(--bg)] text-[var(--text)] selection:bg-[#FF6029]/20 flex-1 relative absolute inset-0 w-full"
+      className="flex flex-col bg-[var(--bg)] text-[var(--text)] selection:bg-[#FF6029]/20 absolute inset-0 w-full"
       style={{ '--brand-color': branding.brand_color, '--brand-accent': branding.brand_accent, zIndex: 10 } as React.CSSProperties}
       initial={justExitedSplash ? { opacity: 0, scale: 0.98, filter: 'blur(4px)' } : false}
       animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
@@ -896,10 +896,10 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
         )}
       </AnimatePresence>
 
-      {!showSplash && activeMessage && activeMessage.role === "assistant" && wizardContent}
+      {!showSplash && wizardContent}
       
-      {!showSplash && (!activeMessage || activeMessage.role !== "assistant") && (
-        <div className="h-screen w-full flex items-center justify-center flex-col gap-4 text-[var(--text)] absolute inset-0 bg-[var(--bg)]" style={{ zIndex: 10 }}>
+      {!showSplash && !wizardContent && (
+        <div className="h-full w-full flex items-center justify-center flex-col gap-4 text-[var(--text)] absolute inset-0 bg-[var(--bg)]" style={{ zIndex: 10 }}>
           <div className="w-6 h-6 border-b-2 border-current rounded-full animate-spin text-[var(--orange)]" />
         </div>
       )}

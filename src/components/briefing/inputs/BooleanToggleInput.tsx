@@ -55,6 +55,7 @@ function BooleanButtons({ onSelect, disabled, t, initialAnswer }: DraggableToggl
           flex-1 flex flex-col items-center justify-center gap-2
           h-28 rounded-2xl border-2 font-bold text-xl uppercase tracking-widest
           transition-all duration-200 cursor-pointer select-none
+          ${isYes
             ? "bg-green-500 border-green-400 text-white shadow-[0_0_24px_rgba(34,197,94,0.4)]"
             : "bg-white border-gray-200 text-gray-500 hover:border-green-500/40 hover:bg-green-50 hover:text-green-600 shadow-sm"
           }
