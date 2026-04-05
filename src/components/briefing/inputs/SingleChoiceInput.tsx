@@ -44,9 +44,7 @@ export function SingleChoiceInput({
   const [showTextInput, setShowTextInput] = useState(false);
   const textInputRef = useRef<TextAudioInputHandle>(null);
 
-  useEffect(() => {
-    if (inputText.trim().length > 0) setShowTextInput(true);
-  }, [inputText]);
+  const isTextInputVisible = showTextInput || inputText.trim().length > 0;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -194,7 +192,7 @@ export function SingleChoiceInput({
             </div>
           )}
         </div>
-        {showTextInput ? (
+        {isTextInputVisible ? (
           <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
             {highlightInput && (
               <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">
@@ -241,7 +239,7 @@ export function SingleChoiceInput({
           isDisabled={isLoading || isSubmittingLocal}
           label={t.viewOptions}
         />
-        {showTextInput ? (
+        {isTextInputVisible ? (
           <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
             {highlightInput && (
               <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">
@@ -310,7 +308,7 @@ export function SingleChoiceInput({
           </Button>
         )}
       </div>
-      {showTextInput ? (
+      {isTextInputVisible ? (
         <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
           {highlightInput && (
             <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">

@@ -49,9 +49,7 @@ export function MultipleChoiceInput({
   const optionTitles = options.map((opt) => parseOption(opt, 0).text);
   const customTexts = selectedMultiples.filter((item) => !optionTitles.includes(item));
 
-  useEffect(() => {
-    if (customTexts.length > 0 || inputText.trim().length > 0) setShowTextInput(true);
-  }, [customTexts.length, inputText]);
+  const isTextInputVisible = showTextInput || customTexts.length > 0 || inputText.trim().length > 0;
 
   const specifyLabel = voiceLanguage === "pt"
     ? "Especifique abaixo o que deseja:"
@@ -122,7 +120,7 @@ export function MultipleChoiceInput({
             setSelectedMultiples(selectedMultiples.filter((t) => t !== text))
           }
         />
-        {showTextInput ? (
+        {isTextInputVisible ? (
           <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
             {highlightInput && (
               <p className="text-sm font-medium text-[var(--orange)] text-center animate-pulse mb-2">

@@ -145,6 +145,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     window.location.href = '/dashboard/login';
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const t = (I18N[chosenLanguage] || I18N.pt) as any;
 
   const [inputText, setInputText] = useState("");

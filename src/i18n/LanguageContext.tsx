@@ -16,19 +16,21 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Attempt automatic detection on mount
-    const savedLang = localStorage.getItem("brieffy_lang") as Language | null;
-    if (savedLang && ["pt", "en", "es"].includes(savedLang)) {
-      setLanguage(savedLang);
-    } else {
-      const browserLang = navigator.language.slice(0, 2).toLowerCase();
-      if (browserLang === "pt" || browserLang === "en" || browserLang === "es") {
-        setLanguage(browserLang as Language);
+    setTimeout(() => {
+      // Attempt automatic detection on mount
+      const savedLang = localStorage.getItem("brieffy_lang") as Language | null;
+      if (savedLang && ["pt", "en", "es"].includes(savedLang)) {
+        setLanguage(savedLang);
       } else {
-        setLanguage("en"); // fallback to en if unknown language
+        const browserLang = window.navigator.language.slice(0, 2).toLowerCase();
+        if (browserLang === "pt" || browserLang === "en" || browserLang === "es") {
+          setLanguage(browserLang as Language);
+        } else {
+          setLanguage("en"); // fallback to en if unknown language
+        }
       }
-    }
-    setIsInitialized(true);
+      setIsInitialized(true);
+    }, 0);
   }, []);
 
   const handleSetLanguage = (lang: Language) => {

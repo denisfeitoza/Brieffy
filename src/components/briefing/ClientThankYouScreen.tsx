@@ -14,7 +14,7 @@ interface Branding {
   brand_color?: string;
   company_name?: string;
   logo_url?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Translations {

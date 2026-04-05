@@ -348,7 +348,7 @@ export default function PackagesPage() {
         </Button>
         <Button 
           className="bg-[var(--orange)] hover:bg-[#E65625] text-white"
-          disabled={saving || !form.slug || !form.name || form.system_prompt_fragment?.length! < 10}
+          disabled={saving || !form.slug || !form.name || (form.system_prompt_fragment?.length ?? 0) < 10}
           onClick={handleSave}
         >
           <Save className="w-4 h-4 mr-1" /> {saving ? 'Salvando...' : 'Salvar Skill'}
@@ -363,7 +363,7 @@ export default function PackagesPage() {
         <div className="py-16 text-center text-gray-500 bg-[var(--bg2)] border border-dashed border-[var(--bd)] rounded-2xl">
           <Brain className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-600 font-medium">Nenhuma Skill encontrada.</p>
-          {isEditable && <p className="text-xs text-gray-400 mt-1">Clique em "Nova Skill" para criar a sua.</p>}
+          {isEditable && <p className="text-xs text-gray-400 mt-1">Clique em &quot;Nova Skill&quot; para criar a sua.</p>}
         </div>
       );
     }

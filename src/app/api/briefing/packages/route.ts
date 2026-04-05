@@ -98,7 +98,8 @@ export async function POST(req: Request) {
   if (authError || !user) return authError;
   try {
     const body = await req.json();
-    let { slug, name, description, icon, system_prompt_fragment, max_questions, is_default_enabled, sort_order, department, skill_type } = body;
+    let { slug, is_default_enabled, skill_type } = body;
+    const { name, description, icon, system_prompt_fragment, max_questions, sort_order, department } = body;
 
     if (!slug || !name) {
       return NextResponse.json({ error: "slug and name are required" }, { status: 400 });

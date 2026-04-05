@@ -38,11 +38,12 @@ export async function ensureSessionInDb(templateId: string | null): Promise<stri
     if (!error && data) {
       return data.id;
     } else {
-      console.error("Failed to start session in Supabase:", (error as any)?.message || JSON.stringify(error));
+      console.error("Failed to start session in Supabase:", (error as { message?: string })?.message || JSON.stringify(error));
       return null;
     }
-  } catch (err: any) {
-    console.error("Failed to start session:", err?.message || JSON.stringify(err));
+  } catch (err: unknown) {
+    const errObj = err as { message?: string } | null;
+    console.error("Failed to start session:", errObj?.message || JSON.stringify(err));
     return null;
   }
 }
@@ -61,7 +62,7 @@ export async function persistSnapshotInDb(
     .eq('id', sessionId)
   );
 
-  if (error) console.error('[Snapshot] Failed to persist after retries:', (error as any)?.message || JSON.stringify(error));
+  if (error) console.error('[Snapshot] Failed to persist after retries:', (error as { message?: string })?.message || JSON.stringify(error));
 }
 
 export async function logInteractionInDb(
@@ -111,21 +112,21 @@ export async function clearFutureInteractionsInDb(
     .eq('session_id', sessionId)
     .gt('step_order', currentStepIndex);
     
-  if (error) console.error('Erro ao limpar interações futuras:', (error as any)?.message || JSON.stringify(error));
+  if (error) console.error('Erro ao limpar interações futuras:', (error as { message?: string })?.message || JSON.stringify(error));
 }
 
 export async function updateSessionStateInDb(sessionId: string, sessionUpdate: Record<string, unknown>): Promise<void> {
   const { error } = await supabaseRetry(async () =>
     supabase.from('briefing_sessions').update(sessionUpdate).eq('id', sessionId)
   );
-  if (error) console.error('Erro ao atualizar progresso da sessão após retries:', (error as any)?.message || JSON.stringify(error));
+  if (error) console.error('Erro ao atualizar progresso da sessão após retries:', (error as { message?: string })?.message || JSON.stringify(error));
 }
 
 export async function updateInteractionSignalInDb(interactionId: string, interactionUpdate: Record<string, unknown>): Promise<void> {
   const { error } = await supabaseRetry(async () =>
     supabase.from('briefing_interactions').update(interactionUpdate).eq('id', interactionId)
   );
-  if (error) console.error('Erro ao atualizar interação após retries:', (error as any)?.message || JSON.stringify(error));
+  if (error) console.error('Erro ao atualizar interação após retries:', (error as { message?: string })?.message || JSON.stringify(error));
 }
 
 export async function markSessionAsFinishedInDb(
@@ -135,7 +136,7 @@ export async function markSessionAsFinishedInDb(
   const { error } = await supabase.from('briefing_sessions')
     .update(finishedPayload)
     .eq('id', sessionId);
-  if (error) console.error("Erro ao fechar sessão no DB:", (error as any)?.message || JSON.stringify(error));
+  if (error) console.error("Erro ao fechar sessão no DB:", (error as { message?: string })?.message || JSON.stringify(error));
 }
 
 export async function finalizeDocumentInDb(
@@ -146,5 +147,5 @@ export async function finalizeDocumentInDb(
     .update(docPayload)
     .eq('id', sessionId);
 
-  if (error) console.error("Erro ao salvar documento no DB:", (error as any)?.message || JSON.stringify(error));
+  if (error) console.error("Erro ao salvar documento no DB:", (error as { message?: string })?.message || JSON.stringify(error));
 }

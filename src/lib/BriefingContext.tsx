@@ -92,6 +92,8 @@ export function BriefingProvider({
   savedMessagesSnapshot,
   savedStepIndex,
   initialTimeoutMs,
+  initialIsFinished,
+  initialGeneratedDocument,
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;

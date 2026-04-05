@@ -17,22 +17,24 @@ export function DashboardLanguageProvider({ children }: { children: React.ReactN
   const [language, setLanguageState] = useState<DashboardLanguage>("en");
 
   useEffect(() => {
-    // Priority: localStorage > brieffy_lang (landing) > browser language > English
-    const saved = localStorage.getItem(STORAGE_KEY) as DashboardLanguage | null;
-    const landingLang = localStorage.getItem("brieffy_lang") as DashboardLanguage | null;
+    setTimeout(() => {
+      // Priority: localStorage > brieffy_lang (landing) > browser language > English
+      const saved = localStorage.getItem(STORAGE_KEY) as DashboardLanguage | null;
+      const landingLang = localStorage.getItem("brieffy_lang") as DashboardLanguage | null;
 
-    if (saved && ["pt", "en", "es"].includes(saved)) {
-      setLanguageState(saved);
-    } else if (landingLang && ["pt", "en", "es"].includes(landingLang)) {
-      setLanguageState(landingLang);
-    } else {
-      const browserLang = navigator.language.slice(0, 2).toLowerCase();
-      if (browserLang === "pt" || browserLang === "en" || browserLang === "es") {
-        setLanguageState(browserLang as DashboardLanguage);
+      if (saved && ["pt", "en", "es"].includes(saved)) {
+        setLanguageState(saved);
+      } else if (landingLang && ["pt", "en", "es"].includes(landingLang)) {
+        setLanguageState(landingLang);
       } else {
-        setLanguageState("en");
+        const browserLang = window.navigator.language.slice(0, 2).toLowerCase();
+        if (browserLang === "pt" || browserLang === "en" || browserLang === "es") {
+          setLanguageState(browserLang as DashboardLanguage);
+        } else {
+          setLanguageState("en");
+        }
       }
-    }
+    }, 0);
   }, []);
 
   const setLanguage = useCallback((lang: DashboardLanguage) => {
