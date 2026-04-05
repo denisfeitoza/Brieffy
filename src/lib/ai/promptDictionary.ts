@@ -81,6 +81,7 @@ export function buildBehaviorRules(params: BehaviorRulesParams): string {
 - ${generateMore ? 'generateMore=true: APENAS mude as opções, sem nova pergunta.' : 'Formule a PRÓXIMA pergunta.'}
 - Se basalCoverage>=${basalThreshold} E objetivos atingidos: isFinished=true, preencha assets.
 - ANTI-REPETIÇÃO: Verifique <PreviousQuestions>. NUNCA gere pergunta semanticamente similar.
+- AGRUPAMENTO OPORTUNISTA: Se houver perguntas abertas basais pendentes e que têm correlação lógica (Ex: 'Quais os anos de mercado' e 'Qual o setor do projeto'), junte-as criativamente em UMA ÚNICA PRÓXIMA PERGUNTA para poupar o tempo do usuário.
 - ENGAGEMENT ATUAL (calculado pelo sistema): "${backendEngagement}". ${backendEngagement === 'low' ? 'Cliente com baixo engajamento — use APENAS tipos táteis (boolean_toggle, slider, single_choice). Seja breve.' : backendEngagement === 'medium' ? 'Engajamento moderado — equilibre perguntas abertas e táteis.' : 'Bom engajamento — explore com profundidade.'}
 - Pule campos já conhecidos. Infira quando possível. Cada pergunta deve ter razão estratégica.
 - Para tipos de escolha: ÚLTIMA opção SEMPRE "Outro"/"Other"/"Otra".

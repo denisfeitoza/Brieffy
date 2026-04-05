@@ -465,27 +465,32 @@ export function BriefingProvider({
     const currentMsgToLog = messages[currentStepIndex];
     
     // Lazily create session on first interaction (fixes session leak bug)
-    const activeSessionId = await ensureSession();
+    const activeSessionPromise = ensureSession();
     
-    // Log Interaction to Database — UPSERT with retry for network resilience
-    let interactionId: string | null = null;
-    if (activeSessionId) {
-      interactionId = await logInteractionInDb(
-        activeSessionId,
-        currentStepIndex,
-        currentMsgToLog.questionType || 'text',
-        currentMsgToLog.content,
-        currentMsgToLog.options ? currentMsgToLog.options : null,
-        answer,
-        currentMsgToLog.isDepthQuestion || false
-      );
+    // Log Interaction to Database — UPSERT executado paralelamente (Fire-and-forget logic)
+    const interactionPromise = activeSessionPromise.then(activeSessionId => {
+      if (activeSessionId) {
+        // When re-answering a past step (went back), remove stale future interactions
+        if (currentStepIndex < messages.length - 1) {
+          clearFutureInteractionsInDb(activeSessionId, currentStepIndex)
+            .catch(err => console.error("[DB Sync] Error clearing futures:", err));
+        }
 
-      // When re-answering a past step (went back), remove stale future interactions
-      // because the AI will generate new questions from this point forward
-      if (currentStepIndex < messages.length - 1) {
-        clearFutureInteractionsInDb(activeSessionId, currentStepIndex);
+        return logInteractionInDb(
+          activeSessionId,
+          currentStepIndex,
+          currentMsgToLog.questionType || 'text',
+          currentMsgToLog.content,
+          currentMsgToLog.options ? currentMsgToLog.options : null,
+          answer,
+          currentMsgToLog.isDepthQuestion || false
+        ).catch(err => {
+          console.error("[DB Sync] Error logging interaction:", err);
+          return null;
+        });
       }
-    }
+      return null;
+    });
 
     // Constrói o histórico COMPLETO desde a primeira mensagem até o step atual
     const historyPayload = messages.slice(0, currentStepIndex + 1).map(m => {
@@ -579,6 +584,12 @@ export function BriefingProvider({
       }
 
       // ================================================================
+      // AWAIT PROMISES POST-FETCH API - Retrieve DB ids parallelized
+      // ================================================================
+      const activeSessionId = await activeSessionPromise;
+      const interactionId = await interactionPromise;
+
+      // ================================================================
       // CONSOLIDATED DB WRITE — Single update per step (was 3-4 separate writes)
       // ================================================================
       if (activeSessionId && !data.isFinished) {
@@ -609,14 +620,14 @@ export function BriefingProvider({
           sessionUpdate.session_name = companyName.trim();
         }
 
-        updateSessionStateInDb(activeSessionId, sessionUpdate);
+        updateSessionStateInDb(activeSessionId, sessionUpdate).catch(err => console.error("[DB Sync] Error updating session state:", err));
 
         if (interactionId) {
           const interactionUpdate: Record<string, unknown> = {};
           if (data.inferences) interactionUpdate.inferences = data.inferences;
           if (newSignals.length > 0) interactionUpdate.detected_signal = newSignals[0].summary;
           if (Object.keys(interactionUpdate).length > 0) {
-            updateInteractionSignalInDb(interactionId, interactionUpdate);
+            updateInteractionSignalInDb(interactionId, interactionUpdate).catch(err => console.error("[DB Sync] Error updating interaction signal:", err));
           }
         }
       }
@@ -797,7 +808,7 @@ export function BriefingProvider({
             ...newMessages[currentStepIndex],
             options: [...existingOptions, ...data.nextQuestion.options],
           };
-          persistSnapshot(newMessages, currentStepIndex, activeSessionId);
+          persistSnapshot(newMessages, currentStepIndex, sessionId);
           return newMessages;
         });
       }

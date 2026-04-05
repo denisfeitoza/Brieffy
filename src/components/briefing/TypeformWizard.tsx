@@ -777,66 +777,87 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                 )}
 
 
+                {/* User Answer Confirmation (Visible while loading) */}
+                {isLoading && activeMessage.userAnswer && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 flex justify-center w-full"
+                  >
+                    <div className="inline-block px-5 py-2.5 rounded-2xl bg-[var(--text)]/5 text-[var(--text)]/70 text-sm md:text-base border border-[var(--text)]/10">
+                      {Array.isArray(activeMessage.userAnswer) 
+                        ? activeMessage.userAnswer.join(', ') 
+                        : (typeof activeMessage.userAnswer === 'string' ? activeMessage.userAnswer : '')}
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* Progressive Loading Feedback — reduces perceived wait time */}
                 {isLoading && (
-                  <AIThinkingAnimation 
-                    language={chosenLanguage} 
-                    brandColor={branding.brand_color}
-                    accentColor={branding.brand_accent || '#000000'}
-                  />
-                )}
-
-                {/* Box Híbrido Dinamico (Text, Audio, Single Choice, Multiple Choice, Slider, Color Picker) */}
-                <DynamicInput 
-                  activeMessage={activeMessage}
-                  inputText={inputText}
-                  setInputText={setInputText}
-                  submitAnswer={submitAnswer}
-                  handleSend={handleSend}
-                  isLoading={isLoading}
-                  isRecording={isRecording}
-                  setIsRecording={setIsRecording}
-                  generateMoreOptions={generateMoreOptions}
-                  isGeneratingMore={isGeneratingMore}
-                  voiceLanguage={chosenLanguage}
-                  messages={messages}
-                  isDiscoveryPhase={isDiscoveryPhase}
-                />
-
-                {currentStepIndex > 0 && !isDiscoveryPhase && (
-                  <div className="flex flex-col sm:flex-row items-center justify-center md:justify-between gap-2 pt-4 opacity-70 hover:opacity-100 transition-opacity">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={goBack} 
-                      disabled={isLoading}
-                      className="text-gray-500 hover:text-[var(--text)] rounded-full px-4 h-10 border border-transparent hover:border-gray-200 hover:bg-gray-50"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      {(I18N[chosenLanguage] || I18N.pt).goBackAdjust}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => submitAnswer('(skipped)')}
-                      disabled={isLoading}
-                      className="text-gray-400 hover:text-gray-600 rounded-full px-4 h-10 text-xs gap-2"
-                    >
-                      {chosenLanguage === 'en' ? 'Skip' : chosenLanguage === 'es' ? 'Omitir' : 'Pular'}
-                      <span className="hidden sm:inline opacity-40 text-[10px] font-mono ml-1">Shift+Enter</span>
-                    </Button>
+                  <div className="mt-8">
+                    <AIThinkingAnimation 
+                      language={chosenLanguage} 
+                      brandColor={branding.brand_color}
+                      accentColor={branding.brand_accent || '#000000'}
+                    />
                   </div>
                 )}
-                {/* Mobile swipe hint — only on first few steps */}
-                {currentStepIndex > 0 && currentStepIndex <= 3 && (
-                  <motion.p
-                    className="text-[10px] text-gray-400 text-center sm:hidden mt-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2, duration: 0.5 }}
-                  >
-                    {chosenLanguage === 'en' ? '← swipe right to go back' : chosenLanguage === 'es' ? '← desliza a la derecha para volver' : '← deslize para a direita para voltar'}
-                  </motion.p>
+
+                {!isLoading && (
+                  <>
+                    {/* Box Híbrido Dinamico (Text, Audio, Single Choice, Multiple Choice, Slider, Color Picker) */}
+                    <DynamicInput 
+                      activeMessage={activeMessage}
+                      inputText={inputText}
+                      setInputText={setInputText}
+                      submitAnswer={submitAnswer}
+                      handleSend={handleSend}
+                      isLoading={isLoading}
+                      isRecording={isRecording}
+                      setIsRecording={setIsRecording}
+                      generateMoreOptions={generateMoreOptions}
+                      isGeneratingMore={isGeneratingMore}
+                      voiceLanguage={chosenLanguage}
+                      messages={messages}
+                      isDiscoveryPhase={isDiscoveryPhase}
+                    />
+
+                    {currentStepIndex > 0 && !isDiscoveryPhase && (
+                      <div className="flex flex-col sm:flex-row items-center justify-center md:justify-between gap-2 pt-4 opacity-70 hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={goBack} 
+                          disabled={isLoading}
+                          className="text-gray-500 hover:text-[var(--text)] rounded-full px-4 h-10 border border-transparent hover:border-gray-200 hover:bg-gray-50"
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-2" />
+                          {(I18N[chosenLanguage] || I18N.pt).goBackAdjust}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => submitAnswer('(skipped)')}
+                          disabled={isLoading}
+                          className="text-gray-400 hover:text-gray-600 rounded-full px-4 h-10 text-xs gap-2"
+                        >
+                          {chosenLanguage === 'en' ? 'Skip' : chosenLanguage === 'es' ? 'Omitir' : 'Pular'}
+                          <span className="hidden sm:inline opacity-40 text-[10px] font-mono ml-1">Shift+Enter</span>
+                        </Button>
+                      </div>
+                    )}
+                    {/* Mobile swipe hint — only on first few steps */}
+                    {currentStepIndex > 0 && currentStepIndex <= 3 && (
+                      <motion.p
+                        className="text-[10px] text-gray-400 text-center sm:hidden mt-2"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 2, duration: 0.5 }}
+                      >
+                        {chosenLanguage === 'en' ? '← swipe right to go back' : chosenLanguage === 'es' ? '← desliza a la derecha para volver' : '← deslize para a direita para voltar'}
+                      </motion.p>
+                    )}
+                  </>
                 )}
               </motion.div>
             </AnimatePresence>

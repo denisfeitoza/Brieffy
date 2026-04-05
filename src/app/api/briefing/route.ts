@@ -271,7 +271,7 @@ export async function POST(req: Request) {
     // HISTORY COMPRESSION — Keep recent messages full, summarize older ones
     // User answers get more space (up to 300 chars) to preserve context
     // ================================================================
-    const RECENT_WINDOW = 8;
+    const RECENT_WINDOW = 4;
     let compressedHistory = history;
     if (history.length > RECENT_WINDOW) {
       const oldMessages = history.slice(0, history.length - RECENT_WINDOW);

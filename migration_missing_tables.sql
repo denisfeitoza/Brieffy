@@ -21,7 +21,7 @@ CREATE POLICY "Users can update own profile" ON public.briefing_profiles FOR UPD
 -- Create briefing_quotas table
 CREATE TABLE IF NOT EXISTS public.briefing_quotas (
   user_id uuid PRIMARY KEY REFERENCES public.briefing_profiles(id) ON DELETE CASCADE,
-  max_briefings integer DEFAULT 10,
+  max_briefings integer DEFAULT 3,
   used_briefings integer DEFAULT 0,
   is_blocked boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
@@ -86,7 +86,7 @@ BEGIN
   );
   
   INSERT INTO public.briefing_quotas (user_id, max_briefings, used_briefings)
-  VALUES (new.id, 10, 0);
+  VALUES (new.id, 3, 0);
 
   RETURN new;
 END;
@@ -110,6 +110,6 @@ FROM auth.users
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.briefing_quotas (user_id, max_briefings, used_briefings)
-SELECT id, 10, 0 FROM public.briefing_profiles
+SELECT id, 3, 0 FROM public.briefing_profiles
 ON CONFLICT (user_id) DO NOTHING;
 

@@ -367,10 +367,6 @@ export default function DashboardPage() {
         <DashboardHeader />
       </Suspense>
 
-      <Suspense fallback={<StatsSkeleton />}>
-        <DashboardStats />
-      </Suspense>
-
       <Suspense fallback={<ExtrasSkeleton />}>
         <DashboardExtras />
       </Suspense>

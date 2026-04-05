@@ -413,6 +413,51 @@ async function SessionContent({ id }: { id: string }) {
         </div>
       </div>
 
+      {/* ── PEQUENO RESUMO DA SESSÃO ───────────────────── */}
+      {(qualityScore !== null || dataCompleteness || (detectedSignals && detectedSignals.length > 0)) && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[var(--bg2)] border border-[var(--bd)] p-4 rounded-2xl mb-6 print:hidden">
+          {qualityScore !== null && (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--bg)] border border-[var(--bd-strong)] shadow-sm shrink-0">
+                <BarChart3 className="w-4 h-4 text-[var(--orange)]" />
+              </div>
+              <div>
+                <p className="text-[10px] text-[var(--text3)] uppercase tracking-wider font-bold">Quality Score</p>
+                <p className="text-lg font-black text-[var(--text)] leading-none mt-0.5">{qualityScore}</p>
+              </div>
+            </div>
+          )}
+          
+          {dataCompleteness && (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-50 border border-emerald-100 shadow-sm shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-[10px] text-[var(--text3)] uppercase tracking-wider font-bold">Campos Sólidos</p>
+                <p className="text-sm font-semibold text-[var(--text)] mt-0.5">
+                  {dataCompleteness.strong_fields?.length || 0} confirmados
+                </p>
+              </div>
+            </div>
+          )}
+
+          {detectedSignals && detectedSignals.length > 0 && (
+             <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-50 border border-orange-100 shadow-sm shrink-0">
+                <Brain className="w-4 h-4 text-[var(--orange)]" />
+              </div>
+              <div>
+                <p className="text-[10px] text-[var(--text3)] uppercase tracking-wider font-bold">Sinais da IA</p>
+                <p className="text-sm font-semibold text-[var(--text)] mt-0.5">
+                  {detectedSignals.length} insights
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── ÁREA DO DOCUMENTO PRINCIPAL (Folha A4) ──────────────── */}
       <div className="print:shadow-none print:border-0 print:m-0 print:p-0 bg-[var(--bg)] text-[var(--text)] border border-[var(--bd-strong)] shadow-sm rounded-2xl md:rounded-[2rem] overflow-hidden min-h-[60vh]">
         {session.final_assets?.document ? (
