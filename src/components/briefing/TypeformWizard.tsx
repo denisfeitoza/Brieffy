@@ -4,6 +4,7 @@ import { useBriefing } from "@/lib/BriefingContext";
 import { useState, useRef, useEffect, memo, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AILoadingSplash } from "./AILoadingSplash";
+import { ClientThankYouScreen } from "./ClientThankYouScreen";
 import { Button } from "@/components/ui/button";
 
 import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut } from "lucide-react";
@@ -40,6 +41,8 @@ const I18N: Record<string, Record<string, string>> = {
     thankYouSubtitle: "Suas respostas foram registradas com sucesso.",
     thankYouBody: "Nossa equipe vai analisar cada detalhe com atenção para criar algo verdadeiramente alinhado com a sua visão.",
     thankYouCta: "Pode fechar esta página",
+    reviewAnswers: "Conferir minhas respostas",
+    reviewDesc: "Caso tenha se esquecido ou pulado algo importante, suas respostas já foram enviadas mas você pode revisar o painel abaixo ou simplesmente fechar esta página.",
   },
   en: {
     docGenerated: "Document Generated ✓",
@@ -66,6 +69,8 @@ const I18N: Record<string, Record<string, string>> = {
     thankYouSubtitle: "Your responses have been recorded successfully.",
     thankYouBody: "Our team will carefully analyze every detail to create something truly aligned with your vision.",
     thankYouCta: "You can close this page",
+    reviewAnswers: "Review my answers",
+    reviewDesc: "If you forgot or skipped something important, your answers are already sent but you can review them below or simply close this page.",
   },
   es: {
     docGenerated: "Documento Generado ✓",
@@ -92,236 +97,14 @@ const I18N: Record<string, Record<string, string>> = {
     thankYouSubtitle: "Sus respuestas se han registrado con éxito.",
     thankYouBody: "Nuestro equipo analizará cada detalle con atención para crear algo verdaderamente alineado con su visión.",
     thankYouCta: "Puede cerrar esta página",
+    reviewAnswers: "Revisar mis respuestas",
+    reviewDesc: "Si olvidó o se saltó algo importante, sus respuestas ya han sido enviadas pero puede revisarlas aquí abajo o simplemente cerrar esta página.",
   }
 };
 
-const BrandedLogo = memo(function BrandedLogo({ branding, size = 'md', isSolid = false }: { branding: { logo_url: string; company_name: string; brand_color: string }; size?: 'sm' | 'md', isSolid?: boolean }) {
-  const sizeClasses = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
-  const initials = branding.company_name
-    ? branding.company_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    : 'AI';
+import { BrandedLogo } from "./BrandedLogo";
 
-  if (branding.logo_url) {
-    return (
-      <img
-        src={branding.logo_url}
-        alt={branding.company_name}
-        className={`${sizeClasses} flex-shrink-0 rounded-xl object-contain bg-white border border-white/10 p-0.5 shadow-sm`}
-      />
-    );
-  }
-
-  const contrastColor = getContrastColor(branding.brand_color || '#000000');
-  const fallbackBg = isSolid ? (contrastColor === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)') : `linear-gradient(135deg, ${branding.brand_color}40, ${branding.brand_color}20)`;
-  const fallbackColor = isSolid ? contrastColor : branding.brand_color;
-
-  return (
-    <div
-      className={`${sizeClasses} flex-shrink-0 rounded-xl flex items-center justify-center font-bold border ${isSolid ? 'border-transparent' : 'border-white/10'}`}
-      style={{ background: fallbackBg, color: fallbackColor }}
-    >
-      {initials}
-    </div>
-  );
-});
-
-// ================================================================
-const THINKING_MESSAGES: Record<string, string[]> = {
-  pt: [
-    'Analisando sua resposta...',
-    'Cruzando dados ao vivo...',
-    'Gerando a próxima pergunta...',
-    'Processando intenção...',
-    'Validando parâmetros contextuais...',
-    'Ajustando modelo de linguagem...',
-    'Extraindo entidades chave...',
-    'Mapeando vetores de resposta...',
-    'Lendo nas entrelinhas da resposta...',
-    'Rodando inferência em tempo real...',
-    'Calibrando o peso da próxima questão...',
-    'Compilando novo fluxo de dados...',
-  ],
-  en: [
-    'Analyzing your response...',
-    'Cross-referencing live data...',
-    'Generating next question...',
-    'Processing intent...',
-    'Validating contextual parameters...',
-    'Adjusting language model...',
-    'Extracting key entities...',
-    'Mapping response vectors...',
-    'Reading between the response lines...',
-    'Running real-time inference...',
-    'Calibrating question weights...',
-    'Compiling new data flow...',
-  ],
-  es: [
-    'Analizando su respuesta...',
-    'Cruzando datos en vivo...',
-    'Generando la próxima pregunta...',
-    'Procesando intención...',
-    'Validando parámetros contextuales...',
-    'Ajustando modelo de lenguaje...',
-    'Extrayendo entidades clave...',
-    'Mapeando vectores de respuesta...',
-    'Leyendo entre las líneas de la respuesta...',
-    'Ejecutando inferencia en tiempo real...',
-    'Calibrando el peso de la próxima pregunta...',
-    'Compilando nuevo flujo de datos...',
-  ],
-};
-
-const AIThinkingAnimation = memo(function AIThinkingAnimation({ 
-  language, 
-  brandColor = '#6366f1',
-  accentColor = '#06b6d4',
-}: { 
-  language: string; 
-  brandColor?: string;
-  accentColor?: string;
-}) {
-  const msgs = THINKING_MESSAGES[language] || THINKING_MESSAGES.pt;
-  const [msgIdx, setMsgIdx] = useState(() => Math.floor(Math.random() * msgs.length));
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMsgIdx(prev => (prev + 1) % msgs.length);
-    }, 2800);
-    return () => clearInterval(interval);
-  }, [msgs.length]);
-
-  // Generate stable particle configs on mount
-  const particles = useMemo<{ id: number; x: number; size: number; delay: number; duration: number; color: string; opacity: number }[]>(() => 
-    Array.from({ length: 12 }, (_, i) => ({
-      id: i,
-      x: 5 + (i * 8) % 90,
-      size: 2 + (i % 3),
-      delay: i * 0.15,
-      duration: 2 + (i % 4) * 0.5,
-      color: i % 3 === 0 ? brandColor : i % 3 === 1 ? accentColor : '#ffffff',
-      opacity: i % 3 === 2 ? 0.15 : 0.4,
-    })),
-    [brandColor, accentColor]
-  );
-
-  // Neural wave bars config
-  const waveBars = useMemo<{ id: number; delay: number; color: string }[]>(() => 
-    Array.from({ length: 5 }, (_, i) => ({
-      id: i,
-      delay: i * 0.08,
-      color: i % 2 === 0 ? brandColor : accentColor,
-    })),
-    [brandColor, accentColor]
-  );
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8, scale: 0.95 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="relative flex flex-col items-start gap-3 py-4 my-2"
-    >
-      {/* Floating luminous particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {particles.map(p => (
-          <motion.div
-            key={p.id}
-            className="absolute rounded-full"
-            style={{
-              width: p.size,
-              height: p.size,
-              left: `${p.x}%`,
-              bottom: '20%',
-              background: p.color,
-              boxShadow: `0 0 ${p.size * 3}px ${p.color}${p.opacity > 0.3 ? '80' : '40'}, 0 0 ${p.size * 6}px ${p.color}30`,
-            }}
-            animate={{
-              y: [0, -30 - (p.id % 4) * 8, -50 - (p.id % 3) * 12],
-              opacity: [0, p.opacity, 0],
-              scale: [0.5, 1.2, 0.3],
-            }}
-            transition={{
-              duration: p.duration,
-              delay: p.delay,
-              repeat: Infinity,
-              ease: 'easeOut',
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Main content row */}
-      <div className="relative flex items-center gap-3">
-        {/* Neural wave / audio-wave bars */}
-        <div className="flex items-end gap-[3px] h-5">
-          {waveBars.map(bar => (
-            <motion.div
-              key={bar.id}
-              className="w-[3px] rounded-full"
-              style={{ background: `linear-gradient(to top, ${bar.color}90, ${bar.color})` }}
-              animate={{
-                height: ['6px', '18px', '8px', '14px', '6px'],
-                opacity: [0.5, 1, 0.6, 0.9, 0.5],
-              }}
-              transition={{
-                duration: 1.2,
-                delay: bar.delay,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Progressive message with typewriter shimmer */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={msgIdx}
-            initial={{ opacity: 0, x: 6, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, x: -6, filter: 'blur(4px)' }}
-            transition={{ duration: 0.35 }}
-            className="relative"
-          >
-            <span 
-              className="text-sm font-medium font-inter"
-              style={{
-                background: `linear-gradient(90deg, ${brandColor}, ${accentColor}, ${brandColor})`,
-                backgroundSize: '200% 100%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                animation: 'shimmerText 2.5s ease-in-out infinite',
-              }}
-            >
-              {msgs[msgIdx]}
-            </span>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Subtle glow line under the animation */}
-      <motion.div
-        className="h-[1px] rounded-full"
-        style={{
-          background: `linear-gradient(90deg, transparent, ${brandColor}40, ${accentColor}40, transparent)`,
-          width: '100%',
-        }}
-        animate={{ opacity: [0.3, 0.7, 0.3] }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      />
-
-      {/* Inject shimmer keyframes via global style */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes shimmerText {
-          0% { background-position: 100% 0; }
-          50% { background-position: 0% 0; }
-          100% { background-position: 100% 0; }
-        }
-      ` }} />
-    </motion.div>
-  );
-});
+import { AIThinkingAnimation } from "./AIThinkingAnimation";
 
 interface TypeformWizardProps {
   hasAccessPassword?: boolean;
@@ -362,7 +145,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     window.location.href = '/dashboard/login';
   };
 
-  const t = I18N[chosenLanguage] || I18N.pt;
+  const t = (I18N[chosenLanguage] || I18N.pt) as any;
 
   const [inputText, setInputText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -554,138 +337,14 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     // ════════════════════════════════════════════════════════════
     if (!isOwner) {
       return (
-        <div className="flex flex-col h-full bg-neutral-950 text-white">
-          <main className="flex-1 flex items-center justify-center p-6">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col items-center text-center max-w-lg space-y-8 relative"
-            >
-              {/* Background glow */}
-              <div className="absolute inset-0 -z-10">
-                <motion.div
-                  className="w-72 h-72 rounded-full mx-auto"
-                  style={{ background: `radial-gradient(circle, ${activeColor}15 0%, transparent 70%)` }}
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                />
-              </div>
-
-              {/* Animated Check */}
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.3, duration: 0.7, type: 'spring', stiffness: 150 }}
-                className="relative"
-              >
-                <div
-                  className="w-24 h-24 rounded-full flex items-center justify-center border-2"
-                  style={{ borderColor: `${activeColor}40`, background: `${activeColor}10` }}
-                >
-                  <motion.svg
-                    width="48" height="48" viewBox="0 0 48 48"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ delay: 0.8, duration: 0.6, ease: 'easeOut' }}
-                  >
-                    <motion.path
-                      d="M14 24 L22 32 L34 16"
-                      fill="none"
-                      stroke={activeColor}
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: 1 }}
-                      transition={{ delay: 0.8, duration: 0.6, ease: 'easeOut' }}
-                    />
-                  </motion.svg>
-                </div>
-                <motion.div
-                  className="absolute inset-0 w-24 h-24 rounded-full"
-                  style={{ boxShadow: `0 0 40px ${activeColor}25, 0 0 80px ${activeColor}10` }}
-                  animate={{ scale: [1, 1.15, 1], opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                />
-              </motion.div>
-
-              {/* Text Content */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2, duration: 0.6 }}
-                className="space-y-3"
-              >
-                <h1 className="text-3xl md:text-4xl font-outfit font-medium tracking-tight text-white">
-                  {t.thankYouTitle}
-                </h1>
-                <p className="text-lg text-neutral-300 font-medium">
-                  {t.thankYouSubtitle}
-                </p>
-              </motion.div>
-
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.8, duration: 0.8 }}
-                className="text-neutral-500 leading-relaxed max-w-md"
-              >
-                {t.thankYouBody}
-              </motion.p>
-
-              {/* Brand badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 2.4, duration: 0.5 }}
-                className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-white/5"
-                style={{ background: `${activeColor}08` }}
-              >
-                <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
-                <span className="text-sm font-medium text-neutral-400" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
-                  {activeCompanyName}
-                </span>
-              </motion.div>
-
-              {/* Floating particles */}
-              <div className="absolute inset-0 pointer-events-none -z-5 overflow-hidden">
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-1 h-1 rounded-full"
-                    style={{
-                      background: activeColor,
-                      left: `${15 + i * 14}%`,
-                      top: `${20 + (i % 3) * 25}%`,
-                    }}
-                    animate={{
-                      y: [0, -30, 0],
-                      opacity: [0, 0.6, 0],
-                      scale: [0.5, 1.5, 0.5],
-                    }}
-                    transition={{
-                      duration: 3 + i * 0.5,
-                      delay: i * 0.4,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Subtle footer */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 3, duration: 0.5 }}
-                className="text-xs text-neutral-700 pt-4"
-              >
-                {t.thankYouCta}
-              </motion.p>
-            </motion.div>
-          </main>
-        </div>
+        <ClientThankYouScreen
+          branding={branding}
+          activeColor={activeColor}
+          activeCompanyName={activeCompanyName}
+          activeFont={activeFont}
+          t={t}
+          messages={messages}
+        />
       );
     }
 
@@ -693,10 +352,10 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     // OWNER DOCUMENT VIEW — Full document generation flow
     // ════════════════════════════════════════════════════════════
     return (
-      <div className="flex flex-col h-full bg-neutral-950 text-white selection:bg-indigo-500/30">
+      <div className="flex flex-col h-full bg-[var(--bg)] text-[var(--text)] selection:bg-[#FF6029]/20">
         <header className="flex items-center justify-between p-4 md:p-6 h-20 shrink-0">
           <div 
-            className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-lg border border-white/5 transition-transform hover:scale-[1.02]"
+            className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 transition-transform hover:scale-[1.02]"
             style={{ 
               backgroundColor: activeColor,
               color: getContrastColor(activeColor),
@@ -715,7 +374,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
               )}
             </div>
           </div>
-          <div className="text-sm font-medium text-neutral-500 flex items-center gap-2 bg-neutral-900 px-3 py-1.5 rounded-full border border-neutral-800">
+          <div className="text-sm font-medium text-gray-500 flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
             {generatedDocument ? (I18N[chosenLanguage] || I18N.pt).docGenerated : (I18N[chosenLanguage] || I18N.pt).lastStep}
           </div>
         </header>
@@ -743,7 +402,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                       style={{
                         border: '3px solid transparent',
                         borderTopColor: activeColor,
-                        borderRightColor: `${branding.brand_accent || '#06b6d4'}80`,
+                        borderRightColor: `${branding.brand_accent || '#000000'}80`,
                       }}
                       animate={{ rotate: 360 }}
                       transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
@@ -758,15 +417,15 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                     <Sparkles className="w-10 h-10" style={{ color: activeColor }} />
                   </div>
                   <div className="space-y-3">
-                    <h2 className="text-3xl font-outfit font-medium text-white">{(I18N[chosenLanguage] || I18N.pt).generatingDoc}</h2>
-                    <p className="text-lg text-neutral-400">{(I18N[chosenLanguage] || I18N.pt).analyzingResponses.replace('{count}', String(messages.length))}</p>
+                    <h2 className="text-3xl font-outfit font-medium text-[var(--text)]">{(I18N[chosenLanguage] || I18N.pt).generatingDoc}</h2>
+                    <p className="text-lg text-gray-500">{(I18N[chosenLanguage] || I18N.pt).analyzingResponses.replace('{count}', String(messages.length))}</p>
                     {/* Animated dots indicator */}
                     <div className="flex gap-1.5 justify-center pt-2">
                       {[0, 1, 2, 3, 4].map(i => (
                         <motion.div
                           key={i}
                           className="w-1.5 h-1.5 rounded-full"
-                          style={{ background: i % 2 === 0 ? activeColor : (branding.brand_accent || '#06b6d4') }}
+                          style={{ background: i % 2 === 0 ? activeColor : (branding.brand_accent || '#000000') }}
                           animate={{ scale: [1, 2, 1], opacity: [0.3, 1, 0.3] }}
                           transition={{ duration: 1.4, delay: i * 0.12, repeat: Infinity, ease: 'easeInOut' }}
                         />
@@ -787,29 +446,29 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   className="w-full max-w-5xl flex flex-col space-y-6 shrink-0 py-8"
                 >
                   <div className="flex flex-col space-y-2 text-center mb-4">
-                    <h2 className="text-3xl font-outfit text-white">{t.docReadyTitle}</h2>
-                    <p className="text-neutral-400">{t.docReadyDesc}</p>
+                    <h2 className="text-3xl font-outfit text-[var(--text)]">{t.docReadyTitle}</h2>
+                    <p className="text-gray-500">{t.docReadyDesc}</p>
                   </div>
 
                   {/* Public Link Card */}
                   {editToken && editPassphrase && (
-                    <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="bg-[var(--orange)]/5 border border-[var(--orange)]/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="flex flex-col space-y-1">
-                        <div className="flex items-center gap-2 text-indigo-400 font-medium">
+                        <div className="flex items-center gap-2 text-[var(--orange)] font-medium">
                           <Lock className="w-4 h-4" /> {t.secureLink}
                         </div>
-                        <p className="text-sm text-neutral-400">
+                        <p className="text-sm text-gray-500">
                           {t.secureLinkDesc}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-zinc-300">
-                          {t.password}: <span className="text-white font-bold">{editPassphrase}</span>
+                        <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-black">
+                          {t.password}: <span className="text-black font-bold">{editPassphrase}</span>
                         </div>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          className="bg-transparent border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+                          className="bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                           onClick={() => {
                             const url = `${window.location.origin}/doc/${editToken}`;
                             navigator.clipboard.writeText(`${t.clipboardMsg}\n${url}\n\n${t.clipboardPassword} ${editPassphrase}`);
@@ -856,22 +515,22 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   className="w-full max-w-2xl flex flex-col items-center text-center space-y-8 shrink-0 py-8"
                 >
                   <div className="space-y-4">
-                     <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight">
+                     <h1 className="text-3xl md:text-5xl font-outfit font-medium tracking-tight text-[var(--text)] leading-tight">
                       {/* BUG-07 FIX: Show error title when document generation failed */}
                       {documentError
                         ? (chosenLanguage === 'en' ? 'Something went wrong' : chosenLanguage === 'es' ? 'Algo salió mal' : 'Algo deu errado')
                         : t.allSet}
                     </h1>
-                    <p className="text-lg text-neutral-400 max-w-lg mx-auto leading-relaxed">
+                    <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed">
                       {documentError ? documentError : t.uploadRef}
                     </p>
                   </div>
 
                   {/* BUG-07 FIX: Show warning icon when there is an error */}
-                  <div className={`w-24 h-24 rounded-full flex items-center justify-center ${documentError ? 'bg-red-500/10 border border-red-500/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center ${documentError ? 'bg-red-500/10 border border-red-500/20' : 'bg-[var(--orange)]/10 border border-[var(--orange)]/20'}`}>
                     {documentError
                       ? <span className="text-4xl">⚠️</span>
-                      : <Sparkles className="w-10 h-10 text-indigo-400" />
+                      : <Sparkles className="w-10 h-10 text-[var(--orange)]" />
                     }
                   </div>
                   
@@ -880,8 +539,8 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                         size="lg"
                         className={`w-full h-16 text-lg font-medium rounded-2xl transition-all ${
                           documentError
-                            ? 'bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30'
-                            : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+                            ? 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100'
+                            : 'bg-[var(--orange)] text-white hover:opacity-90 shadow-xl hover:shadow-2xl border-none'
                         }`}
                         onClick={generateDocument}
                       >
@@ -930,12 +589,12 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   // ==========================
   if (!activeMessage || activeMessage.role !== "assistant") {
      // Safeguard for synchronization delays
-     return <div className="h-full flex items-center justify-center flex-col gap-4 text-white">{(I18N[chosenLanguage] || I18N.pt).loadingStep}</div>;
+     return <div className="h-full flex items-center justify-center flex-col gap-4 text-[var(--text)]">{(I18N[chosenLanguage] || I18N.pt).loadingStep}</div>;
   }
 
   return (
     <motion.div
-      className="flex flex-col h-full bg-neutral-950 text-white selection:bg-indigo-500/30"
+      className="flex flex-col h-full bg-[var(--bg)] text-[var(--text)] selection:bg-[#FF6029]/20"
       style={{ '--brand-color': branding.brand_color, '--brand-accent': branding.brand_accent } as React.CSSProperties}
       initial={justExitedSplash ? { opacity: 0, scale: 0.98, filter: 'blur(4px)' } : false}
       animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
@@ -946,13 +605,13 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
       <header className="flex items-center justify-between p-4 md:p-6 h-20 shrink-0">
         <div className="flex items-center gap-3">
           {currentStepIndex > 0 && (
-            <Button variant="ghost" size="icon" className="hover:bg-neutral-800 shrink-0 border border-neutral-800 bg-neutral-900 shadow-sm rounded-full" onClick={goBack}>
-              <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <Button variant="ghost" size="icon" className="hover:bg-gray-100 shrink-0 border border-gray-200 bg-white shadow-sm rounded-full" onClick={goBack}>
+              <ArrowLeft className="w-5 h-5 text-gray-500" />
             </Button>
           )}
 
           <div 
-            className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-lg border border-white/5 transition-transform hover:scale-[1.02]"
+            className="flex items-center gap-3 px-4 py-2 rounded-2xl shadow-sm border border-gray-100 transition-transform hover:scale-[1.02]"
             style={{ 
               backgroundColor: activeColor,
               color: getContrastColor(activeColor),
@@ -989,7 +648,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
             const tierLabels = activeTiers.map(t => TIER_LABELS[t] || t);
             return (
               <div className="hidden md:flex items-center gap-2">
-                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full bg-[var(--orange)]/10 text-[var(--orange)] border border-[var(--orange)]/20">
                   <Sparkles className="w-3 h-3" />
                   {tierLabels.length > 0 ? tierLabels.join(' · ') : `${selectedPackageDetails.length} especialidades`}
                 </div>
@@ -998,7 +657,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
           })()}
 
           {/* Progresso Simplificado */}
-          <div className="text-sm font-medium text-neutral-500 flex items-center gap-2 bg-neutral-900 px-4 py-1.5 rounded-full border border-neutral-800">
+          <div className="text-sm font-medium text-gray-500 flex items-center gap-2 bg-white px-4 py-1.5 rounded-full border border-gray-200 shadow-sm">
              {(() => {
                const skillDilution = 1 / (1 + (selectedPackageDetails?.length || 0) * 0.22);
                const rawPct = basalInfo.basalCoverage * 100;
@@ -1014,7 +673,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
               size="icon"
               onClick={handleLogout}
               title="Sair da conta"
-              className="shrink-0 rounded-full w-9 h-9 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors border border-neutral-800"
+              className="shrink-0 rounded-full w-9 h-9 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-200 bg-white shadow-sm"
             >
               <LogOut className="w-4 h-4" />
             </Button>
@@ -1034,11 +693,11 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
         const displayProgress = Math.max(dilutedProgress, currentStepIndex > 0 ? 3 : 0);
 
         return (
-          <div className="h-1 bg-neutral-900/50 w-full shrink-0 overflow-hidden">
+          <div className="h-1 bg-gray-200 w-full shrink-0 overflow-hidden">
             <motion.div
               className="h-full rounded-r-full"
               style={{
-                background: `linear-gradient(90deg, ${activeColor}, ${branding.brand_accent || '#06b6d4'}, ${activeColor})`,
+                background: `linear-gradient(90deg, ${activeColor}, ${branding.brand_accent || '#000000'}, ${activeColor})`,
               }}
               initial={false}
               animate={{ 
@@ -1081,9 +740,9 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.5 }}
-                    className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/15 text-indigo-300/90 text-sm font-medium w-fit mb-3"
+                    className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[var(--orange)]/5 border border-[var(--orange)]/20 text-[var(--orange)] text-sm font-medium w-fit mb-3 shadow-sm"
                   >
-                    <span className="w-2 h-2 rounded-full bg-indigo-400/60 animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-[var(--orange)] animate-pulse" />
                     {chosenLanguage === 'en' ? 'Speak freely — the more details, the better the result'
                       : chosenLanguage === 'es' ? 'Habla libremente — cuantos más detalles, mejor el resultado'
                       : 'Fale livremente — quanto mais detalhes, melhor o resultado'}
@@ -1095,9 +754,9 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-semibold w-fit mb-2"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50/50 border border-orange-200/50 text-[#FF6029] text-xs font-semibold w-fit mb-2 shadow-sm"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6029] animate-pulse" />
                     {chosenLanguage === 'en' ? 'Going deeper...' : chosenLanguage === 'es' ? 'Profundizando...' : 'Aprofundando...'}
                   </motion.div>
                 )}
@@ -1108,16 +767,16 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                     initial={{ opacity: 0, y: 12, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm w-fit mb-5 max-w-md"
+                    className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white border border-gray-200 shadow-sm w-fit mb-5 max-w-md"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
-                    <span className="text-[13px] text-zinc-400 leading-relaxed font-medium">{activeMessage.microFeedback}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--orange)] mt-2 shrink-0" />
+                    <span className="text-[13px] text-gray-500 leading-relaxed font-medium">{activeMessage.microFeedback}</span>
                   </motion.div>
                 )}
 
                 {/* The IA Formatted Question — stagger entrance for premium feel */}
                 <motion.h1
-                  className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-white leading-tight"
+                  className="text-2xl md:text-5xl font-outfit font-medium tracking-tight text-[var(--text)] leading-tight"
                   initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
@@ -1130,7 +789,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-sm text-neutral-500 mt-2"
+                    className="text-sm text-gray-500 mt-2"
                   >
                     {chosenLanguage === 'en' ? '⚡ Almost there — just a few key questions left.' 
                       : chosenLanguage === 'es' ? '⚡ Ya casi — solo quedan algunas preguntas clave.' 
@@ -1144,7 +803,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   <AIThinkingAnimation 
                     language={chosenLanguage} 
                     brandColor={branding.brand_color}
-                    accentColor={branding.brand_accent || '#06b6d4'}
+                    accentColor={branding.brand_accent || '#000000'}
                   />
                 )}
 
@@ -1172,7 +831,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                       size="sm"
                       onClick={goBack} 
                       disabled={isLoading}
-                      className="text-neutral-400 hover:text-white rounded-full px-4 h-10 border border-transparent hover:border-neutral-800 hover:bg-neutral-900/50"
+                      className="text-gray-500 hover:text-[var(--text)] rounded-full px-4 h-10 border border-transparent hover:border-gray-200 hover:bg-gray-50"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       {(I18N[chosenLanguage] || I18N.pt).goBackAdjust}
@@ -1182,7 +841,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                       size="sm"
                       onClick={() => submitAnswer('(skipped)')}
                       disabled={isLoading}
-                      className="text-neutral-500 hover:text-neutral-300 rounded-full px-4 h-10 text-xs gap-2"
+                      className="text-gray-400 hover:text-gray-600 rounded-full px-4 h-10 text-xs gap-2"
                     >
                       {chosenLanguage === 'en' ? 'Skip' : chosenLanguage === 'es' ? 'Omitir' : 'Pular'}
                       <span className="hidden sm:inline opacity-40 text-[10px] font-mono ml-1">Shift+Enter</span>
@@ -1192,7 +851,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                 {/* Mobile swipe hint — only on first few steps */}
                 {currentStepIndex > 0 && currentStepIndex <= 3 && (
                   <motion.p
-                    className="text-[10px] text-neutral-600 text-center sm:hidden mt-2"
+                    className="text-[10px] text-gray-400 text-center sm:hidden mt-2"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 2, duration: 0.5 }}

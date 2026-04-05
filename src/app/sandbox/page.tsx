@@ -313,7 +313,7 @@ export default function SandboxPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-950 text-white selection:bg-indigo-500/30 font-inter">
+    <div className="flex flex-col h-screen bg-white text-[var(--text)] selection:bg-[var(--orange)]/30 font-inter">
       {/* Header */}
       <header className="flex items-center justify-between p-4 md:p-6 shrink-0 border-b border-neutral-900 bg-neutral-950/50 backdrop-blur-md">
         <div className="flex items-center gap-4">
@@ -339,7 +339,7 @@ export default function SandboxPage() {
                }}
                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
                  currentIdx === i 
-                   ? "bg-indigo-500 text-white shadow-md" 
+                   ? "bg-[var(--orange)] text-white shadow-md"
                    : "text-neutral-500 hover:text-white"
                }`}
              >
@@ -366,7 +366,7 @@ export default function SandboxPage() {
                   transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm w-fit max-w-md"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--orange)] mt-2 shrink-0" />
                   <span className="text-[13px] text-zinc-400 leading-relaxed font-medium">{activeMessage.microFeedback}</span>
                 </motion.div>
               )}

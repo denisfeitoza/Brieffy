@@ -33,32 +33,43 @@ export function FileUploadInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert(t.fileTooLarge);
-      return;
-    }
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
     try {
       const supabase = createClient();
-      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "")}`;
-      const { error } = await supabase.storage
-        .from("briefing_assets")
-        .upload(fileName, file, { upsert: false });
+      const urls: string[] = [];
 
-      if (error) throw error;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`${t.fileTooLarge || "Arquivo grande demais:"} ${file.name}`);
+          continue;
+        }
 
-      const { data: publicUrlData } = supabase.storage
-        .from("briefing_assets")
-        .getPublicUrl(fileName);
+        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "")}`;
+        const { error } = await supabase.storage
+          .from("briefing_assets")
+          .upload(fileName, file, { upsert: false });
 
-      doSubmit(`[Arquivo Anexado via UI]: ${publicUrlData.publicUrl}`);
+        if (error) throw error;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("briefing_assets")
+          .getPublicUrl(fileName);
+
+        urls.push(publicUrlData.publicUrl);
+      }
+
+      if (urls.length > 0) {
+        doSubmit(`[Anexos via UI]: ${urls.join(", ")}`);
+      } else {
+        alert(t.fileUploadError || "Erro ao fazer upload dos arquivos.");
+      }
     } catch (err) {
       console.error("Erro no upload do arquivo:", err instanceof Error ? err.message : String(err));
-      alert(t.fileUploadError);
+      alert(t.fileUploadError || "Erro ao fazer upload.");
     } finally {
       setIsUploading(false);
     }
@@ -68,6 +79,7 @@ export function FileUploadInput({
     <div className="flex flex-col gap-6 w-full mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <input
         type="file"
+        multiple
         accept=".pdf,.png,.jpg,.jpeg"
         capture="environment"
         ref={fileInputRef}
@@ -76,25 +88,26 @@ export function FileUploadInput({
       />
       {/* Mobile fix: h-40 md:h-56 */}
       <div
-        className={`w-full h-40 md:h-56 rounded-3xl border-2 border-dashed border-neutral-700 bg-neutral-900/30 flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group hover:shadow-[0_0_30px_rgba(var(--color-primary),0.2)] active:scale-[0.98] ${
+        className={`w-full h-40 md:h-56 rounded-3xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center hover:border-[var(--orange)]/50 hover:bg-[var(--orange)]/5 transition-all cursor-pointer group hover:shadow-lg active:scale-[0.98] ${
           isUploading ? "opacity-50 pointer-events-none" : ""
         }`}
         onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
       >
-        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-neutral-800 group-hover:bg-primary/20 flex items-center justify-center mb-4 transition-colors">
+        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border border-gray-200 group-hover:bg-[var(--orange)]/10 flex items-center justify-center mb-4 transition-colors shadow-sm">
           {isUploading ? (
-            <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-primary animate-spin" />
+            <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-[var(--orange)] animate-spin" />
           ) : (
-            <UploadCloud className="w-7 h-7 md:w-8 md:h-8 text-neutral-400 group-hover:text-primary transition-colors" />
+            <UploadCloud className="w-7 h-7 md:w-8 md:h-8 text-gray-400 group-hover:text-[var(--orange)] transition-colors" />
           )}
         </div>
-        <p className="text-white font-medium text-base md:text-lg">
-          {isUploading ? t.sendingFile : t.dragFiles}
+        <p className="text-black font-medium text-base md:text-lg">
+          {isUploading ? (t.sendingFile || "Enviando...") : (t.dragFiles || "Toque para adicionar arquivos")}
         </p>
-        <p className="text-neutral-500 text-sm mt-1">PDF, PNG, JPG (Max 5MB)</p>
+        <p className="text-gray-500 text-sm mt-1">PDF, PNG, JPG (Múltiplos permitidos, Max 5MB cada)</p>
       </div>
+      
       <div className="w-full">
-        <p className="text-sm text-center text-neutral-500 mb-2">{t.orTypeFile}</p>
+        <p className="text-sm text-center text-gray-500 mb-2">{t.orTypeFile || "Ou digite os links / responda em texto:"}</p>
         <TextAudioInput
           inputText={inputText}
           setInputText={setInputText}
@@ -103,6 +116,14 @@ export function FileUploadInput({
           isSubmittingLocal={isSubmittingLocal}
           voiceLanguage={voiceLanguage}
         />
+        
+        <button 
+          onClick={() => doSubmit('(skipped)')}
+          disabled={isLoading || isSubmittingLocal || isUploading}
+          className="mt-6 w-full py-3 px-4 rounded-xl border border-gray-200 text-gray-500 font-medium text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          {t.skipFiles || "Pular (Não tenho arquivos no momento)"}
+        </button>
       </div>
     </div>
   );

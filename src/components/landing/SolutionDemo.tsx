@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 const getDemoSteps = (t: (key: string) => string) => [
   {
@@ -67,8 +67,8 @@ function DemoMessage({
           isInsight
             ? "border border-emerald-500/30 bg-emerald-500/[0.08]"
             : isAI
-            ? "border border-white/[0.08] bg-white/[0.04]"
-            : "border border-[oklch(0.65_0.25_255_/_0.3)] bg-[oklch(0.65_0.25_255_/_0.08)]"
+            ? "border border-black/[0.08] bg-black/[0.04]"
+            : "border border-[#ff6029_/_0.3)] bg-[#ff6029_/_0.08)]"
         }`}
       >
         {isInsight && (
@@ -84,8 +84,8 @@ function DemoMessage({
             isInsight
               ? "text-emerald-300/90"
               : isAI
-              ? "text-neutral-300"
-              : "text-white"
+              ? "text-neutral-700"
+              : "text-black"
           }`}
         >
           {step.text}
@@ -97,8 +97,8 @@ function DemoMessage({
                 key={opt}
                 className={`text-xs px-3 py-1.5 rounded-full border ${
                   i === 1
-                    ? "border-[oklch(0.65_0.25_255_/_0.5)] bg-[oklch(0.65_0.25_255_/_0.15)] text-white"
-                    : "border-white/[0.08] bg-white/[0.03] text-neutral-400"
+                    ? "border-[#ff6029_/_0.5)] bg-[#ff6029_/_0.15)] text-black"
+                    : "border-black/[0.08] bg-black/[0.03] text-neutral-600"
                 }`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -145,7 +145,7 @@ export function SolutionDemo() {
             {t("solution.badge")}
           </motion.span>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-black tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {t("solution.title1")}
@@ -160,7 +160,7 @@ export function SolutionDemo() {
               {t("solution.title2")}
             </span>
           </h2>
-          <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-neutral-600 max-w-2xl mx-auto">
             {t("solution.desc")}
           </p>
         </motion.div>
@@ -169,21 +169,21 @@ export function SolutionDemo() {
         <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-start">
           {/* Demo Mockup */}
           <motion.div
-            className="relative rounded-3xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm overflow-hidden"
+            className="relative rounded-3xl border border-black/[0.08] bg-black/[0.02] backdrop-blur-sm overflow-hidden"
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Mockup Header */}
-            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06] bg-white/[0.02]">
+            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-black/[0.06] bg-black/[0.02]">
               <div className="flex gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
                 <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
               </div>
               <div className="flex-1 flex justify-center">
-                <div className="text-[10px] text-neutral-600 px-4 py-1 rounded-full bg-white/[0.04] border border-white/[0.06]">
+                <div className="text-[10px] text-neutral-600 px-4 py-1 rounded-full bg-black/[0.04] border border-black/[0.06]">
                   brieffy.com/briefing
                 </div>
               </div>
@@ -224,7 +224,7 @@ export function SolutionDemo() {
 
             {/* Input bar */}
             <div className="px-5 pb-5">
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-black/[0.08] bg-black/[0.03]">
                 <MessageSquareText className="w-4 h-4 text-neutral-600" />
                 <span className="text-sm text-neutral-600 flex-1">
                   {t("solution.demo.input")}
@@ -287,7 +287,7 @@ export function SolutionDemo() {
               return (
                 <motion.div
                   key={feat.title}
-                  className="group flex gap-4 items-start p-4 rounded-2xl border border-white/[0.04] bg-white/[0.01] hover:border-white/[0.1] hover:bg-white/[0.03] transition-all duration-400 cursor-default"
+                  className="group flex gap-4 items-start p-4 rounded-2xl border border-black/[0.04] bg-black/[0.01] hover:border-black/[0.1] hover:bg-black/[0.03] transition-all duration-400 cursor-default"
                   initial={{ opacity: 0, y: 15 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -305,7 +305,7 @@ export function SolutionDemo() {
                   </div>
                   <div>
                     <h3
-                      className="text-sm font-semibold text-white mb-1"
+                      className="text-sm font-semibold text-black mb-1"
                       style={{ fontFamily: '"Outfit", sans-serif' }}
                     >
                       {feat.title}

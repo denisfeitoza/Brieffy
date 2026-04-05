@@ -28,7 +28,7 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
   }
 
   let session;
-  let template;
+
   let branding: BrandingInfo | undefined;
 
   try {
@@ -53,7 +53,7 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
 
   const perfConfig = getPerformanceConfig(dbSettings);
 
-  template = templateResult;
+  const template = templateResult;
 
   // If branding wasn't found via user_id, try template owner
   if (!brandingResult && template?.user_id) {

@@ -45,8 +45,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isAdmin === null) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[var(--orange)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -58,39 +58,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div suppressHydrationWarning className="min-h-screen bg-black text-white selection:bg-purple-500/30 font-sans flex flex-col md:flex-row">
-      {/* Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-600/8 rounded-full blur-[150px]" />
-      </div>
-
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex relative z-10 w-64 flex-shrink-0 bg-black/40 backdrop-blur-2xl border-r border-purple-500/10 flex-col justify-between">
+    <div suppressHydrationWarning className="min-h-screen bg-[var(--bg)] text-[var(--text)] font-sans flex flex-col md:flex-row">
+      {/* ============ DESKTOP SIDEBAR ============ */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-[var(--bg)] border-r border-[var(--bd)] flex-col justify-between">
         <div className="p-6">
+          {/* Admin Logo */}
           <Link href="/admin" className="flex items-center gap-3 mb-10 group">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-purple-400" />
+            <div className="w-10 h-10 rounded-xl bg-[var(--bg2)] border border-[var(--bd)] flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Shield className="w-5 h-5 text-[var(--text)]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
-                Admin Panel
+              <h1 className="text-xl font-bold tracking-tight text-[var(--text)]">
+                Admin<span className="text-[var(--orange)]">.</span>
               </h1>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Super Admin</p>
+              <p className="text-[10px] text-[var(--text3)] uppercase tracking-widest font-medium">Super Admin</p>
             </div>
           </Link>
 
-          <nav className="space-y-2">
+          {/* Nav */}
+          <nav className="space-y-1.5">
             {navItems.map(item => {
               const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
               return (
                 <Link key={item.href} href={item.href}>
                   <Button
                     variant="ghost"
-                    className={`w-full justify-start rounded-xl transition-all ${
+                    className={`w-full justify-start rounded-xl transition-all text-sm font-medium ${
                       isActive
-                        ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20'
-                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'
+                        ? 'bg-[var(--acbg)] text-[var(--actext)] border border-[var(--acbd)]'
+                        : 'text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg2)]'
                     }`}
                   >
                     <item.icon className="w-4 h-4 mr-3" />
@@ -101,9 +97,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             })}
           </nav>
 
-          <div className="mt-8 pt-4 border-t border-white/10">
+          {/* Link to user dashboard */}
+          <div className="mt-8 pt-4 border-t border-[var(--bd)]">
             <Link href="/dashboard">
-              <Button variant="ghost" className="w-full justify-start rounded-xl text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/5">
+              <Button variant="ghost" className="w-full justify-start rounded-xl text-[var(--text2)] hover:text-[var(--actext)] hover:bg-[var(--acbg)]">
                 <Sparkles className="w-4 h-4 mr-3" />
                 User Dashboard
               </Button>
@@ -111,11 +108,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        <div className="p-6 border-t border-white/10">
+        {/* Logout */}
+        <div className="p-6 border-t border-[var(--bd)]">
           <Button
             variant="ghost"
             onClick={handleLogout}
-            className="w-full justify-start rounded-xl text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
+            className="w-full justify-start rounded-xl text-[var(--text3)] hover:text-red-500 hover:bg-red-50"
           >
             <LogOut className="w-4 h-4 mr-3" />
             Sign Out
@@ -123,47 +121,65 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <div className="md:hidden relative z-10 bg-black/60 backdrop-blur-xl border-b border-purple-500/10 px-4 py-3 flex items-center justify-between">
+      {/* ============ MOBILE HEADER ============ */}
+      <div className="md:hidden bg-[var(--bg)] border-b border-[var(--bd)] px-4 py-3 flex items-center justify-between">
         <Link href="/admin" className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-purple-400" />
-          <span className="font-bold text-lg">Admin</span>
+          <Shield className="w-5 h-5 text-[var(--text)]" />
+          <span className="font-bold text-lg text-[var(--text)]">Admin<span className="text-[var(--orange)]">.</span></span>
         </Link>
-        <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-[var(--text)]">
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </Button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* ============ MOBILE MENU OVERLAY ============ */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col p-6 animate-in fade-in duration-200">
+        <div className="md:hidden fixed inset-0 z-50 bg-[var(--bg)] flex flex-col p-6 animate-in fade-in duration-200">
           <div className="flex justify-between items-center mb-8">
-            <span className="font-bold text-xl">Admin Menu</span>
-            <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)}>
+            <span className="font-bold text-xl text-[var(--text)]">Admin Menu</span>
+            <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} className="text-[var(--text)]">
               <X className="w-5 h-5" />
             </Button>
           </div>
           <nav className="space-y-3 flex-1">
-            {navItems.map(item => (
-              <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start rounded-xl text-lg py-6 text-zinc-300">
-                  <item.icon className="w-5 h-5 mr-4" />
-                  {item.label}
-                </Button>
-              </Link>
-            ))}
+            {navItems.map(item => {
+              const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start rounded-xl text-lg py-6 ${
+                      isActive
+                        ? 'bg-[var(--acbg)] text-[var(--actext)] border border-[var(--acbd)]'
+                        : 'text-[var(--text2)]'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5 mr-4" />
+                    {item.label}
+                  </Button>
+                </Link>
+              );
+            })}
             <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start rounded-xl text-lg py-6 text-cyan-400">
+              <Button variant="ghost" className="w-full justify-start rounded-xl text-lg py-6 text-[var(--actext)]">
                 <Sparkles className="w-5 h-5 mr-4" />
                 User Dashboard
               </Button>
             </Link>
           </nav>
+          <Button
+            variant="ghost"
+            onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+            className="w-full justify-start rounded-xl text-red-500 hover:bg-red-50 py-6 text-lg"
+          >
+            <LogOut className="w-5 h-5 mr-4" />
+            Sign Out
+          </Button>
         </div>
       )}
 
-      {/* Content */}
-      <main className="relative z-10 flex-1 overflow-x-hidden p-4 md:p-10">
+      {/* ============ MAIN CONTENT ============ */}
+      <main className="flex-1 overflow-x-hidden p-4 md:p-10">
         {children}
       </main>
     </div>

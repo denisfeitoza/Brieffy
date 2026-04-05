@@ -79,17 +79,17 @@ export function MultipleChoiceInput({
               key={optKey}
               className={`flex items-center gap-3 p-4 min-h-[48px] rounded-xl border cursor-pointer transition-all active:scale-[0.98] ${
                 isSelected
-                  ? "border-indigo-500 bg-indigo-500/10"
-                  : "border-neutral-800 bg-neutral-900/40 hover:border-neutral-700"
+                  ? "border-[var(--orange)] bg-[var(--orange)]/5 ring-1 ring-[var(--orange)]/30"
+                  : "border-gray-200 bg-white hover:border-[var(--orange)]/30 shadow-sm"
               }`}
             >
               <Checkbox
                 checked={isSelected}
-                className="w-5 h-5 shrink-0"
+                className="w-5 h-5 shrink-0 data-[state=checked]:bg-[var(--orange)] data-[state=checked]:border-[var(--orange)]"
                 onCheckedChange={(checked) => handleCheckChange(optText, checked)}
               />
               <span
-                className="text-white font-medium"
+                className="text-black font-medium"
                 style={
                   isFontSelection
                     ? {
@@ -109,13 +109,13 @@ export function MultipleChoiceInput({
         })}
       </div>
 
-      <div ref={scrollTargetRef} className={`w-full transition-all mt-4 ${highlightInput ? 'opacity-100 ring-2 ring-indigo-500/50 rounded-2xl p-2' : 'opacity-80 hover:opacity-100'}`}>
+      <div ref={scrollTargetRef} className={`w-full transition-all mt-4 ${highlightInput ? 'opacity-100 ring-2 ring-[var(--orange)]/30 rounded-2xl p-2 bg-[var(--orange)]/5' : 'opacity-80 hover:opacity-100'}`}>
         {highlightInput && (
-          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300 mb-2">
+          <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300 mb-2">
             ↓ {specifyLabel}
           </p>
         )}
-        <p className="text-sm text-center text-neutral-500 mb-2">
+        <p className="text-sm text-center text-gray-500 mb-2">
           {voiceLanguage === "pt"
             ? "Adicione detalhes via texto ou áudio (opcional):"
             : voiceLanguage === "es"
@@ -144,7 +144,7 @@ export function MultipleChoiceInput({
       </div>
 
       <ScrollConfirmWrapper
-        containerClassName="flex justify-end mt-6 border-t border-neutral-800 pt-6"
+        containerClassName="flex justify-end mt-6 border-t border-gray-200 pt-6"
         isDisabled={
           (selectedMultiples.length === 0 && !inputText.trim()) ||
           isLoading ||
@@ -155,8 +155,8 @@ export function MultipleChoiceInput({
             size="lg"
             className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
               selectedMultiples.length > 0 || inputText.trim()
-                ? "bg-indigo-500 text-white border-indigo-400 hover:bg-indigo-600 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:scale-105"
-                : "bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10"
+                ? "bg-black text-white hover:bg-neutral-800 shadow-lg hover:scale-105"
+                : "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
             }`}
             onClick={handleLocalSend}
             disabled={

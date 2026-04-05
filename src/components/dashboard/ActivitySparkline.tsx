@@ -13,20 +13,27 @@ export function ActivitySparkline({ data }: Props) {
         <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+              <stop offset="5%" stopColor="#ff6029" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#ff6029" stopOpacity={0} />
             </linearGradient>
           </defs>
           <Tooltip
-            contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px', fontSize: '11px', padding: '4px 8px' }}
-            itemStyle={{ color: '#06b6d4' }}
-            labelStyle={{ color: '#71717a', display: 'none' }}
+            contentStyle={{ 
+              backgroundColor: 'var(--bg)', 
+              border: '1px solid var(--bd)', 
+              borderRadius: '8px', 
+              fontSize: '11px', 
+              padding: '4px 8px',
+              color: 'var(--text)',
+            }}
+            itemStyle={{ color: '#ff6029' }}
+            labelStyle={{ color: 'var(--text3)', display: 'none' }}
             formatter={(v: unknown) => [String(v), 'briefings']}
           />
           <Area
             type="monotone"
             dataKey="count"
-            stroke="#06b6d4"
+            stroke="#ff6029"
             strokeWidth={2}
             fill="url(#sparkGrad)"
             dot={false}

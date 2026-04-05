@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 export function CTASection() {
   const { t } = useLanguage();
@@ -32,8 +32,8 @@ export function CTASection() {
         viewport={{ once: true }}
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+            linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
           `,
           backgroundSize: "50px 50px",
         }}
@@ -75,7 +75,7 @@ export function CTASection() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
           <h2
-            className="text-3xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-6 leading-tight"
+            className="text-3xl sm:text-5xl md:text-6xl font-bold text-black tracking-tight mb-6 leading-tight"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {t("cta.title1")}
@@ -90,14 +90,14 @@ export function CTASection() {
               {t("cta.title2")}
             </span>
           </h2>
-          <p className="text-base md:text-lg text-neutral-400 max-w-xl mx-auto mb-10">
+          <p className="text-base md:text-lg text-neutral-600 max-w-xl mx-auto mb-10">
             {t("cta.desc")}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/dashboard/register"
-              className="relative group text-base font-semibold text-white px-8 py-4 rounded-full overflow-hidden inline-block"
+              className="relative group text-base font-semibold text-black px-8 py-4 rounded-full overflow-hidden inline-block"
             >
               <span
                 className="absolute inset-0 rounded-full"
@@ -108,7 +108,7 @@ export function CTASection() {
               <motion.span
                 className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{
-                  background: `linear-gradient(135deg, oklch(0.72 0.28 255), #0ef0ff)`,
+                  background: `linear-gradient(135deg, #ffcfbc, #ff6029)`,
                 }}
               />
               {/* Glow */}

@@ -120,7 +120,7 @@ export function PublicDocumentView({ token }: { token: string }) {
       <div className="max-w-5xl mx-auto py-10 px-4 md:px-8">
         <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-2xl font-outfit font-bold tracking-tight text-white flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffcfbc] to-[var(--orange)] flex items-center justify-center">
               <span className="text-white text-sm">B</span>
             </div>
             Brieffy
@@ -140,13 +140,13 @@ export function PublicDocumentView({ token }: { token: string }) {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-neutral-900 border border-white/10 p-8 rounded-2xl shadow-xl flex flex-col items-center">
         <div className="mb-8 text-2xl font-outfit font-bold tracking-tight text-white flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffcfbc] to-[var(--orange)] flex items-center justify-center">
             <span className="text-white text-sm">B</span>
           </div>
           Brieffy
         </div>
         
-        <div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6">
+        <div className="w-16 h-16 rounded-full bg-[var(--orange)]/10 flex items-center justify-center text-[var(--orange)] mb-6">
           <Lock className="w-8 h-8" />
         </div>
         
@@ -160,7 +160,7 @@ export function PublicDocumentView({ token }: { token: string }) {
             <input
               type="text"
               placeholder={tr.passphrasePlaceholder}
-              className="w-full bg-black border border-neutral-800 text-white placeholder-neutral-600 px-4 py-3 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+              className="w-full bg-[var(--bg)] border border-[var(--bd)] text-[var(--text)] placeholder-[var(--text3)] px-4 py-3 rounded-xl focus:border-[var(--orange)] focus:ring-1 focus:ring-[var(--orange)] outline-none transition-all"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               disabled={isVerifying}

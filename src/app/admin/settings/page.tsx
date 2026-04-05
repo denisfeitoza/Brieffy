@@ -154,8 +154,8 @@ export default function AdminSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[60vh] gap-3">
-        <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-        <span className="text-zinc-400 text-lg">Loading settings...</span>
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--orange)]" />
+        <span className="text-[var(--text2)] text-lg">Loading settings...</span>
       </div>
     );
   }
@@ -168,7 +168,7 @@ export default function AdminSettingsPage() {
           <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
             Global AI Configuration
           </h2>
-          <p className="text-zinc-400 mt-2">
+          <p className="text-[var(--text2)] mt-2">
             Configure AI providers, models, performance, and briefing parameters for all users.
           </p>
         </div>
@@ -179,7 +179,7 @@ export default function AdminSettingsPage() {
             <Button
               variant="ghost"
               onClick={handleReset}
-              className="text-zinc-400 hover:text-zinc-200"
+              className="text-[var(--text2)] hover:text-zinc-200"
             >
               Undo
             </Button>
@@ -189,8 +189,8 @@ export default function AdminSettingsPage() {
             disabled={!hasChanges || isSaving}
             className={`rounded-xl px-6 h-11 transition-all ${
               hasChanges
-                ? "bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_20px_-5px_rgba(147,51,234,0.5)]"
-                : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                ? "bg-[var(--orange)] hover:bg-[#e8552a] text-[var(--text)] shadow-md"
+                : "bg-zinc-800 text-[var(--text3)] cursor-not-allowed"
             }`}
           >
             {isSaving ? (
@@ -207,27 +207,27 @@ export default function AdminSettingsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="ai" className="w-full">
-        <TabsList className="bg-zinc-900/80 border border-purple-500/10 rounded-xl p-1 h-auto flex-wrap">
-          <TabsTrigger value="ai" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-300 px-4 py-2.5 gap-2">
+        <TabsList className="bg-[var(--bg)]/80 border border-[var(--bd)] rounded-xl p-1 h-auto flex-wrap">
+          <TabsTrigger value="ai" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
             <Brain className="w-4 h-4" />
             <span className="hidden sm:inline">Intelligence</span>
             <span className="sm:hidden">AI</span>
           </TabsTrigger>
-          <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-300 px-4 py-2.5 gap-2">
+          <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
             <Volume2 className="w-4 h-4" />
             Voice
           </TabsTrigger>
-          <TabsTrigger value="performance" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-300 px-4 py-2.5 gap-2">
+          <TabsTrigger value="performance" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
             <Gauge className="w-4 h-4" />
             <span className="hidden sm:inline">Performance</span>
             <span className="sm:hidden">Perf</span>
           </TabsTrigger>
-          <TabsTrigger value="briefing" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-300 px-4 py-2.5 gap-2">
+          <TabsTrigger value="briefing" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
             <Target className="w-4 h-4" />
             <span className="hidden sm:inline">Briefing</span>
             <span className="sm:hidden">Brief</span>
           </TabsTrigger>
-          <TabsTrigger value="formats" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-300 px-4 py-2.5 gap-2">
+          <TabsTrigger value="formats" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
             <LayoutTemplate className="w-4 h-4" />
             <span className="hidden sm:inline">Formats</span>
             <span className="sm:hidden">Fmt</span>
@@ -236,11 +236,11 @@ export default function AdminSettingsPage() {
 
         {/* TAB: AI / LLM */}
         <TabsContent value="ai" className="mt-6 space-y-6">
-          <Card className="bg-zinc-900/50 backdrop-blur-md border-purple-500/10">
+          <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                  <Cpu className="w-5 h-5 text-purple-400" />
+                <div className="p-2 rounded-xl bg-purple-500/10 border focus-visible:border-[var(--orange)] border-[var(--orange)]/30">
+                  <Cpu className="w-5 h-5 text-[var(--orange)]" />
                 </div>
                 LLM Provider
               </CardTitle>
@@ -249,7 +249,7 @@ export default function AdminSettingsPage() {
               {/* Provider */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-zinc-300 text-sm font-medium">Provider</Label>
+                  <Label className="text-[var(--text2)] text-sm font-medium">Provider</Label>
                   <Select 
                     value={settings.ai_llm_provider || "groq"} 
                     onValueChange={(v) => {
@@ -259,16 +259,16 @@ export default function AdminSettingsPage() {
                       if (v === "openrouter") updateSetting("ai_llm_model", "x-ai/grok-4.1-fast");
                     }}
                   >
-                    <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl text-white">
+                    <SelectTrigger className="bg-black/40 border-[var(--bd)] h-12 rounded-xl text-[var(--text)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-[var(--bg)] border-[var(--bd)]">
                       {LLM_PROVIDERS.map(p => (
-                        <SelectItem key={p.value} value={p.value} className="text-white focus:bg-purple-500/10 focus:text-purple-300">
+                        <SelectItem key={p.value} value={p.value} className="text-[var(--text)] focus:bg-[var(--bg)] focus:text-[var(--orange)]">
                           <div className="flex items-center gap-2">
-                            <Zap className="w-3.5 h-3.5 text-purple-400" />
+                            <Zap className="w-3.5 h-3.5 text-[var(--orange)]" />
                             <span>{p.label}</span>
-                            <span className="text-zinc-500 text-xs">— {p.description}</span>
+                            <span className="text-[var(--text3)] text-xs">— {p.description}</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -278,30 +278,30 @@ export default function AdminSettingsPage() {
 
                 {/* Model */}
                 <div className="space-y-2">
-                  <Label className="text-zinc-300 text-sm font-medium">Model</Label>
+                  <Label className="text-[var(--text2)] text-sm font-medium">Model</Label>
                   <Select 
                     value={settings.ai_llm_model || ""} 
                     onValueChange={(v) => updateSetting("ai_llm_model", v || "")}
                   >
-                    <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl text-white">
+                    <SelectTrigger className="bg-black/40 border-[var(--bd)] h-12 rounded-xl text-[var(--text)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-[var(--bg)] border-[var(--bd)]">
                       {llmModels.map(m => (
-                        <SelectItem key={m.value} value={m.value} className="text-white focus:bg-purple-500/10 focus:text-purple-300">
+                        <SelectItem key={m.value} value={m.value} className="text-[var(--text)] focus:bg-[var(--bg)] focus:text-[var(--orange)]">
                           {m.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-[11px] text-[var(--text3)]">
                     Or type a custom model below
                   </p>
                   <Input
                     value={settings.ai_llm_model || ""}
                     onChange={(e) => updateSetting("ai_llm_model", e.target.value)}
                     placeholder="e.g. openai/gpt-oss-120b"
-                    className="bg-black/40 border-white/10 rounded-xl h-10 text-white font-mono text-sm"
+                    className="bg-black/40 border-[var(--bd)] rounded-xl h-10 text-[var(--text)] font-mono text-sm"
                   />
                 </div>
               </div>
@@ -311,10 +311,10 @@ export default function AdminSettingsPage() {
               {/* Temperature */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-zinc-300 text-sm font-medium">
+                  <Label className="text-[var(--text2)] text-sm font-medium">
                     Temperature
                   </Label>
-                  <span className="text-purple-400 font-mono text-sm font-bold bg-purple-500/10 px-3 py-1 rounded-lg">
+                  <span className="text-[var(--orange)] font-mono text-sm font-bold bg-purple-500/10 px-3 py-1 rounded-lg">
                     {settings.ai_llm_temperature || "0"}
                   </span>
                 </div>
@@ -326,7 +326,7 @@ export default function AdminSettingsPage() {
                   step={0.1}
                   className="w-full"
                 />
-                <div className="flex justify-between text-[11px] text-zinc-500">
+                <div className="flex justify-between text-[11px] text-[var(--text3)]">
                   <span>Deterministic (0)</span>
                   <span>Creative (1)</span>
                 </div>
@@ -334,16 +334,16 @@ export default function AdminSettingsPage() {
 
               {/* Max Tokens */}
               <div className="space-y-2">
-                <Label className="text-zinc-300 text-sm font-medium">Max Tokens</Label>
+                <Label className="text-[var(--text2)] text-sm font-medium">Max Tokens</Label>
                 <Input
                   type="number"
                   value={settings.ai_llm_max_tokens || "1200"}
                   onChange={(e) => updateSetting("ai_llm_max_tokens", e.target.value)}
                   min={200}
                   max={8000}
-                  className="bg-black/40 border-white/10 rounded-xl h-12 text-white font-mono"
+                  className="bg-black/40 border-[var(--bd)] rounded-xl h-12 text-[var(--text)] font-mono"
                 />
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-[11px] text-[var(--text3)]">
                   Maximum tokens in the response. More tokens = longer but slower.
                 </p>
               </div>
@@ -353,11 +353,11 @@ export default function AdminSettingsPage() {
 
         {/* TAB: VOICE */}
         <TabsContent value="voice" className="mt-6 space-y-6">
-          <Card className="bg-zinc-900/50 backdrop-blur-md border-purple-500/10">
+          <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                  <Mic className="w-5 h-5 text-indigo-400" />
+                  <Mic className="w-5 h-5 text-[var(--text)]" />
                 </div>
                 Voice Transcription (STT)
               </CardTitle>
@@ -365,21 +365,21 @@ export default function AdminSettingsPage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-zinc-300 text-sm font-medium">Provider</Label>
+                  <Label className="text-[var(--text2)] text-sm font-medium">Provider</Label>
                   <Select 
                     value={settings.ai_voice_provider || "groq"} 
                     onValueChange={(v) => updateSetting("ai_voice_provider", v || "")}
                   >
-                    <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl text-white">
+                    <SelectTrigger className="bg-black/40 border-[var(--bd)] h-12 rounded-xl text-[var(--text)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-[var(--bg)] border-[var(--bd)]">
                       {VOICE_PROVIDERS.map(p => (
-                        <SelectItem key={p.value} value={p.value} className="text-white focus:bg-indigo-500/10 focus:text-indigo-300">
+                        <SelectItem key={p.value} value={p.value} className="text-[var(--text)] focus:bg-[var(--bg)] focus:text-[var(--text2)]">
                           <div className="flex items-center gap-2">
-                            <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
+                            <Volume2 className="w-3.5 h-3.5 text-[var(--text)]" />
                             <span>{p.label}</span>
-                            <span className="text-zinc-500 text-xs">— {p.description}</span>
+                            <span className="text-[var(--text3)] text-xs">— {p.description}</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -388,17 +388,17 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-zinc-300 text-sm font-medium">Model</Label>
+                  <Label className="text-[var(--text2)] text-sm font-medium">Model</Label>
                   <Select 
                     value={settings.ai_voice_model || "whisper-large-v3-turbo"} 
                     onValueChange={(v) => updateSetting("ai_voice_model", v || "")}
                   >
-                    <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl text-white">
+                    <SelectTrigger className="bg-black/40 border-[var(--bd)] h-12 rounded-xl text-[var(--text)]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-[var(--bg)] border-[var(--bd)]">
                       {VOICE_MODELS.map(m => (
-                        <SelectItem key={m.value} value={m.value} className="text-white focus:bg-indigo-500/10 focus:text-indigo-300">
+                        <SelectItem key={m.value} value={m.value} className="text-[var(--text)] focus:bg-[var(--bg)] focus:text-[var(--text2)]">
                           {m.label}
                         </SelectItem>
                       ))}
@@ -410,23 +410,23 @@ export default function AdminSettingsPage() {
               <Separator className="bg-white/5" />
 
               <div className="space-y-2">
-                <Label className="text-zinc-300 text-sm font-medium">Default Transcription Language</Label>
+                <Label className="text-[var(--text2)] text-sm font-medium">Default Transcription Language</Label>
                 <Select 
                   value={settings.ai_voice_language || "pt"} 
                   onValueChange={(v) => updateSetting("ai_voice_language", v || "")}
                 >
-                  <SelectTrigger className="bg-black/40 border-white/10 h-12 rounded-xl text-white max-w-xs">
+                  <SelectTrigger className="bg-black/40 border-[var(--bd)] h-12 rounded-xl text-[var(--text)] max-w-xs">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectContent className="bg-[var(--bg)] border-[var(--bd)]">
                     {LANGUAGES.map(l => (
-                      <SelectItem key={l.value} value={l.value} className="text-white focus:bg-indigo-500/10 focus:text-indigo-300">
+                      <SelectItem key={l.value} value={l.value} className="text-[var(--text)] focus:bg-[var(--bg)] focus:text-[var(--text2)]">
                         {l.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-[11px] text-[var(--text3)]">
                   Language used for audio transcription when not specified.
                 </p>
               </div>
@@ -436,7 +436,7 @@ export default function AdminSettingsPage() {
 
         {/* TAB: PERFORMANCE */}
         <TabsContent value="performance" className="mt-6 space-y-6">
-          <Card className="bg-zinc-900/50 backdrop-blur-md border-purple-500/10">
+          <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -449,8 +449,8 @@ export default function AdminSettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-zinc-300 text-sm font-medium">Context Window</Label>
-                    <p className="text-[11px] text-zinc-500 mt-1">
+                    <Label className="text-[var(--text2)] text-sm font-medium">Context Window</Label>
+                    <p className="text-[11px] text-[var(--text3)] mt-1">
                       Full conversation context is sent to the AI for maximum intelligence.
                     </p>
                   </div>
@@ -460,7 +460,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-3 flex gap-3">
                   <Brain className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-[var(--text2)]">
                     O motor de briefing envia o histórico completo da conversa para que a IA possa 
                     fazer deduções cross-package, evitar redundâncias e manter contexto total. O 
                     comprimento do briefing é auto-regulado pelo módulo ADAPTIVE_LENGTH.
@@ -473,8 +473,8 @@ export default function AdminSettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-zinc-300 text-sm font-medium">Request Timeout</Label>
-                    <p className="text-[11px] text-zinc-500 mt-1">
+                    <Label className="text-[var(--text2)] text-sm font-medium">Request Timeout</Label>
+                    <p className="text-[11px] text-[var(--text3)] mt-1">
                       Maximum wait time (ms) before aborting the AI call.
                     </p>
                   </div>
@@ -490,7 +490,7 @@ export default function AdminSettingsPage() {
                   step={5000}
                   className="w-full"
                 />
-                <div className="flex justify-between text-[11px] text-zinc-500">
+                <div className="flex justify-between text-[11px] text-[var(--text3)]">
                   <span>5s — Aggressive</span>
                   <span>60s — Patient</span>
                 </div>
@@ -499,11 +499,11 @@ export default function AdminSettingsPage() {
               {/* Speed Tips */}
               <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 flex gap-3">
                 <Zap className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-sm text-zinc-300">
+                <div className="text-sm text-[var(--text2)]">
                   <p className="font-medium text-amber-300 mb-1">Speed Tips</p>
-                  <ul className="text-zinc-400 space-y-1 text-xs">
-                    <li>• Use <strong className="text-zinc-300">Groq</strong> as provider for ultra-fast inference</li>
-                    <li>• <strong className="text-zinc-300">Temperature 0</strong> eliminates random sampling</li>
+                  <ul className="text-[var(--text2)] space-y-1 text-xs">
+                    <li>• Use <strong className="text-[var(--text2)]">Groq</strong> as provider for ultra-fast inference</li>
+                    <li>• <strong className="text-[var(--text2)]">Temperature 0</strong> eliminates random sampling</li>
                     <li>• Full context window is required for intelligent deduction across packages</li>
                     <li>• Aggressive timeout (10-15s) prevents hangs</li>
                   </ul>
@@ -515,7 +515,7 @@ export default function AdminSettingsPage() {
 
         {/* TAB: BRIEFING */}
         <TabsContent value="briefing" className="mt-6 space-y-6">
-          <Card className="bg-zinc-900/50 backdrop-blur-md border-purple-500/10">
+          <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
@@ -528,8 +528,8 @@ export default function AdminSettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-zinc-300 text-sm font-medium">Basal Coverage Threshold</Label>
-                    <p className="text-[11px] text-zinc-500 mt-1">
+                    <Label className="text-[var(--text2)] text-sm font-medium">Basal Coverage Threshold</Label>
+                    <p className="text-[11px] text-[var(--text3)] mt-1">
                       Minimum percentage of required fields to finalize the briefing.
                     </p>
                   </div>
@@ -545,7 +545,7 @@ export default function AdminSettingsPage() {
                   step={0.05}
                   className="w-full"
                 />
-                <div className="flex justify-between text-[11px] text-zinc-500">
+                <div className="flex justify-between text-[11px] text-[var(--text3)]">
                   <span>50% — Permissive</span>
                   <span>100% — Strict</span>
                 </div>
@@ -554,7 +554,7 @@ export default function AdminSettingsPage() {
               {/* Info card */}
               <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4 flex gap-3">
                 <AlertCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-sm text-zinc-400">
+                <div className="text-sm text-[var(--text2)]">
                   <p className="font-medium text-emerald-300 mb-1">About Basal Coverage</p>
                   <p className="text-xs">
                     The AI only advances to visual questions (colors, style, logo) when this threshold 
@@ -569,7 +569,7 @@ export default function AdminSettingsPage() {
 
         {/* TAB: FORMATS */}
         <TabsContent value="formats" className="mt-6 space-y-6">
-          <Card className="bg-zinc-900/50 backdrop-blur-md border-purple-500/10">
+          <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
@@ -581,12 +581,12 @@ export default function AdminSettingsPage() {
             <CardContent className="space-y-6">
               <div className="rounded-xl bg-blue-500/5 border border-blue-500/20 p-4 flex gap-3 mb-6">
                 <AlertCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                <div className="text-sm text-zinc-400">
+                <div className="text-sm text-[var(--text2)]">
                   <p className="font-medium text-blue-300 mb-1">Modular Format Capabilities</p>
                   <p className="text-xs">
                     Enable or disable specific question formats that the AI is permitted to use. 
-                    The "Text" format cannot be disabled as it is required for the Discovery phase.
-                    Changes here dynamically recreate the AI's allowed system constraints.
+                    The &quot;Text&quot; format cannot be disabled as it is required for the Discovery phase.
+                    Changes here dynamically recreate the AI&apos;s allowed system constraints.
                   </p>
                 </div>
               </div>
@@ -605,10 +605,10 @@ export default function AdminSettingsPage() {
                 ].map((fmt) => {
                   const currentValue = settings[fmt.id] !== "false"; // Default true
                   return (
-                    <div key={fmt.id} className="flex flex-row items-center justify-between rounded-xl border border-white/5 p-4 bg-black/20">
+                    <div key={fmt.id} className="flex flex-row items-center justify-between rounded-xl border border-[var(--bd)] p-4 bg-[var(--bg2)]">
                       <div className="space-y-0.5 pr-4">
                         <Label className="text-base text-zinc-200">{fmt.label}</Label>
-                        <p className="text-xs text-zinc-500">{fmt.desc}</p>
+                        <p className="text-xs text-[var(--text3)]">{fmt.desc}</p>
                       </div>
                       <div className="flex shrink-0">
                         {/* Custom Toggle Switch */}
@@ -633,10 +633,10 @@ export default function AdminSettingsPage() {
                 })}
 
                 {/* Hardcoded Text - Always Enabled */}
-                <div className="flex flex-row items-center justify-between rounded-xl border border-white/5 p-4 bg-black/20 opacity-60">
+                <div className="flex flex-row items-center justify-between rounded-xl border border-[var(--bd)] p-4 bg-[var(--bg2)] opacity-60">
                   <div className="space-y-0.5 pr-4">
                     <Label className="text-base text-zinc-200">Text (Free Input)</Label>
-                    <p className="text-xs text-zinc-500">Universal fallback. Forced enable.</p>
+                    <p className="text-xs text-[var(--text3)]">Universal fallback. Forced enable.</p>
                   </div>
                   <div className="flex shrink-0">
                     <button
@@ -657,11 +657,11 @@ export default function AdminSettingsPage() {
 
       {/* Mobile-sticky save bar */}
       {hasChanges && (
-        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-black/80 backdrop-blur-xl border-t border-purple-500/10 p-4 z-50">
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-black/80 backdrop-blur-xl border-t border-[var(--bd)] p-4 z-50">
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full h-12 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold shadow-[0_0_20px_-5px_rgba(147,51,234,0.5)]"
+            className="w-full h-12 rounded-xl bg-[var(--orange)] hover:bg-[#e8552a] text-[var(--text)] font-semibold shadow-md"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

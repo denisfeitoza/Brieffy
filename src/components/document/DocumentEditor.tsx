@@ -117,7 +117,7 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={generatePDF} size="sm" className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold">
+          <Button onClick={generatePDF} size="sm" className="bg-[var(--orange)] hover:opacity-90 text-white font-semibold">
             <Download className="w-4 h-4 mr-2" />
             Baixar PDF Premium
           </Button>
@@ -129,7 +129,7 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
         {isEditing ? (
           <div className="flex flex-col h-full w-full">
             <textarea
-              className="w-full min-h-[60vh] bg-transparent text-zinc-300 font-mono text-sm leading-relaxed p-4 border border-zinc-800 focus:border-cyan-500 rounded-xl outline-none resize-y custom-scrollbar"
+              className="w-full min-h-[60vh] bg-transparent text-zinc-300 font-mono text-sm leading-relaxed p-4 border border-zinc-800 focus:border-[var(--orange)] rounded-xl outline-none resize-y custom-scrollbar"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Escreva ou edite o markdown aqui..."
@@ -141,12 +141,12 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
             className={`prose prose-invert prose-sm md:prose-base max-w-none 
               prose-headings:font-outfit prose-headings:tracking-tight
               prose-h1:text-2xl prose-h1:md:text-4xl prose-h1:bg-gradient-to-r prose-h1:from-white prose-h1:to-zinc-500 prose-h1:bg-clip-text prose-h1:text-transparent prose-h1:mb-8
-              prose-h2:text-xl prose-h2:text-cyan-400 prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2 prose-h2:mt-10
+              prose-h2:text-xl prose-h2:text-[var(--orange)] prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2 prose-h2:mt-10
               prose-h3:text-lg prose-h3:text-zinc-200
               prose-p:text-zinc-300 prose-p:leading-relaxed
               prose-li:text-zinc-300
               prose-strong:text-white prose-strong:font-semibold
-              prose-blockquote:border-l-cyan-500 prose-blockquote:bg-cyan-500/5 prose-blockquote:rounded-r-lg prose-blockquote:px-4 prose-blockquote:py-2
+              prose-blockquote:border-l-[var(--orange)] prose-blockquote:bg-[var(--orange)]/5 prose-blockquote:rounded-r-lg prose-blockquote:px-4 prose-blockquote:py-2
               w-full mx-auto
               ${/* Classes extras q qnd PDF tiver ativo a gente pode usar via CSS se precisar */''}
             `}

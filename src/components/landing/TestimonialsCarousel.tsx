@@ -5,8 +5,8 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 const getTestimonials = (t: (key: string) => string) => [
   {
@@ -69,7 +69,7 @@ export function TestimonialsCarousel() {
             {t("testim.badge")}
           </motion.span>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-black tracking-tight"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {t("testim.title1")} <span className="text-neutral-500">{t("testim.title2")}</span>
@@ -79,7 +79,7 @@ export function TestimonialsCarousel() {
         {/* Carousel */}
         <div className="relative">
           <motion.div
-            className="rounded-3xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-8 md:p-12 text-center relative overflow-hidden"
+            className="rounded-3xl border border-black/[0.08] bg-black/[0.02] backdrop-blur-sm p-8 md:p-12 text-center relative overflow-hidden"
             key={active}
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
@@ -93,14 +93,14 @@ export function TestimonialsCarousel() {
             />
 
             {/* Text */}
-            <p className="text-lg md:text-xl text-neutral-300 leading-relaxed max-w-2xl mx-auto mb-8 italic">
+            <p className="text-lg md:text-xl text-neutral-700 leading-relaxed max-w-2xl mx-auto mb-8 italic">
               &ldquo;{testimonials[active].text}&rdquo;
             </p>
 
             {/* Avatar + Name */}
             <div className="flex flex-col items-center gap-3">
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-black"
                 style={{
                   background: `linear-gradient(135deg, ${testimonials[active].color}, ${testimonials[active].color}80)`,
                 }}
@@ -109,7 +109,7 @@ export function TestimonialsCarousel() {
               </div>
               <div>
                 <p
-                  className="text-base font-semibold text-white"
+                  className="text-base font-semibold text-black"
                   style={{ fontFamily: '"Outfit", sans-serif' }}
                 >
                   {testimonials[active].name}
@@ -125,7 +125,7 @@ export function TestimonialsCarousel() {
           <div className="flex items-center justify-center gap-4 mt-6">
             <button
               onClick={prev}
-              className="w-10 h-10 rounded-full border border-white/[0.08] bg-white/[0.03] flex items-center justify-center text-neutral-400 hover:text-white hover:border-white/20 transition-all"
+              className="w-10 h-10 rounded-full border border-black/[0.08] bg-black/[0.03] flex items-center justify-center text-neutral-600 hover:text-black hover:border-black/20 transition-all"
               aria-label="Anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -140,7 +140,7 @@ export function TestimonialsCarousel() {
                   className={`w-2 h-2 rounded-full transition-all duration-300 ${
                     i === active
                       ? "w-6 bg-white"
-                      : "bg-white/20 hover:bg-white/40"
+                      : "bg-black/20 hover:bg-black/40"
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
@@ -149,7 +149,7 @@ export function TestimonialsCarousel() {
 
             <button
               onClick={next}
-              className="w-10 h-10 rounded-full border border-white/[0.08] bg-white/[0.03] flex items-center justify-center text-neutral-400 hover:text-white hover:border-white/20 transition-all"
+              className="w-10 h-10 rounded-full border border-black/[0.08] bg-black/[0.03] flex items-center justify-center text-neutral-600 hover:text-black hover:border-black/20 transition-all"
               aria-label="Próximo"
             >
               <ChevronRight className="w-4 h-4" />

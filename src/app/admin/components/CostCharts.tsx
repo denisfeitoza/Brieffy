@@ -67,22 +67,22 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
       </div>
 
       {/* Timeline Chart */}
-      <Card className="bg-zinc-900/50 border-purple-500/10">
+      <Card className="bg-[var(--bg2)] border-[var(--bd)]">
         <CardHeader>
-          <CardTitle className="text-sm text-zinc-300">Custo Diário (USD)</CardTitle>
+          <CardTitle className="text-sm text-[var(--text2)]">Custo Diário (USD)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[200px] sm:h-[250px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={formattedTimeline} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
-                <XAxis dataKey="date" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <XAxis dataKey="date" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#e4e4e7', borderRadius: '8px' }}
-                  itemStyle={{ color: '#a78bfa' }}
+                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', color: '#111827', borderRadius: '8px' }}
+                  itemStyle={{ color: '#ff6029' }}
                 />
-                <Line type="monotone" dataKey="costUSD" name="Custo USD" stroke="#a78bfa" strokeWidth={3} dot={{ r: 4, fill: '#18181b', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="costUSD" name="Custo USD" stroke="#ff6029" strokeWidth={3} dot={{ r: 4, fill: '#ffffff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -90,20 +90,20 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
       </Card>
 
       {/* Top Companies Chart */}
-      <Card className="bg-zinc-900/50 border-purple-500/10">
+      <Card className="bg-[var(--bg2)] border-[var(--bd)]">
         <CardHeader>
-          <CardTitle className="text-sm text-zinc-300">Top 5 Custos por Empresa (USD)</CardTitle>
+          <CardTitle className="text-sm text-[var(--text2)]">Top 5 Custos por Empresa (USD)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[200px] sm:h-[250px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topCompanies} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
-                <XAxis dataKey="name" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#e4e4e7', borderRadius: '8px' }}
-                  cursor={{ fill: '#27272a' }}
+                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', color: '#111827', borderRadius: '8px' }}
+                  cursor={{ fill: '#e5e7eb' }}
                 />
                 <Bar dataKey="cost" name="Custo USD" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
               </BarChart>
@@ -113,14 +113,14 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
       </Card>
       
       {/* Detailed Companies List */}
-      <Card className="col-span-1 lg:col-span-2 bg-zinc-900/50 border-purple-500/10">
+      <Card className="col-span-1 lg:col-span-2 bg-[var(--bg2)] border-[var(--bd)]">
         <CardHeader>
-          <CardTitle className="text-sm text-zinc-300">Tabela de Custo por Cliente</CardTitle>
+          <CardTitle className="text-sm text-[var(--text2)]">Tabela de Custo por Cliente</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-[10px] sm:text-xs text-zinc-400 uppercase bg-zinc-900/50 border-b border-zinc-800">
+              <thead className="text-[10px] sm:text-xs text-[var(--text2)] uppercase bg-[var(--bg2)] border-b border-[var(--bd)]">
                 <tr>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 font-medium">Empresa</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-right hidden sm:table-cell">Tokens</th>
@@ -130,16 +130,16 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
               </thead>
               <tbody>
                 {costByCompany.map((company, index) => (
-                  <tr key={index} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
-                    <td className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-zinc-200 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{company.companyName}</td>
-                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-zinc-400 text-xs hidden sm:table-cell">{company.tokens.toLocaleString()}</td>
+                  <tr key={index} className="border-b border-[var(--bd)] hover:bg-[var(--bg3)]">
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-[var(--text)] text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{company.companyName}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-[var(--text2)] text-xs hidden sm:table-cell">{company.tokens.toLocaleString()}</td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-emerald-400 text-xs sm:text-sm">${company.costUsd.toFixed(4)}</td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-emerald-400 text-xs hidden md:table-cell">R$ {(company.costUsd * 6.0).toFixed(4)}</td>
                   </tr>
                 ))}
                 {costByCompany.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">Nenhum custo registrado até o momento.</td>
+                    <td colSpan={4} className="px-4 py-8 text-center text-[var(--text3)]">Nenhum custo registrado até o momento.</td>
                   </tr>
                 )}
               </tbody>

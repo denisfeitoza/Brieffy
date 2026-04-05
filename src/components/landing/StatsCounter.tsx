@@ -4,8 +4,8 @@ import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 const getStats = (t: (key: string) => string) => [
   {
@@ -118,7 +118,7 @@ export function StatsCounter() {
                 color={stat.color}
               />
               <h3
-                className="text-base md:text-lg font-semibold text-white mt-2"
+                className="text-base md:text-lg font-semibold text-black mt-2"
                 style={{ fontFamily: '"Outfit", sans-serif' }}
               >
                 {stat.label}

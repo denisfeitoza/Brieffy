@@ -115,58 +115,58 @@ export default function AdminUserDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--orange)]" />
       </div>
     );
   }
 
   if (!user) {
-    return <p className="text-zinc-500 text-center py-20">User not found.</p>;
+    return <p className="text-[var(--text3)] text-center py-20">User not found.</p>;
   }
 
   return (
     <div className="space-y-8 max-w-3xl animate-in fade-in duration-700">
       <div>
         <Link href="/admin">
-          <Button variant="ghost" className="text-zinc-400 hover:text-white -ml-4 mb-4">
+          <Button variant="ghost" className="text-[var(--text2)] hover:text-[var(--text)] -ml-4 mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Users
           </Button>
         </Link>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--text)]">
           {user.display_name}
         </h2>
-        <p className="text-zinc-400 text-sm mt-1">{user.company_name || 'No company'} • Joined {new Date(user.created_at).toLocaleDateString()}</p>
+        <p className="text-[var(--text2)] text-sm mt-1">{user.company_name || 'No company'} • Joined {new Date(user.created_at).toLocaleDateString()}</p>
       </div>
 
       {/* Quota Management */}
-      <Card className="bg-zinc-900/50 border-purple-500/10">
+      <Card className="bg-[var(--bg2)] border-[var(--bd)]">
         <CardHeader>
-          <CardTitle className="text-purple-300">Quota & Plan Management</CardTitle>
-          <CardDescription className="text-zinc-400">
+          <CardTitle className="text-[var(--orange)]">Quota & Plan Management</CardTitle>
+          <CardDescription className="text-[var(--text2)]">
             Control how many briefings this user can create.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-zinc-300">Max Briefings</Label>
+              <Label className="text-[var(--text2)]">Max Briefings</Label>
               <Input
                 type="number"
                 value={maxBriefings}
                 onChange={(e) => setMaxBriefings(parseInt(e.target.value) || 0)}
-                className="bg-black/50 border-white/10 focus-visible:ring-purple-500"
+                className="bg-black/50 border-[var(--bd)] focus-visible:ring-purple-500"
               />
-              <p className="text-xs text-zinc-500">Currently used: {quota?.used_briefings || 0}</p>
+              <p className="text-xs text-[var(--text3)]">Currently used: {quota?.used_briefings || 0}</p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-300">Plan</Label>
+              <Label className="text-[var(--text2)]">Plan</Label>
               <Select value={plan} onValueChange={(v) => setPlan(v || 'free')}>
-                <SelectTrigger className="bg-black/50 border-white/10">
+                <SelectTrigger className="bg-black/50 border-[var(--bd)]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800">
+                <SelectContent className="bg-[var(--bg)] border-[var(--bd)]">
                   <SelectItem value="free">Free</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
                   <SelectItem value="enterprise">Enterprise</SelectItem>
@@ -200,7 +200,7 @@ export default function AdminUserDetailPage() {
             )}
           </div>
 
-          <Button onClick={handleSave} disabled={saving} className="bg-purple-600 hover:bg-purple-500">
+          <Button onClick={handleSave} disabled={saving} className="bg-[var(--orange)] hover:bg-[#e8552a]">
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save Changes
           </Button>
@@ -209,29 +209,29 @@ export default function AdminUserDetailPage() {
 
       {/* User's Briefings */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-purple-400" />
+        <h3 className="text-lg font-semibold text-[var(--text)] flex items-center gap-2">
+          <FileText className="w-5 h-5 text-[var(--orange)]" />
           User&apos;s Briefings ({sessions.length})
         </h3>
         {sessions.length === 0 ? (
-          <Card className="bg-zinc-900/30 border-white/5">
-            <CardContent className="text-center py-8 text-zinc-500">
+          <Card className="bg-[var(--bg)] border-[var(--bd)]">
+            <CardContent className="text-center py-8 text-[var(--text3)]">
               No briefings created by this user.
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-2">
             {sessions.map(s => (
-              <Card key={s.id} className="bg-zinc-900/40 border-white/8">
+              <Card key={s.id} className="bg-[var(--bg2)] border-[var(--bd)]">
                 <CardContent className="py-3 px-4 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-zinc-200">{s.session_name || 'Untitled'}</p>
-                    <p className="text-xs text-zinc-500">{new Date(s.created_at).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-[var(--text)]">{s.session_name || 'Untitled'}</p>
+                    <p className="text-xs text-[var(--text3)]">{new Date(s.created_at).toLocaleDateString()}</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${
                     s.status === 'finished' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' :
                     s.status === 'in_progress' ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' :
-                    'text-zinc-400 bg-zinc-400/10 border-zinc-400/20'
+                    'text-[var(--text2)] bg-[var(--bg2)] border-[var(--bd)]'
                   }`}>
                     {s.status}
                   </span>

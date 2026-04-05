@@ -33,7 +33,7 @@ export function BottomSheetOptions({ options, onSelect, isDisabled, label }: Bot
         size="lg"
         onClick={() => setIsOpen(true)}
         disabled={isDisabled}
-        className="w-full rounded-2xl border-neutral-700 text-zinc-200 hover:bg-neutral-800 h-14 font-medium flex items-center justify-between px-6"
+        className="w-full rounded-2xl border-gray-200 bg-white text-gray-500 hover:text-black hover:bg-gray-50 shadow-sm h-14 font-medium flex items-center justify-between px-6"
       >
         <span>{label}</span>
         <ChevronDown className="w-4 h-4 opacity-60" />
@@ -57,22 +57,22 @@ export function BottomSheetOptions({ options, onSelect, isDisabled, label }: Bot
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed bottom-0 inset-x-0 z-[201] bg-zinc-900 border-t border-white/10 rounded-t-3xl"
+              className="fixed bottom-0 inset-x-0 z-[201] bg-white border-t border-gray-200 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
               style={{ maxHeight: "75vh" }}
             >
               {/* Handle */}
               <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 rounded-full bg-zinc-600" />
+                <div className="w-10 h-1.5 rounded-full bg-gray-300" />
               </div>
 
               {/* Header */}
-              <div className="flex items-center justify-between px-6 pb-4 border-b border-white/8">
-                <p className="text-sm font-medium text-zinc-400 tracking-wide">
+              <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100">
+                <p className="text-sm font-medium text-gray-500 tracking-wide">
                   Selecione uma opção
                 </p>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:text-black hover:bg-gray-200 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -88,7 +88,7 @@ export function BottomSheetOptions({ options, onSelect, isDisabled, label }: Bot
                       setIsOpen(false);
                     }}
                     disabled={isDisabled}
-                    className="w-full text-left px-6 py-4 text-zinc-200 font-medium text-base border-b border-white/5 hover:bg-white/5 active:bg-white/10 transition-colors min-h-[56px] flex items-center"
+                    className="w-full text-left px-6 py-4 text-black font-medium text-base border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[56px] flex items-center"
                   >
                     {opt}
                   </button>

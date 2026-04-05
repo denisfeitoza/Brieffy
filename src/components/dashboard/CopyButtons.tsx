@@ -18,7 +18,7 @@ export function CopyButtons({ markdown, html }: CopyButtonsProps) {
     try {
       await navigator.clipboard.writeText(markdown);
       setCopiedMd(true);
-      toast.success('Formato Markdown copiado para uso em IAs!');
+      toast.success('Conteúdo copiado em texto simples (Markdown)!');
       setTimeout(() => setCopiedMd(false), 2000);
     } catch (err) {
       toast.error('Erro ao copiar formato markdown');
@@ -58,25 +58,25 @@ export function CopyButtons({ markdown, html }: CopyButtonsProps) {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 w-full">
+    <div className="flex flex-col sm:flex-row items-center gap-2 lg:gap-3 w-full">
       <Button 
         onClick={handleCopyRichText}
         variant="outline" 
-        size="lg"
-        className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 text-zinc-200"
+        size="sm"
+        className="flex-1 w-full text-xs font-semibold bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)]"
       >
-        <Copy className="w-5 h-5 mr-2 text-zinc-400" />
-        {copiedRich ? 'Copiado!' : 'Copiar'}
+        <Copy className="w-3.5 h-3.5 mr-2" />
+        {copiedRich ? 'Copiado' : 'Copiar'}
       </Button>
       
       <Button 
         onClick={handleCopyMarkdown}
         variant="default"
-        size="lg"
-        className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)]"
+        size="sm"
+        className="flex-1 w-full text-xs font-semibold bg-[var(--orange)] hover:bg-[#e8552a] text-black shadow-sm"
       >
-        <Bot className="w-5 h-5 mr-2" />
-        {copiedMd ? 'Copiado!' : 'Copiar para IA'}
+        <Bot className="w-3.5 h-3.5 mr-2" />
+        {copiedMd ? 'Pronto para IA!' : 'Copiar para IA'}
       </Button>
     </div>
   );

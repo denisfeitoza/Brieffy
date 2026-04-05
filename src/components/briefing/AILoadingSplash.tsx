@@ -318,8 +318,8 @@ export const AILoadingSplash = memo(function AILoadingSplash({
       setIsVerifying(false);
     }
   }, [password, isVerifying, sessionId, onAccessUnlocked, t.passwordError]);
-  const brandColor = branding.brand_color || "#6366f1";
-  const accentColor = branding.brand_accent || "#06b6d4";
+  const brandColor = branding.brand_color || "#ff6029";
+  const accentColor = branding.brand_accent || "#000000";
   const contrastColor = getContrastColor(brandColor);
 
   // Pre-compute node positions for the neural network visualization
@@ -354,7 +354,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-neutral-950 overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-[var(--bg)] overflow-hidden"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, filter: "blur(8px)", scale: 1.02 }}
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
@@ -378,12 +378,12 @@ export const AILoadingSplash = memo(function AILoadingSplash({
       <motion.div
         className="absolute inset-0 pointer-events-none"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.025 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 3 }}
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)
+            linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)
           `,
           backgroundSize: "50px 50px",
         }}
@@ -440,11 +440,11 @@ export const AILoadingSplash = memo(function AILoadingSplash({
             <img
               src={branding.logo_url}
               alt={branding.company_name}
-              className="relative w-14 h-14 md:w-18 md:h-18 rounded-2xl object-contain bg-white border border-white/10 p-1.5 shadow-xl"
+              className="relative w-14 h-14 md:w-18 md:h-18 rounded-2xl object-contain bg-white border border-gray-100 p-1.5 shadow-md"
             />
           ) : (
             <div
-              className="relative w-14 h-14 md:w-18 md:h-18 rounded-2xl flex items-center justify-center font-bold text-xl md:text-2xl border border-white/10 shadow-xl"
+              className="relative w-14 h-14 md:w-18 md:h-18 rounded-2xl flex items-center justify-center font-bold text-xl md:text-2xl border border-gray-100 shadow-xl"
               style={{
                 background: `linear-gradient(135deg, ${brandColor}, ${accentColor || brandColor})`,
                 color: contrastColor,
@@ -458,14 +458,14 @@ export const AILoadingSplash = memo(function AILoadingSplash({
         {/* Company Name */}
         <div className="text-center">
           <h2
-            className="text-lg md:text-xl font-bold tracking-tight text-white"
+            className="text-lg md:text-xl font-bold tracking-tight text-[var(--text)]"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {branding.company_name}
           </h2>
           {branding.tagline && (
             <motion.p
-              className="text-[11px] md:text-xs text-neutral-500 mt-1 tracking-wider uppercase"
+              className="text-[11px] md:text-xs text-gray-400 mt-1 tracking-wider uppercase"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
@@ -576,7 +576,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
                 y={node.y}
                 size={i === 0 || i === 8 ? 4.5 : 3}
                 delay={i * 0.18}
-                color={i % 3 === 0 ? brandColor : i % 3 === 1 ? accentColor : "#ffffff60"}
+                color={i % 3 === 0 ? brandColor : i % 3 === 1 ? accentColor : "rgba(0,0,0,0.15)"}
               />
             ))}
           </svg>
@@ -606,10 +606,10 @@ export const AILoadingSplash = memo(function AILoadingSplash({
               exit={{ opacity: 0, y: -12, scale: 0.95 }}
               transition={{ delay: 0.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="flex items-center justify-center gap-2 mb-2">
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: `${brandColor}20`, border: `1px solid ${brandColor}30` }}
+                  style={{ background: `${brandColor}15`, border: `1px solid ${brandColor}30` }}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke={brandColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -617,14 +617,14 @@ export const AILoadingSplash = memo(function AILoadingSplash({
                   </svg>
                 </div>
                 <h2
-                  className="text-lg md:text-xl font-semibold text-white tracking-tight"
+                  className="text-lg md:text-xl font-semibold text-[var(--text)] tracking-tight"
                   style={{ fontFamily: '"Outfit", sans-serif' }}
                 >
                   {t.passwordTitle}
                 </h2>
               </div>
 
-              <p className="text-xs text-neutral-500 leading-relaxed">
+              <p className="text-xs text-gray-500 leading-relaxed">
                 {t.passwordHint}
               </p>
 
@@ -642,7 +642,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
                     }}
                     placeholder={t.passwordPlaceholder}
                     autoFocus
-                    className="w-full h-12 px-4 bg-white/[0.06] border border-white/10 rounded-xl text-white text-sm placeholder:text-neutral-600 outline-none transition-all duration-200 focus:border-white/20 focus:bg-white/[0.08] focus:ring-2 focus:ring-white/5"
+                    className="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl text-black text-sm placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[var(--orange)] focus:bg-white focus:ring-2 focus:ring-[var(--orange)]/20 shadow-sm"
                     style={{ fontFamily: '"Inter", sans-serif' }}
                   />
                 </div>
@@ -698,13 +698,13 @@ export const AILoadingSplash = memo(function AILoadingSplash({
               transition={{ delay: requirePassword ? 0.2 : 0.6, duration: 0.5 }}
             >
               <h1
-                className="text-lg md:text-xl font-medium text-white tracking-tight"
+                className="text-lg md:text-xl font-medium text-[var(--text)] tracking-tight"
                 style={{ fontFamily: '"Outfit", sans-serif' }}
               >
                 <TypewriterText text={t.generating} />
               </h1>
               <motion.p
-                className="text-xs md:text-sm text-neutral-500 leading-relaxed"
+                className="text-xs md:text-sm text-gray-500 leading-relaxed"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: requirePassword ? 1.0 : 1.8, duration: 0.8 }}
@@ -754,7 +754,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
         transition={{ duration: 0.7, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Progress Bar */}
-        <div className="w-32 md:w-40 h-[3px] bg-neutral-800/60 rounded-full overflow-hidden mb-1">
+        <div className="w-32 md:w-40 h-[3px] bg-gray-200 rounded-full overflow-hidden mb-1">
           <motion.div
             className="h-full rounded-full"
             style={{
@@ -767,10 +767,10 @@ export const AILoadingSplash = memo(function AILoadingSplash({
         </div>
 
         {/* Divider */}
-        <div className="w-12 h-px bg-gradient-to-r from-transparent via-neutral-700/50 to-transparent" />
+        <div className="w-12 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
 
         {/* Footer Text */}
-        <p className="text-[11px] md:text-xs text-neutral-600 leading-relaxed">
+        <p className="text-[11px] md:text-xs text-gray-400 leading-relaxed">
           {t.footer}
         </p>
 
@@ -787,7 +787,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
           >
             B
           </motion.div>
-          <span className="text-[10px] md:text-xs text-neutral-600 font-medium tracking-wide">
+          <span className="text-[10px] md:text-xs text-gray-500 font-medium tracking-wide">
             Powered by{" "}
             <span
               className="font-bold"

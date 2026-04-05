@@ -57,10 +57,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div suppressHydrationWarning className="min-h-screen bg-black text-white flex items-center justify-center p-4 selection:bg-cyan-500/30">
+    <div suppressHydrationWarning className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex items-center justify-center p-4 selection:bg-[var(--orange)] selection:text-black">
       {/* Background Decor */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff6029]/[0.03] rounded-full blur-[120px]" />
       </div>
 
       <motion.div
@@ -69,19 +69,19 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
+        <div className="bg-[var(--bg)] border border-[var(--bd)] p-8 rounded-[2rem] shadow-xl">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-7 h-7 text-cyan-400" />
+            <div className="w-14 h-14 rounded-2xl bg-[var(--orange)]/10 border border-[var(--orange)]/20 flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-7 h-7 text-[var(--orange)]" />
             </div>
-            <h1 className="text-3xl font-bold mb-2 tracking-tight">Smart Briefing</h1>
-            <p className="text-zinc-400 text-sm">Sign in to manage your briefings</p>
+            <h1 className="text-3xl font-extrabold mb-2 tracking-tight text-[var(--text)]">Smart Briefing</h1>
+            <p className="text-[var(--text2)] text-sm">Entre para gerenciar seus briefings</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-zinc-300">
-                Email
+              <Label htmlFor="email" className="text-[var(--text2)] font-semibold">
+                E-mail
               </Label>
               <Input
                 id="email"
@@ -89,14 +89,14 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="bg-black/50 border-white/10 focus-visible:ring-cyan-500 focus-visible:border-cyan-500 rounded-xl h-12"
+                placeholder="seu@email.com"
+                className="bg-[var(--bg2)] border-[var(--bd)] focus-visible:ring-[var(--orange)] focus-visible:border-[var(--orange)] rounded-xl h-12 text-[var(--text)] placeholder:text-[var(--text3)]"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-zinc-300">
-                Password
+              <Label htmlFor="password" className="text-[var(--text2)] font-semibold">
+                Senha
               </Label>
               <Input
                 id="password"
@@ -105,7 +105,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="bg-black/50 border-white/10 focus-visible:ring-cyan-500 focus-visible:border-cyan-500 rounded-xl h-12"
+                className="bg-[var(--bg2)] border-[var(--bd)] focus-visible:ring-[var(--orange)] focus-visible:border-[var(--orange)] rounded-xl h-12 text-[var(--text)] placeholder:text-[var(--text3)]"
               />
             </div>
 
@@ -113,7 +113,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="text-red-400 text-sm p-3 bg-red-950/50 rounded-lg border border-red-900/50"
+                className="text-red-700 text-sm p-3 bg-red-50 rounded-lg border border-red-200"
               >
                 {error}
               </motion.div>
@@ -122,25 +122,25 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl py-6 transition-all duration-300 shadow-[0_0_20px_-5px_rgba(6,182,212,0.5)]"
+              className="w-full bg-[var(--text)] hover:opacity-90 text-[var(--bg)] font-bold rounded-xl h-14 btn-pill transition-all duration-300 shadow-md"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <span className="flex items-center gap-2">
-                  Sign In
+                  Entrar
                   <ArrowRight className="w-4 h-4" />
                 </span>
               )}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-zinc-500 text-sm">
-              Don&apos;t have an account?{' '}
+          <div className="mt-8 text-center border-t border-[var(--bd)] pt-6">
+            <p className="text-[var(--text3)] text-sm font-medium">
+              Não tem uma conta?{' '}
               <Link 
                 href="/dashboard/register" 
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                className="text-[var(--orange)] hover:underline font-bold transition-colors"
               >
-                Create one
+                Criar uma agora
               </Link>
             </p>
           </div>

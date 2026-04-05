@@ -55,14 +55,13 @@ function BooleanButtons({ onSelect, disabled, t, initialAnswer }: DraggableToggl
           flex-1 flex flex-col items-center justify-center gap-2
           h-28 rounded-2xl border-2 font-bold text-xl uppercase tracking-widest
           transition-all duration-200 cursor-pointer select-none
-          ${isYes
             ? "bg-green-500 border-green-400 text-white shadow-[0_0_24px_rgba(34,197,94,0.4)]"
-            : "bg-neutral-900 border-neutral-700 text-neutral-300 hover:border-green-500/60 hover:bg-green-950/30 hover:text-green-300"
+            : "bg-white border-gray-200 text-gray-500 hover:border-green-500/40 hover:bg-green-50 hover:text-green-600 shadow-sm"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
       >
-        <Check className={`w-7 h-7 ${isYes ? "text-white" : "text-neutral-500"}`} />
+        <Check className={`w-7 h-7 ${isYes ? "text-white" : "text-gray-400"}`} />
         {t.yes}
       </motion.button>
 
@@ -79,12 +78,12 @@ function BooleanButtons({ onSelect, disabled, t, initialAnswer }: DraggableToggl
           transition-all duration-200 cursor-pointer select-none
           ${isNo
             ? "bg-red-500 border-red-400 text-white shadow-[0_0_24px_rgba(239,68,68,0.4)]"
-            : "bg-neutral-900 border-neutral-700 text-neutral-300 hover:border-red-500/60 hover:bg-red-950/30 hover:text-red-300"
+            : "bg-white border-gray-200 text-gray-500 hover:border-red-500/40 hover:bg-red-50 hover:text-red-600 shadow-sm"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
       >
-        <X className={`w-7 h-7 ${isNo ? "text-white" : "text-neutral-500"}`} />
+        <X className={`w-7 h-7 ${isNo ? "text-white" : "text-gray-400"}`} />
         {t.no}
       </motion.button>
     </div>
@@ -123,7 +122,7 @@ export function BooleanToggleInput({
         initialAnswer={initialAnswer}
       />
       <div className="w-full max-w-lg opacity-70 hover:opacity-100 transition-opacity">
-        <p className="text-sm text-center text-neutral-500 mb-2">{t.moreDetails}</p>
+        <p className="text-sm text-center text-gray-500 mb-2">{t.moreDetails}</p>
         <TextAudioInput
           inputText={inputText}
           setInputText={setInputText}

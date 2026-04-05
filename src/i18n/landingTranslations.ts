@@ -60,7 +60,7 @@ export const landingTranslations: Record<Language, Record<string, string>> = {
     "solution.feat.4.title": "Geração de ativos visuais",
     "solution.feat.4.desc": "Slogans, paletas de cores e tom de voz — gerados e escolhidos pelo cliente durante o briefing.",
     "solution.feat.5.title": "Skills modulares personalizáveis",
-    "solution.feat.5.desc": "Monte briefings com pacotes de expertise: Branding, Marketing, Web/App, IA & Automação e muito mais.",
+    "solution.feat.5.desc": "Monte briefings com Skills de IA: Branding, Marketing, Web/App, IA & Automação e muito mais.",
     "solution.chat.1": "Olá! Conte-me um pouco sobre o seu negócio. O que vocês fazem?",
     "solution.chat.2": "Somos uma consultoria de marketing digital focada em e-commerce.",
     "solution.chat.3": "Interessante! Qual é o perfil dos seus clientes ideais?",

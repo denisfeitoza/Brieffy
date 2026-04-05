@@ -14,14 +14,14 @@ export function CustomTextPills({ customTexts, onRemove }: CustomTextPillsProps)
       {customTexts.map((text, idx) => (
         <div
           key={idx}
-          className="flex items-center gap-2 bg-indigo-500/20 px-4 py-2 rounded-full border border-indigo-500/50 animate-in fade-in zoom-in duration-300 shadow-[0_0_15px_rgba(99,102,241,0.15)]"
+          className="flex items-center gap-2 bg-[var(--orange)]/10 px-4 py-2 rounded-full border border-[var(--orange)]/30 animate-in fade-in zoom-in duration-300 shadow-sm"
         >
-          <span className="text-sm font-medium text-indigo-300 truncate max-w-[200px]" title={text}>
+          <span className="text-sm font-medium text-[var(--orange)] truncate max-w-[200px]" title={text}>
             {text}
           </span>
           <button
             onClick={() => onRemove(text)}
-            className="text-indigo-400/70 hover:text-red-400 transition-colors"
+            className="text-[var(--orange)]/70 hover:text-red-500 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

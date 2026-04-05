@@ -3,7 +3,17 @@ import { getLLMConfig, getDBSettings, getPerformanceConfig, getFormatConfig } fr
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
-
+import {
+  INTENT_MODULE,
+  EXTRACTION_MODULE,
+  CONSULTANT_RULES,
+  PHASE_MODULES,
+  buildActiveListeningModule,
+  buildBehaviorRules,
+  buildOutputFormat,
+  buildCorePersona,
+  BriefingPhase
+} from '@/lib/ai/promptDictionary';
 // BUG-05 FIX: Do NOT create Supabase client at module level.
 // At Vercel build time, env vars are not available, causing "supabaseUrl is required" crash.
 // The client is created lazily inside each function call.
@@ -241,7 +251,6 @@ export async function POST(req: Request) {
     const currentBasalCoverage = calculateQualityBasalCoverage(currentState || {}, basalFields);
     const backendEngagement = calculateEngagement(history || []);
 
-    type BriefingPhase = 'discovery' | 'confirm' | 'depth' | 'finalize';
     let currentPhase: BriefingPhase = 'discovery';
     if (questionCount >= 3 && currentBasalCoverage >= 0.2) currentPhase = 'confirm';
     if (questionCount >= 6 && currentBasalCoverage >= 0.4) currentPhase = 'depth';
@@ -296,112 +305,37 @@ export async function POST(req: Request) {
     // ================================================================
     // PHASE-SPECIFIC MODULES — Only include what's needed for current phase
     // ================================================================
-    const CORE_PERSONA = `<SystemRole>
-Você é um Motor de Briefing com IA — um consultor estratégico de elite tendo uma CONVERSA REAL.
-Conduza 1 pergunta por turno. Cada pergunta segue naturalmente do que o cliente disse.
-Sua inteligência é medida por quão POUCAS perguntas você precisa para extrair o MÁXIMO de insight.
-REGRA ABSOLUTA: TODO texto visível ao usuário DEVE ser em ${targetLang}. Isso inclui pergunta, opções, micro_feedback e qualquer texto.
-</SystemRole>
+    const CORE_PERSONA = buildCorePersona({
+      targetLang,
+      templateContext,
+      basalFields,
+      sections,
+      extraContext,
+      selectedPackages,
+      packageDataPrompt: packageData.prompt
+    });
 
-<Context>
-  <Template>${templateContext}</Template>
-  <BasalFields>${JSON.stringify(basalFields)}</BasalFields>
-  <SectionPipeline>${sections.map((s: { id: string }) => s.id).join(' → ')}</SectionPipeline>
-${extraContext ? `  <AgencyProfile>${extraContext}</AgencyProfile>` : ''}
-</Context>
-${selectedPackages && selectedPackages.length > 0 ? `<ActiveSkillPackages>\n${packageData.prompt}\n</ActiveSkillPackages>` : ''}`;
+    const ACTIVE_LISTENING_MODULE = buildActiveListeningModule({
+      mergedPurpose,
+      mergedDepthSignals,
+      previousSignalsList
+    });
 
-    const INTENT_MODULE = `<ClassificacaoDeIntencao>
-Classifique a intenção do usuário: CREATE (info nova), UPDATE (modificar existente), EXPLORE (pensando alto).
-CREATE com confiança ≥85%→prossiga. UPDATE→mude APENAS os campos mencionados (CIRÚRGICO). EXPLORE→sem updates.
-Formato: {"mode":"CREATE|UPDATE|EXPLORE","confidence":0-1,"target_fields":[]}
-</ClassificacaoDeIntencao>`;
+    const BEHAVIOR_RULES = buildBehaviorRules({
+      generateMore,
+      basalThreshold: perfConfig.basalThreshold,
+      backendEngagement,
+      selectedPackages
+    });
 
-    const EXTRACTION_MODULE = `<MotorDeInferencia>
-Extraia dados EXPLÍCITOS (→updates) e IMPLÍCITOS (→inferences). Atribua confiança 0-1.
-Inferências ≥0.7 preenchem automaticamente. Leia nas entrelinhas: hesitação=incerteza, ênfase excessiva em concorrentes=insegurança, "fazemos tudo"=falta de foco.
-Alvo: ≥2 campos avançados por turno.
-</MotorDeInferencia>`;
-
-    const ACTIVE_LISTENING_MODULE = `<EscutaAtiva>
-${mergedPurpose ? `PROPÓSITO: "${mergedPurpose}"` : 'PROPÓSITO: Identidade geral do negócio.'}
-${mergedDepthSignals.length > 0 ? `SINAIS SENSÍVEIS (aborde obliquamente): ${mergedDepthSignals.join(', ')}` : ''}
-${previousSignalsList.length > 0 ? `Já detectados (pule): ${previousSignalsList.join(' | ')}` : ''}
-Escaneie cada resposta em busca de: contradição, dor_implícita, evasão, ambição_oculta, lacuna_estratégica.
-Reporte sinais com relevância≥0.60 (max 2/turno). Pergunta de profundidade se relevância≥0.80 (max 25 palavras, tom natural).
-</EscutaAtiva>`;
-
-    const PHASE_MODULES: Record<BriefingPhase, string> = {
-      discovery: `<Fase nome="DESCOBERTA">
-Q1 DEVE ser "text" — pergunta aberta POR QUÊ→COMO→O QUÊ. Seja caloroso e convidativo. Deixe o cliente falar livremente.
-Após Q1: ≥8 inferências→avance para confirmação. 4-7→mais uma pergunta text direcionada. <4→até 2 perguntas text.
-micro_feedback DEVE ser null. Celebre respostas ricas.
-APENAS questionType "text" nesta fase.
-</Fase>`,
-      confirm: `<Fase nome="CONFIRMAÇÃO-RÁPIDA">
-Confirme inferências em LOTE: use multi_slider, card_selector, boolean_toggle.
-Máximo 2-3 perguntas. Referencie o que o cliente disse. micro_feedback: max 1 total.
-</Fase>`,
-      depth: `<Fase nome="PROFUNDIDADE-CIRÚRGICA">
-Perguntas cirúrgicas para lacunas restantes. Combine 2+ campos por pergunta.
-Variedade total de questionType. Varie tipos (nunca 3 consecutivos iguais).
-micro_feedback: max 1 a cada 3-4 perguntas. Sem emojis.
-</Fase>`,
-      finalize: `<Fase nome="FINALIZAÇÃO">
-${forceFinish ? 'CIRCUIT BREAKER ATIVO: limite de perguntas atingido. Você DEVE finalizar AGORA com isFinished=true.' : ''}
-Escaneie basalFieldsMissing + pacotes ativos. Se houver lacunas + engagement não baixo: 1-3 perguntas rápidas táteis.
-Se engagement="low": infira campos restantes (confiança 0.5-0.7).
-Quando isFinished=true inclua: session_quality_score (0-100).
-NUNCA finalize se basalCoverage<0.4.
-</Fase>`,
-    };
-
-    const CONSULTANT_RULES = `<RegrasDeConsultor>
-Você é um CONSULTOR ESTRATÉGICO, não um entrevistador. Conversa, não interrogatório.
-- NUNCA faça perguntas soltas. Conecte ao que o cliente disse. Pontes naturais.
-- Texto da pergunta: MÁXIMO 20 palavras. Enquadre como exploração colaborativa.
-- Resposta curta/vaga→extraia o que puder, siga em frente. Resposta rica→reconheça, explore o melhor fio.
-- Adapte o tom: Branding→criativo, Finanças→analítico, Marketing→estratégico, Tech→inovador.
-- ANTI-PADRÕES: "Quais são seus concorrentes?"(interrogatório), "Ótima resposta!"(elogio vazio).
-</RegrasDeConsultor>`;
-
-    const BEHAVIOR_RULES = `<RegrasDeComportamento>
-- ${generateMore ? 'generateMore=true: APENAS mude as opções, sem nova pergunta.' : 'Formule a PRÓXIMA pergunta.'}
-- Se basalCoverage>=${perfConfig.basalThreshold} E objetivos atingidos: isFinished=true, preencha assets.
-- ANTI-REPETIÇÃO: Verifique <PreviousQuestions>. NUNCA gere pergunta semanticamente similar.
-- ENGAGEMENT ATUAL (calculado pelo sistema): "${backendEngagement}". ${backendEngagement === 'low' ? 'Cliente com baixo engajamento — use APENAS tipos táteis (boolean_toggle, slider, single_choice). Seja breve.' : backendEngagement === 'medium' ? 'Engajamento moderado — equilibre perguntas abertas e táteis.' : 'Bom engajamento — explore com profundidade.'}
-- Pule campos já conhecidos. Infira quando possível. Cada pergunta deve ter razão estratégica.
-- Para tipos de escolha: ÚLTIMA opção SEMPRE "Outro"/"Other"/"Otra".
-${selectedPackages && selectedPackages.length > 0 ? `- ORQUESTRAÇÃO DE PACOTES: conversa unificada. Sequência: basal→branding→estratégia→execução→consultoria. Deduplicação cruzada entre pacotes. Transições naturais.` : ''}
-</RegrasDeComportamento>`;
-
-    const OUTPUT_FORMAT = `<FormatoSaida>
-Retorne APENAS JSON válido com estes campos:
-{
-  "intent": {"mode": "CREATE", "confidence": 0.95, "target_fields": []},
-  "updates": {},
-  "inferences": {"extracted": [{"field": "", "value": "", "confidence": 0}]},
-  "basalCoverage": 0,
-  "currentSection": "",
-  "basalFieldsCollected": [],
-  "basalFieldsMissing": [],
-  "nextQuestion": {"text": "", "questionType": "", "options": [], "allowMoreOptions": false},
-  "isFinished": false,
-  "assets": null,
-  "micro_feedback": null,
-  "engagement_level": "${backendEngagement}",
-  "active_listening": {"signals": [], "depth_question": null},
-  "session_quality_score": null
-}
-Campos obrigatórios: intent, updates, nextQuestion (ou isFinished=true), basalCoverage, basalFieldsCollected, basalFieldsMissing.
-</FormatoSaida>`;
+    const OUTPUT_FORMAT = buildOutputFormat(backendEngagement);
 
     const systemPrompt = [
       CORE_PERSONA,
       INTENT_MODULE,
       EXTRACTION_MODULE,
       ACTIVE_LISTENING_MODULE,
-      PHASE_MODULES[currentPhase],
+      PHASE_MODULES[currentPhase](forceFinish),
       CONSULTANT_RULES,
       BEHAVIOR_RULES,
       `<AllowedFormats>\n${allowedFormats.join('\n')}\n</AllowedFormats>`,
@@ -612,7 +546,7 @@ Campos obrigatórios: intent, updates, nextQuestion (ou isFinished=true), basalC
             // Validation: force fallback to text if AI generated a disabled format
             const qType = parsed.nextQuestion.questionType;
             if (qType && qType !== 'text') {
-              const isAllowed = (formatConfig as any)[qType];
+              const isAllowed = (formatConfig as unknown as Record<string, boolean>)[qType];
               if (isAllowed === false) {
                 console.warn(`[Briefing] AI generated disabled format '${qType}'. Forcing fallback to 'text'.`);
                 parsed.nextQuestion.questionType = 'text';

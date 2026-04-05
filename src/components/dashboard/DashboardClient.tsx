@@ -26,12 +26,13 @@ interface Session {
   created_at: string;
   final_assets?: Record<string, unknown>;
   final_document?: string;
+  basal_coverage?: number | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  finished: { label: 'Completed', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', icon: CheckCircle2 },
-  in_progress: { label: 'In Progress', color: 'text-amber-400 bg-amber-400/10 border-amber-400/20', icon: Clock },
-  pending: { label: 'Pending', color: 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20', icon: AlertCircle },
+  finished: { label: 'Completed', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: CheckCircle2 },
+  in_progress: { label: 'In Progress', color: 'text-amber-600 bg-amber-50 border-amber-200', icon: Clock },
+  pending: { label: 'Pending', color: 'text-[var(--text3)] bg-[var(--bg2)] border-[var(--bd)]', icon: AlertCircle },
 };
 
 const FILTER_TABS = [
@@ -145,21 +146,21 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
     <div className="space-y-4">
       {/* Header + Search */}
       <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        <h3 className="text-xl font-semibold text-zinc-100">{t('dashboard.myBriefings')}</h3>
+        <h3 className="text-xl font-semibold text-[var(--text)]">{t('dashboard.myBriefings')}</h3>
         <div className="flex items-center gap-2 flex-1 md:justify-end">
           {/* Search */}
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text3)]" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('dashboard.searchPlaceholder')}
-              className="pl-9 bg-zinc-900/50 border-white/10 focus-visible:ring-cyan-500 rounded-xl h-10"
+              className="pl-9 bg-[var(--bg)] border-[var(--bd)] focus-visible:ring-[var(--orange)] rounded-xl h-10"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text3)] hover:text-[var(--text)] transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -172,7 +173,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
             size="sm"
             onClick={handleExportAll}
             disabled={isExporting || sessions.length === 0}
-            className="shrink-0 border-white/10 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-xl h-10 px-3 gap-1.5"
+            className="shrink-0 border-[var(--bd)] text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-xl h-10 px-3 gap-1.5"
             title="Export all briefings as ZIP"
           >
             <Package className="w-3.5 h-3.5" />
@@ -181,10 +182,10 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
         </div>
       </div>
 
-      {/* Export Selection Bar (appears when items selected) */}
+      {/* Export Selection Bar */}
       {selectedForExport.size > 0 && (
-        <div className="flex items-center justify-between bg-cyan-950/40 border border-cyan-900/50 rounded-2xl px-4 py-3">
-          <span className="text-sm text-cyan-300 font-medium">
+        <div className="flex items-center justify-between bg-[var(--acbg)] border border-[var(--acbd)] rounded-2xl px-4 py-3">
+          <span className="text-sm text-[var(--actext)] font-medium">
             {selectedForExport.size} {t('dashboard.briefingsSelected')}
           </span>
           <div className="flex gap-2">
@@ -192,7 +193,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
               size="sm"
               variant="ghost"
               onClick={() => setSelectedForExport(new Set())}
-              className="text-zinc-400 hover:text-zinc-200 text-xs rounded-lg"
+              className="text-[var(--text3)] hover:text-[var(--text)] text-xs rounded-lg"
             >
               {t('dashboard.clear')}
             </Button>
@@ -200,7 +201,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
               size="sm"
               onClick={handleExportSelected}
               disabled={isExporting}
-              className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs gap-1.5"
+              className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl text-xs gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               {isExporting ? t('dashboard.exporting') : t('dashboard.exportZip')}
@@ -220,8 +221,8 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
               onClick={() => setFilter(tab.key)}
               className={`rounded-full px-4 shrink-0 transition-all ${
                 filter === tab.key
-                  ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                  ? 'bg-[var(--acbg)] text-[var(--actext)] border border-[var(--acbd)]'
+                  : 'text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] border border-transparent'
               }`}
             >
               {t(tab.labelKey)}
@@ -235,7 +236,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <CalendarDays className="w-3.5 h-3.5 text-zinc-500" />
+          <CalendarDays className="w-3.5 h-3.5 text-[var(--text3)]" />
           <div className="flex gap-1 overflow-x-auto no-scrollbar">
             {DATE_FILTERS.map(d => (
               <button
@@ -243,8 +244,8 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                 onClick={() => setDateFilter(d.key)}
                 className={`text-xs px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
                   dateFilter === d.key
-                    ? 'bg-zinc-700 text-zinc-100'
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                    ? 'bg-[var(--text)] text-[var(--bg)] font-semibold'
+                    : 'text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)]'
                 }`}
               >
                 {t(d.labelKey)}
@@ -255,19 +256,19 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
       </div>
 
       {filtered.length !== sessions.length && (
-        <p className="text-xs text-zinc-500">
-          {t('dashboard.showing')} <span className="text-zinc-300 font-medium">{filtered.length}</span> {t('dashboard.of')} {sessions.length} {t('dashboard.briefings')}
+        <p className="text-xs text-[var(--text3)]">
+          {t('dashboard.showing')} <span className="text-[var(--text)] font-medium">{filtered.length}</span> {t('dashboard.of')} {sessions.length} {t('dashboard.briefings')}
         </p>
       )}
 
       {/* Session Cards */}
       {filtered.length === 0 ? (
-        <Card className="bg-zinc-900/30 border-white/5">
-          <CardContent className="text-center py-12 text-zinc-500">
+        <div className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl">
+          <div className="text-center py-12 text-[var(--text3)]">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p className="text-lg">{t('dashboard.noBriefings')}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(session => {
@@ -277,13 +278,13 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
             const isChecked = selectedForExport.has(session.id);
 
             return (
-              <Card
+              <div
                 key={session.id}
-                className={`bg-zinc-900/40 backdrop-blur-sm border-white/8 hover:border-white/15 transition-all duration-300 group ${
-                  isChecked ? 'border-cyan-800/50 bg-cyan-950/10' : ''
+                className={`bg-[var(--bg)] border rounded-xl hover:border-[var(--bd-strong)] transition-all duration-200 group ${
+                  isChecked ? 'border-[var(--acbd)] bg-[var(--acbg)]' : 'border-[var(--bd)]'
                 }`}
               >
-                <CardContent className="py-4 px-4 md:px-6">
+                <div className="py-4 px-4 md:px-6">
                   <div className="flex items-center gap-3 md:gap-6">
                     {/* Export Checkbox */}
                     <Checkbox
@@ -295,7 +296,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h4 className="font-semibold text-zinc-100 truncate text-sm md:text-base">
+                        <h4 className="font-semibold text-[var(--text)] truncate text-sm md:text-base">
                           {session.session_name || 'Untitled Briefing'}
                         </h4>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusInfo.color}`}>
@@ -303,10 +304,26 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                           {statusInfo.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-zinc-500">
+                      <div className="flex items-center gap-3 text-xs text-[var(--text3)]">
                         <span className="font-mono">{session.id.slice(0, 8)}...</span>
                         <span>•</span>
                         <span>{format(new Date(session.created_at), 'MMM dd, yyyy')}</span>
+                        {session.status === 'in_progress' && session.basal_coverage != null && (
+                          <>
+                            <span>•</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-12 h-1 bg-[var(--bg3)] rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-[var(--orange)] rounded-full transition-all"
+                                  style={{ width: `${Math.min(100, Math.round(Number(session.basal_coverage) * 100))}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] text-[var(--orange)] font-mono">
+                                {Math.round(Number(session.basal_coverage) * 100)}%
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -317,7 +334,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                           variant="ghost"
                           size="sm"
                           onClick={() => setPreviewSession(session)}
-                          className="text-zinc-400 hover:text-indigo-300 hover:bg-indigo-950/20 rounded-lg text-xs"
+                          className="text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-lg text-xs"
                           title="Quick preview"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -327,7 +344,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 rounded-lg text-xs"
+                          className="text-[var(--actext)] hover:bg-[var(--acbg)] rounded-lg text-xs"
                         >
                           <ExternalLink className="w-3.5 h-3.5 mr-1" />
                           <span className="hidden sm:inline">View</span>
@@ -339,8 +356,8 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         onClick={() => handleCopyLink(session.id)}
                         className={`rounded-lg text-xs hidden sm:flex ${
                           copiedId === session.id
-                            ? 'text-emerald-400 bg-emerald-950/20'
-                            : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                            ? 'text-emerald-500 bg-emerald-50'
+                            : 'text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)]'
                         }`}
                       >
                         <Copy className="w-3.5 h-3.5 mr-1" />
@@ -351,14 +368,14 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         size="sm"
                         onClick={() => handleDelete(session.id)}
                         disabled={deletingId === session.id}
-                        className="text-zinc-500 hover:text-red-400 hover:bg-red-950/20 rounded-lg text-xs"
+                        className="text-[var(--text3)] hover:text-red-500 hover:bg-red-50 rounded-lg text-xs"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -368,17 +385,17 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
       <Sheet open={!!previewSession} onOpenChange={(open) => !open && setPreviewSession(null)}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-2xl bg-zinc-950 border-white/10 overflow-y-auto p-0"
+          className="w-full sm:max-w-2xl bg-[var(--bg)] border-[var(--bd)] overflow-y-auto p-0"
         >
           {previewSession && (
             <>
-              <SheetHeader className="p-6 pb-4 border-b border-white/8 sticky top-0 bg-zinc-950 z-10">
+              <SheetHeader className="p-6 pb-4 border-b border-[var(--bd)] sticky top-0 bg-[var(--bg)] z-10">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <SheetTitle className="text-zinc-100 font-semibold text-base truncate">
+                    <SheetTitle className="text-[var(--text)] font-semibold text-base truncate">
                       {previewSession.session_name || t('dashboard.untitled')}
                     </SheetTitle>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-[var(--text3)] mt-0.5">
                       {format(new Date(previewSession.created_at), 'MMM dd, yyyy • HH:mm')}
                     </p>
                   </div>
@@ -395,7 +412,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         }
                       }}
                       disabled={isExporting}
-                      className="border-white/10 text-zinc-400 hover:text-zinc-200 rounded-xl text-xs gap-1"
+                      className="border-[var(--bd)] text-[var(--text2)] hover:text-[var(--text)] rounded-xl text-xs gap-1"
                     >
                       <Download className="w-3.5 h-3.5" />
                       {t('dashboard.export')}
@@ -403,7 +420,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                     <Link href={`/dashboard/${previewSession.id}`}>
                       <Button
                         size="sm"
-                        className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs"
+                        className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl text-xs"
                       >
                         <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                         {t('dashboard.openFull')}
@@ -415,13 +432,13 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
 
               <div className="p-6">
                 {getPreviewContent(previewSession) ? (
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap text-sm text-zinc-300 leading-relaxed font-sans bg-transparent p-0 border-0">
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-sm text-[var(--text2)] leading-relaxed font-sans bg-transparent p-0 border-0">
                       {getPreviewContent(previewSession)}
                     </pre>
                   </div>
                 ) : (
-                  <div className="text-center text-zinc-500 py-12">
+                  <div className="text-center text-[var(--text3)] py-12">
                     <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
                     <p>{t('dashboard.noContent')}</p>
                   </div>

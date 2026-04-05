@@ -82,7 +82,7 @@ export function ProblemSection() {
             {t("problem.badge")}
           </motion.span>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-black tracking-tight"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {t("problem.title")}
@@ -104,7 +104,7 @@ export function ProblemSection() {
             return (
               <motion.div
                 key={problem.title}
-                className="group relative rounded-3xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-6 md:p-8 hover:border-red-500/20 transition-all duration-500 cursor-default"
+                className="group relative rounded-3xl border border-black/[0.06] bg-black/[0.02] backdrop-blur-sm p-6 md:p-8 hover:border-red-500/20 transition-all duration-500 cursor-default"
                 variants={itemVars}
                 whileHover={{ y: -4 }}
               >
@@ -129,7 +129,7 @@ export function ProblemSection() {
 
                   {/* Text */}
                   <h3
-                    className="text-base font-semibold text-white mb-2"
+                    className="text-base font-semibold text-black mb-2"
                     style={{ fontFamily: '"Outfit", sans-serif' }}
                   >
                     {problem.title}

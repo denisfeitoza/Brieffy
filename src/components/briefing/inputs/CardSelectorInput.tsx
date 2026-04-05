@@ -86,30 +86,30 @@ export function CardSelectorInput({
               key={idx}
               onClick={() => handleCardClick(title)}
               disabled={isLoading || isSubmittingLocal}
-              className={`group flex flex-col items-start text-left p-4 md:p-8 rounded-3xl bg-neutral-900/40 border transition-all min-h-[120px] md:min-h-auto active:scale-[0.98] ${
+              className={`group flex flex-col items-start text-left p-4 md:p-8 rounded-3xl bg-white border transition-all min-h-[120px] md:min-h-auto active:scale-[0.98] ${
                 isSelected
-                  ? "border-indigo-500 bg-indigo-500/10 shadow-[0_5px_30px_rgba(99,102,241,0.15)]"
-                  : "border-neutral-800 hover:border-primary/50 hover:bg-primary/5 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(var(--color-primary),0.1)]"
+                  ? "border-[var(--orange)] bg-[var(--orange)]/5 shadow-[0_5px_30px_rgba(255,96,41,0.15)]"
+                  : "border-gray-200 hover:border-[var(--orange)]/50 hover:bg-[var(--orange)]/5 hover:-translate-y-1 hover:shadow-lg"
               }`}
             >
               <div
                 className={`w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-colors border ${
                   isSelected
-                    ? "bg-primary/20 border-primary/50"
-                    : "bg-neutral-800 border-white/5 group-hover:bg-primary/20"
+                    ? "bg-[var(--orange)]/10 border-[var(--orange)]/50"
+                    : "bg-gray-50 border-gray-200 group-hover:bg-[var(--orange)]/10"
                 }`}
               >
                 <div
                   className={`w-3 h-3 md:w-4 md:h-4 rounded-full transition-all ${
                     isSelected
-                      ? "bg-primary shadow-[0_0_15px_rgba(var(--color-primary),0.8)]"
-                      : "bg-neutral-500 group-hover:bg-primary group-hover:shadow-[0_0_15px_rgba(var(--color-primary),0.8)]"
+                      ? "bg-[var(--orange)] shadow-sm"
+                      : "bg-gray-300 group-hover:bg-[var(--orange)]"
                   }`}
                 />
               </div>
               <h3
                 className={`text-lg md:text-xl font-bold mb-2 md:mb-3 transition-colors ${
-                  isSelected ? "text-primary" : "text-white group-hover:text-primary"
+                  isSelected ? "text-[var(--orange)]" : "text-black group-hover:text-[var(--orange)]"
                 }`}
                 style={
                   isFontSelection
@@ -126,7 +126,7 @@ export function CardSelectorInput({
               >
                 {title}
               </h3>
-              {desc && <p className="text-sm text-neutral-400 font-inter leading-relaxed">{desc}</p>}
+              {desc && <p className="text-sm text-gray-500 font-inter leading-relaxed">{desc}</p>}
             </button>
           );
         })}
@@ -138,7 +138,7 @@ export function CardSelectorInput({
             onClick={generateMoreOptions}
             disabled={isGeneratingMore}
             variant="outline"
-            className="rounded-full gap-2 border-neutral-800 bg-transparent text-neutral-300 hover:bg-neutral-900 h-14 px-8 w-full sm:w-auto"
+            className="rounded-full gap-2 border-gray-200 bg-white shadow-sm text-[var(--orange)] hover:bg-gray-50 hover:text-[#e05221] h-14 px-8 w-full sm:w-auto"
           >
             <RefreshCw className={`w-4 h-4 ${isGeneratingMore ? "animate-spin" : ""}`} />
             <span>{t.suggestRoutes}</span>
@@ -146,13 +146,13 @@ export function CardSelectorInput({
         </div>
       )}
 
-      <div ref={scrollTargetRef} className={`w-full transition-all mt-4 ${highlightInput ? 'opacity-100 ring-2 ring-indigo-500/50 rounded-2xl p-2' : 'opacity-80 hover:opacity-100'}`}>
+      <div ref={scrollTargetRef} className={`w-full transition-all mt-4 ${highlightInput ? 'opacity-100 ring-2 ring-[var(--orange)]/30 bg-[var(--orange)]/5 rounded-2xl p-2' : 'opacity-80 hover:opacity-100'}`}>
         {highlightInput && (
-          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300 mb-2">
+          <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300 mb-2">
             ↓ {specifyLabel}
           </p>
         )}
-        <p className="text-sm text-center text-neutral-500 mb-2">{t.addDetails}</p>
+        <p className="text-sm text-center text-gray-500 mb-2">{t.addDetails}</p>
         <CustomTextPills
           customTexts={customTexts}
           onRemove={(text) => setSelectedMultiples(selectedMultiples.filter((t) => t !== text))}
@@ -172,7 +172,7 @@ export function CardSelectorInput({
       </div>
 
       <ScrollConfirmWrapper
-        containerClassName="flex flex-col sm:flex-row gap-4 w-full mt-6 items-center justify-end border-t border-neutral-800 pt-6"
+        containerClassName="flex flex-col sm:flex-row gap-4 w-full mt-6 items-center justify-end border-t border-gray-200 pt-6"
         isDisabled={
           (selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal
         }
@@ -181,8 +181,8 @@ export function CardSelectorInput({
             size="lg"
             className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
               selectedMultiples.length > 0 || inputText.trim()
-                ? "bg-indigo-500 text-white border-indigo-400 hover:bg-indigo-600 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:scale-105"
-                : "bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10"
+                ? "bg-black text-white hover:bg-neutral-800 shadow-xl hover:scale-105"
+                : "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
             }`}
             onClick={handleLocalSend}
             disabled={

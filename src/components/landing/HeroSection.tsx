@@ -215,7 +215,7 @@ const TypewriterText = memo(function TypewriterText({
         style={{
           opacity: cursorVisible ? 1 : 0,
           background:
-            "linear-gradient(180deg, oklch(0.65 0.25 255), #06b6d4)",
+            "linear-gradient(180deg, #ff6029, #ffcfbc)",
           transition: "opacity 0.1s",
         }}
       />
@@ -226,8 +226,8 @@ const TypewriterText = memo(function TypewriterText({
 import { useLanguage } from "@/i18n/LanguageContext";
 
 /* ─── HERO ─── */
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 export function HeroSection() {
   const { t } = useLanguage();
@@ -286,12 +286,12 @@ export function HeroSection() {
       <motion.div
         className="absolute inset-0 pointer-events-none"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.03 }}
+        animate={{ opacity: 0.2 }}
         transition={{ duration: 3 }}
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)
+            linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
         }}
@@ -335,7 +335,7 @@ export function HeroSection() {
           >
             {/* Badge */}
             <motion.div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm mb-6"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.08] bg-black/[0.03] backdrop-blur-sm mb-6"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4, duration: 0.5 }}
@@ -353,7 +353,7 @@ export function HeroSection() {
 
             {/* Headline */}
             <h1
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.08] mb-6"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-black leading-[1.08] mb-6"
               style={{ fontFamily: '"Outfit", sans-serif' }}
             >
               <TypewriterText text={t("hero.title1") + " "} speed={55} />
@@ -371,17 +371,17 @@ export function HeroSection() {
 
             {/* Sub-headline */}
             <motion.p
-              className="text-base sm:text-lg md:text-xl text-neutral-400 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8"
+              className="text-base sm:text-lg md:text-xl text-neutral-600 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.8, duration: 0.8 }}
             >
               {t("hero.sub1")}
-              <span className="text-white font-medium">
+              <span className="text-black font-medium">
                 {t("hero.sub2")}
               </span>
               {t("hero.sub3")}
-              <span className="text-white font-medium">{t("hero.sub4")}</span>.
+              <span className="text-black font-medium">{t("hero.sub4")}</span>.
             </motion.p>
 
             {/* CTAs */}
@@ -404,7 +404,7 @@ export function HeroSection() {
                 <motion.span
                   className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   style={{
-                    background: `linear-gradient(135deg, oklch(0.72 0.28 255), #0ef0ff)`,
+                    background: `linear-gradient(135deg, #ffcfbc, #ff6029)`,
                   }}
                 />
                 {/* Glow */}
@@ -420,7 +420,7 @@ export function HeroSection() {
               </Link>
               <Link
                 href="/dashboard/login"
-                className="text-sm sm:text-base text-neutral-400 hover:text-white transition-colors border border-white/[0.08] hover:border-white/20 px-7 py-3.5 rounded-full w-full sm:w-auto text-center backdrop-blur-sm bg-white/[0.02]"
+                className="text-sm sm:text-base text-neutral-600 hover:text-black transition-colors border border-black/10 hover:border-black/20 px-7 py-3.5 rounded-full w-full sm:w-auto text-center backdrop-blur-sm bg-black/[0.02]"
               >
                 {t("hero.cta.login")}
               </Link>
@@ -520,7 +520,7 @@ export function HeroSection() {
                   size={i === 0 || i === 8 ? 4 : 2.5}
                   delay={i * 0.2}
                   color={
-                    i % 3 === 0 ? BRAND : i % 3 === 1 ? ACCENT : "#ffffff50"
+                    i % 3 === 0 ? BRAND : i % 3 === 1 ? ACCENT : "#00000030"
                   }
                 />
               ))}
@@ -543,7 +543,7 @@ export function HeroSection() {
       </div>
 
       {/* Bottom Gradient Fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[oklch(0.10_0.02_260)] to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent pointer-events-none" />
     </section>
   );
 }

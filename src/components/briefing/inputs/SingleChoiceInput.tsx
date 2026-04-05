@@ -119,9 +119,9 @@ export function SingleChoiceInput({
   if (isFontSelection) {
     return (
       <div className="flex flex-col gap-6 w-full mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <p className="text-sm font-medium text-neutral-400 -mb-2 tracking-wide">
+        <p className="text-sm font-medium text-gray-500 -mb-2 tracking-wide">
           {t.selectOnlyOne}{" "}
-          <strong className="text-indigo-400 font-semibold text-[15px]">{t.onlyOneLabel}</strong>{" "}
+          <strong className="text-[var(--orange)] font-semibold text-[15px]">{t.onlyOneLabel}</strong>{" "}
           {t.optionLabel}
         </p>
         <div className="flex flex-col gap-4 w-full">
@@ -144,26 +144,26 @@ export function SingleChoiceInput({
                   disabled={isLoading || isSubmittingLocal}
                   className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border transition-all text-center min-h-[160px] md:min-h-[200px] group cursor-pointer ${
                     isNoneOption
-                      ? "border-dashed border-neutral-700 bg-neutral-900/20 hover:bg-neutral-800/40 hover:border-neutral-500"
-                      : "border-neutral-800 bg-neutral-900/40 hover:bg-neutral-800 hover:border-neutral-600 hover:-translate-y-1"
+                      ? "border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400"
+                      : "border-gray-200 bg-white hover:bg-[var(--orange)]/5 hover:border-[var(--orange)]/30 shadow-sm hover:-translate-y-1"
                   }`}
                   style={isNoneOption ? undefined : { fontFamily: `"${fontNameClean}", sans-serif` }}
                 >
                   {isNoneOption ? (
                     <>
-                      <span className="text-[28px] font-medium text-neutral-500 group-hover:text-neutral-300 transition-colors leading-tight">
+                      <span className="text-[28px] font-medium text-gray-400 group-hover:text-gray-600 transition-colors leading-tight">
                         Aa
                       </span>
-                      <span className="text-sm text-neutral-500 group-hover:text-neutral-400 font-inter">
+                      <span className="text-sm text-gray-400 group-hover:text-gray-600 font-inter">
                         {fontDesc || "Padrão do Sistema"}
                       </span>
                     </>
                   ) : (
                     <>
-                      <span className="text-[28px] md:text-[32px] font-semibold text-neutral-100 group-hover:text-white transition-colors leading-tight">
+                      <span className="text-[28px] md:text-[32px] font-semibold text-black group-hover:text-[var(--orange)] shadow-sm transition-colors leading-tight" style={{textShadow: "1px 1px 0px rgba(255,255,255,1)"}}>
                         {companyPreview}
                       </span>
-                      <span className="text-xs uppercase tracking-[0.15em] text-neutral-500 font-inter font-semibold mt-1">
+                      <span className="text-xs uppercase tracking-[0.15em] text-gray-400 group-hover:text-gray-500 font-inter font-semibold mt-1">
                         {fontName}
                       </span>
                     </>
@@ -179,7 +179,7 @@ export function SingleChoiceInput({
                 size="lg"
                 onClick={generateMoreOptions}
                 disabled={isGeneratingMore || isLoading || isSubmittingLocal}
-                className="rounded-full text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 h-12 md:h-14 font-medium"
+                className="rounded-full text-[var(--orange)] hover:text-[#e05221] hover:bg-[var(--orange)]/10 h-12 md:h-14 font-medium"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingMore ? "animate-spin" : ""}`} />
                 {t.otherOptions}
@@ -188,7 +188,7 @@ export function SingleChoiceInput({
           )}
         </div>
         {highlightInput && (
-          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300">
+          <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300">
             ↓ {specifyLabel}
           </p>
         )}
@@ -208,9 +208,9 @@ export function SingleChoiceInput({
   if (useBottomSheet) {
     return (
       <div className="flex flex-col gap-4 w-full mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <p className="text-sm font-medium text-neutral-400 tracking-wide">
+        <p className="text-sm font-medium text-gray-500 tracking-wide">
           {t.selectOnlyOne}{" "}
-          <strong className="text-indigo-400 font-semibold">{t.onlyOneLabel}</strong>{" "}
+          <strong className="text-[var(--orange)] font-semibold">{t.onlyOneLabel}</strong>{" "}
           {t.optionLabel}
         </p>
         <BottomSheetOptions
@@ -220,7 +220,7 @@ export function SingleChoiceInput({
           label={t.viewOptions}
         />
         {highlightInput && (
-          <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300">
+          <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300">
             ↓ {specifyLabel}
           </p>
         )}
@@ -239,9 +239,9 @@ export function SingleChoiceInput({
 
   return (
     <div className="flex flex-col gap-6 w-full mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <p className="text-sm font-medium text-neutral-400 -mb-2 tracking-wide">
+      <p className="text-sm font-medium text-gray-500 -mb-2 tracking-wide">
         {t.selectOnlyOne}{" "}
-        <strong className="text-indigo-400 font-semibold text-[15px]">{t.onlyOneLabel}</strong>{" "}
+        <strong className="text-[var(--orange)] font-semibold text-[15px]">{t.onlyOneLabel}</strong>{" "}
         {t.optionLabel}
       </p>
       <div className="flex flex-wrap gap-2 md:gap-3 items-center w-full">
@@ -254,7 +254,7 @@ export function SingleChoiceInput({
               size="lg"
               onClick={() => handleOptionClick(optText)}
               disabled={isLoading || isSubmittingLocal}
-              className="rounded-full bg-transparent border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900 text-neutral-300 min-h-[48px] h-12 md:h-14 md:px-6 font-medium tracking-wide transition-all active:scale-[0.97]"
+              className="rounded-full bg-white border-gray-200 hover:border-[var(--orange)]/40 hover:bg-[var(--orange)]/5 text-black shadow-sm min-h-[48px] h-12 md:h-14 md:px-6 font-medium tracking-wide transition-all active:scale-[0.97]"
             >
               {optText}
             </Button>
@@ -266,7 +266,7 @@ export function SingleChoiceInput({
             size="lg"
             onClick={generateMoreOptions}
             disabled={isGeneratingMore || isLoading || isSubmittingLocal}
-            className="rounded-full text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 h-12 md:h-14 font-medium"
+            className="rounded-full text-[var(--orange)] hover:text-[#e05221] hover:bg-[var(--orange)]/10 h-12 md:h-14 font-medium"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingMore ? "animate-spin" : ""}`} />
             {t.otherOptions}
@@ -274,7 +274,7 @@ export function SingleChoiceInput({
         )}
       </div>
       {highlightInput && (
-        <p className="text-sm font-medium text-indigo-400 text-center animate-in fade-in duration-300">
+        <p className="text-sm font-medium text-[var(--orange)] text-center animate-in fade-in duration-300">
           ↓ {specifyLabel}
         </p>
       )}

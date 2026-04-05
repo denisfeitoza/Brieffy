@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 const getFeatures = (t: (key: string) => string) => [
   {
@@ -95,8 +95,8 @@ export function FeaturesGrid() {
             className="inline-block text-xs uppercase tracking-[0.2em] font-semibold mb-4 px-4 py-1.5 rounded-full border"
             style={{
               color: BRAND,
-              borderColor: `oklch(0.65 0.25 255 / 25%)`,
-              background: `oklch(0.65 0.25 255 / 6%)`,
+              borderColor: `#ff602925`,
+              background: `#ff602906`,
             }}
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -106,7 +106,7 @@ export function FeaturesGrid() {
             {t("features.badge")}
           </motion.span>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-black tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {t("features.title1")}
@@ -128,7 +128,7 @@ export function FeaturesGrid() {
             return (
               <motion.div
                 key={feat.title}
-                className="group relative rounded-3xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-7 md:p-8 hover:border-white/[0.12] transition-all duration-500 cursor-default overflow-hidden"
+                className="group relative rounded-3xl border border-black/[0.06] bg-black/[0.02] backdrop-blur-sm p-7 md:p-8 hover:border-black/[0.12] transition-all duration-500 cursor-default overflow-hidden"
                 variants={itemVars}
                 whileHover={{ y: -5 }}
               >
@@ -143,8 +143,8 @@ export function FeaturesGrid() {
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
                     style={{
-                      background: `linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))`,
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: `linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.02))`,
+                      border: "1px solid rgba(0,0,0,0.08)",
                     }}
                   >
                     <div
@@ -154,12 +154,12 @@ export function FeaturesGrid() {
                         mask: "none",
                       }}
                     >
-                      <Icon className="w-6 h-6 text-white" />
+                      <Icon className="w-6 h-6 text-black" />
                     </div>
                   </div>
 
                   <h3
-                    className="text-lg font-semibold text-white mb-2"
+                    className="text-lg font-semibold text-black mb-2"
                     style={{ fontFamily: '"Outfit", sans-serif' }}
                   >
                     {feat.title}

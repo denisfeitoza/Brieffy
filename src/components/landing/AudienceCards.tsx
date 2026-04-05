@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 const getAudiences = (t: (key: string) => string) => [
   {
@@ -82,7 +82,7 @@ export function AudienceCards() {
             {t("audience.badge")}
           </motion.span>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-black tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {t("audience.title1")}
@@ -112,7 +112,7 @@ export function AudienceCards() {
             return (
               <motion.div
                 key={aud.title}
-                className="group relative rounded-3xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-6 md:p-8 hover:border-white/[0.12] transition-all duration-500 cursor-default overflow-hidden"
+                className="group relative rounded-3xl border border-black/[0.06] bg-black/[0.02] backdrop-blur-sm p-6 md:p-8 hover:border-black/[0.12] transition-all duration-500 cursor-default overflow-hidden"
                 variants={cardVars}
                 whileHover={{ y: -4 }}
               >
@@ -136,7 +136,7 @@ export function AudienceCards() {
                     </div>
                     <div>
                       <h3
-                        className="text-lg font-semibold text-white"
+                        className="text-lg font-semibold text-black"
                         style={{ fontFamily: '"Outfit", sans-serif' }}
                       >
                         {aud.title}
@@ -150,7 +150,7 @@ export function AudienceCards() {
                     {aud.arguments.map((arg, i) => (
                       <motion.li
                         key={i}
-                        className="flex items-start gap-2.5 text-sm text-neutral-400"
+                        className="flex items-start gap-2.5 text-sm text-neutral-600"
                         initial={{ opacity: 0, x: -10 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}

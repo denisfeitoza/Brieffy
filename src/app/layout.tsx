@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "sonner";
 
-const inter = Inter({
-  variable: "--font-inter",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -33,7 +29,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     title: "Brieffy",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     capable: true,
   },
 };
@@ -46,17 +42,24 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${outfit.variable} h-full antialiased`}
+      className={`${dmSans.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="font-sans min-h-full flex flex-col bg-background text-foreground bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-background to-background" suppressHydrationWarning>
+      <body
+        className="font-sans min-h-full flex flex-col bg-background text-foreground overflow-x-hidden"
+        suppressHydrationWarning
+      >
         <Providers>
           {children}
           <Toaster 
-            theme="dark" 
             position="bottom-right"
             toastOptions={{
-              style: { background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }
+              style: { 
+                background: 'var(--bg)', 
+                border: '1px solid var(--bd)', 
+                color: 'var(--text)',
+                fontFamily: "'DM Sans', sans-serif",
+              }
             }}
           />
         </Providers>

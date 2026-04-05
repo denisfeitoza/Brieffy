@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { Link2, MessageSquareText, FileOutput } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const BRAND = "oklch(0.65 0.25 255)";
-const ACCENT = "#06b6d4";
+const BRAND = "#ff6029";
+const ACCENT = "#ffcfbc";
 
 const getSteps = (t: (key: string) => string) => [
   {
@@ -69,7 +69,7 @@ export function HowItWorks() {
             {t("how.badge")}
           </motion.span>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-black tracking-tight mb-4"
             style={{ fontFamily: '"Outfit", sans-serif' }}
           >
             {t("how.title1")}
@@ -181,12 +181,12 @@ export function HowItWorks() {
                         </span>
                       </div>
                       <h3
-                        className="text-xl md:text-2xl font-bold text-white mb-2"
+                        className="text-xl md:text-2xl font-bold text-black mb-2"
                         style={{ fontFamily: '"Outfit", sans-serif' }}
                       >
                         {step.title}
                       </h3>
-                      <p className="text-sm text-neutral-400 leading-relaxed max-w-sm mb-2">
+                      <p className="text-sm text-neutral-600 leading-relaxed max-w-sm mb-2">
                         {step.desc}
                       </p>
                       <span className="text-xs text-neutral-600 font-medium">

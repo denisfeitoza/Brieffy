@@ -35,15 +35,15 @@ async function DashboardHeader() {
     <>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--text)]">
             Hello, {displayName}! 👋
           </h2>
-          <p className="text-zinc-400 mt-1 text-sm md:text-base">
+          <p className="text-[var(--text2)] mt-1 text-sm md:text-base">
             Manage your intelligent briefings and track results.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-cyan-950/30 border border-cyan-900/50 text-cyan-400 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium">
+          <div className="flex items-center gap-2 bg-[var(--acbg)] border border-[var(--acbd)] text-[var(--actext)] px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold">
             <BarChart3 className="w-3.5 h-3.5" />
             <span>{usedBriefings}/{maxBriefings} briefings</span>
           </div>
@@ -51,15 +51,15 @@ async function DashboardHeader() {
       </div>
 
       {isBlocked && (
-        <div className="flex flex-col sm:flex-row items-start gap-3 bg-red-950/40 border border-red-900/50 text-red-300 px-4 sm:px-5 py-4 rounded-2xl">
+        <div className="flex flex-col sm:flex-row items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 sm:px-5 py-4 rounded-2xl">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-sm sm:text-base">You&apos;ve used all your free briefings</p>
-              <p className="text-xs sm:text-sm text-red-400 mt-0.5">Purchase additional briefing credits to continue creating.</p>
+              <p className="text-xs sm:text-sm text-red-500 mt-0.5">Purchase additional briefing credits to continue creating.</p>
             </div>
           </div>
-          <Button size="sm" className="bg-red-500 hover:bg-red-400 text-white rounded-xl shrink-0 text-xs gap-1 w-full sm:w-auto">
+          <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white rounded-full btn-pill shrink-0 text-xs gap-1 w-full sm:w-auto">
             <Zap className="w-3.5 h-3.5" />
             Buy More
           </Button>
@@ -67,21 +67,21 @@ async function DashboardHeader() {
       )}
 
       {isNearLimit && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-amber-950/30 border border-amber-800/40 text-amber-300 px-4 sm:px-5 py-3.5 rounded-2xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-amber-50 border border-amber-200 text-amber-700 px-4 sm:px-5 py-3.5 rounded-2xl">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <Zap className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <Zap className="w-4 h-4 flex-shrink-0 text-amber-500" />
             <div>
               <p className="text-sm font-medium">
                 {remainingBriefings === 0
                   ? 'Last free briefing used'
                   : `Only ${remainingBriefings} free briefing${remainingBriefings > 1 ? 's' : ''} left`}
               </p>
-              <p className="text-xs text-amber-500 mt-0.5 hidden md:block">
+              <p className="text-xs text-amber-600 mt-0.5 hidden md:block">
                 Each briefing costs a single credit — buy in bulk for the best value.
               </p>
             </div>
           </div>
-          <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-xl shrink-0 text-xs gap-1 w-full sm:w-auto">
+          <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-full btn-pill shrink-0 text-xs gap-1 w-full sm:w-auto">
             <Zap className="w-3.5 h-3.5" />
             Buy Credits
           </Button>
@@ -92,14 +92,14 @@ async function DashboardHeader() {
         <Link href={isBlocked ? '#' : '/dashboard/templates/new'} className="col-span-1">
           <Button
             disabled={isBlocked}
-            className="bg-cyan-600 hover:bg-cyan-500 rounded-xl shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)] disabled:opacity-50 w-full sm:w-auto text-xs sm:text-sm"
+            className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl disabled:opacity-50 w-full sm:w-auto text-xs sm:text-sm"
           >
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
             Novo Briefing
           </Button>
         </Link>
         <Link href="/dashboard/templates" className="col-span-1">
-          <Button variant="outline" className="border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl w-full sm:w-auto text-xs sm:text-sm">
+          <Button variant="outline" className="border-[var(--bd)] text-[var(--text2)] hover:bg-[var(--bg2)] hover:text-[var(--text)] rounded-xl w-full sm:w-auto text-xs sm:text-sm">
             <FileText className="w-4 h-4 mr-1 sm:mr-2" />
             Meus Briefings
           </Button>
@@ -114,56 +114,44 @@ async function DashboardStats() {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-      <Card className="bg-zinc-900/50 backdrop-blur-md border-white/10">
-        <CardHeader className="pb-1 pt-4 px-4 md:px-6">
-          <CardTitle className="text-xs md:text-sm text-zinc-400 font-normal flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5" />
-            Total Briefings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6 pb-3">
-          <p className="text-2xl md:text-3xl font-bold text-white">{stats.total}</p>
-          <div className="mt-2">
-            <ActivitySparkline data={stats.weeklyData} />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 md:p-6">
+        <div className="flex items-center gap-1.5 mb-2">
+          <FileText className="w-3.5 h-3.5 text-[var(--text3)]" />
+          <span className="label-caps">Total Briefings</span>
+        </div>
+        <p className="text-2xl md:text-3xl font-bold text-[var(--text)]">{stats.total}</p>
+        <div className="mt-2">
+          <ActivitySparkline data={stats.weeklyData} />
+        </div>
+      </div>
 
-      <Card className="bg-zinc-900/50 backdrop-blur-md border-white/10">
-        <CardHeader className="pb-2 pt-4 px-4 md:px-6">
-          <CardTitle className="text-xs md:text-sm text-zinc-400 font-normal flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            Completed
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6 pb-4">
-          <p className="text-2xl md:text-3xl font-bold text-emerald-400">{stats.finished}</p>
-        </CardContent>
-      </Card>
+      <div className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 md:p-6">
+        <div className="flex items-center gap-1.5 mb-2">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+          <span className="label-caps">Completed</span>
+        </div>
+        <p className="text-2xl md:text-3xl font-bold text-[var(--text)]">
+          {stats.finished}<span className="text-emerald-500 text-lg ml-1">✓</span>
+        </p>
+      </div>
 
-      <Card className="bg-zinc-900/50 backdrop-blur-md border-white/10">
-        <CardHeader className="pb-2 pt-4 px-4 md:px-6">
-          <CardTitle className="text-xs md:text-sm text-zinc-400 font-normal flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
-            In Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6 pb-4">
-          <p className="text-2xl md:text-3xl font-bold text-amber-400">{stats.inProgress}</p>
-        </CardContent>
-      </Card>
+      <div className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 md:p-6">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Clock className="w-3.5 h-3.5 text-amber-500" />
+          <span className="label-caps">In Progress</span>
+        </div>
+        <p className="text-2xl md:text-3xl font-bold text-[var(--text)]">{stats.inProgress}</p>
+      </div>
 
-      <Card className="bg-zinc-900/50 backdrop-blur-md border-white/10">
-        <CardHeader className="pb-2 pt-4 px-4 md:px-6">
-          <CardTitle className="text-xs md:text-sm text-zinc-400 font-normal flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-            Completion Rate
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6 pb-4">
-          <p className="text-2xl md:text-3xl font-bold text-cyan-400">{stats.completionRate}%</p>
-        </CardContent>
-      </Card>
+      <div className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 md:p-6">
+        <div className="flex items-center gap-1.5 mb-2">
+          <TrendingUp className="w-3.5 h-3.5 text-[var(--orange)]" />
+          <span className="label-caps">Completion Rate</span>
+        </div>
+        <p className="text-2xl md:text-3xl font-bold text-[var(--text)]">
+          {stats.completionRate}<span className="text-[var(--orange)]">%</span>
+        </p>
+      </div>
     </div>
   );
 }
@@ -187,88 +175,84 @@ async function DashboardExtras() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {lastSession && (
-        <Card className="md:col-span-2 bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-white/10 backdrop-blur-md">
-          <CardContent className="pt-4 pb-4 px-4 sm:px-5">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-              <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
-                {lastSession.session_quality_score != null && (
-                  <ScoreRing score={lastSession.session_quality_score} size={48} />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Last Briefing</p>
-                    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                      lastSession.status === 'finished' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' :
-                      lastSession.status === 'in_progress' ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' :
-                      'text-zinc-400 bg-zinc-400/10 border-zinc-400/20'
-                    }`}>
-                      {lastSession.status === 'finished' ? '✓ Completed' :
-                       lastSession.status === 'in_progress' ? '● In Progress' : '○ Pending'}
-                    </span>
-                  </div>
-                  <p className="text-sm sm:text-base font-semibold text-zinc-100 truncate">
-                    {(lastSession.company_info as { company_name?: string } | null)?.company_name || 'Untitled Briefing'}
-                  </p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    {format(new Date(lastSession.created_at), 'MMM dd, yyyy')}
-                  </p>
-
-                  {lastSession.basal_coverage != null && lastSession.status !== 'finished' && (
-                    <div className="mt-3">
-                      <div className="flex justify-between text-[10px] text-zinc-500 mb-1">
-                        <span>Coverage</span>
-                        <span>{Math.round(Number(lastSession.basal_coverage))}%</span>
-                      </div>
-                      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all"
-                          style={{ width: `${Math.min(100, Number(lastSession.basal_coverage))}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+        <div className="md:col-span-2 bg-[var(--text)] text-[var(--bg)] rounded-xl p-5">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+            <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+              {lastSession.session_quality_score != null && (
+                <ScoreRing score={lastSession.session_quality_score} size={48} />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <p className="text-[11px] uppercase tracking-wider font-medium opacity-50">Last Briefing</p>
+                  <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+                    lastSession.status === 'finished' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' :
+                    lastSession.status === 'in_progress' ? 'text-amber-400 bg-amber-400/10 border-amber-400/30' :
+                    'opacity-50 border-current/20'
+                  }`}>
+                    {lastSession.status === 'finished' ? '✓ Completed' :
+                     lastSession.status === 'in_progress' ? '● In Progress' : '○ Pending'}
+                  </span>
                 </div>
-              </div>
+                <p className="text-sm sm:text-base font-semibold truncate">
+                  {(lastSession.company_info as { company_name?: string } | null)?.company_name || 'Untitled Briefing'}
+                </p>
+                <p className="text-xs opacity-50 mt-0.5">
+                  {format(new Date(lastSession.created_at), 'MMM dd, yyyy')}
+                </p>
 
-              <div className="flex sm:flex-col gap-2 shrink-0">
-                <Link href={`/dashboard/${lastSession.id}`} className="flex-1 sm:flex-none">
-                  <Button size="sm" className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs gap-1 w-full">
-                    <ExternalLink className="w-3 h-3" />
-                    {lastSession.status === 'in_progress' ? 'Continue' : 'View'}
-                  </Button>
-                </Link>
-                {lastSession.edit_token && lastSession.status === 'finished' && (
-                  <Link href={`/doc/${lastSession.edit_token}`} target="_blank" className="flex-1 sm:flex-none">
-                    <Button size="sm" variant="outline" className="border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl text-xs gap-1 w-full">
-                      <FileText className="w-3 h-3" />
-                      Doc
-                    </Button>
-                  </Link>
+                {lastSession.basal_coverage != null && lastSession.status !== 'finished' && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-[10px] opacity-50 mb-1">
+                      <span>Coverage</span>
+                      <span>{Math.round(Number(lastSession.basal_coverage) * 100)}%</span>
+                    </div>
+                    <div className="score-bar">
+                      <div
+                        className="score-fill transition-all"
+                        style={{ width: `${Math.min(100, Math.round(Number(lastSession.basal_coverage) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="flex sm:flex-col gap-2 shrink-0">
+              <Link href={`/dashboard/${lastSession.id}`} className="flex-1 sm:flex-none">
+                <Button size="sm" className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl text-xs gap-1 w-full">
+                  <ExternalLink className="w-3 h-3" />
+                  {lastSession.status === 'in_progress' ? 'Continue' : 'View'}
+                </Button>
+              </Link>
+              {lastSession.edit_token && lastSession.status === 'finished' && (
+                <Link href={`/doc/${lastSession.edit_token}`} target="_blank" className="flex-1 sm:flex-none">
+                  <Button size="sm" variant="outline" className="border-current/20 hover:bg-white/10 rounded-xl text-xs gap-1 w-full text-[var(--bg)]">
+                    <FileText className="w-3 h-3" />
+                    Doc
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
-      <Card className="bg-zinc-900/50 backdrop-blur-md border-white/10">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-xs text-zinc-400 font-normal flex items-center gap-1.5">
-            <Package className="w-3.5 h-3.5 text-purple-400" />
-            Top AI Packages Used
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4">
+      <div className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl">
+        <div className="p-4">
+          <div className="flex items-center gap-1.5 mb-3">
+            <Package className="w-3.5 h-3.5 text-[var(--orange)]" />
+            <span className="label-caps">Top AI Packages</span>
+          </div>
           {topPackages.length === 0 ? (
-            <p className="text-xs text-zinc-600">No packages used yet.</p>
+            <p className="text-xs text-[var(--text3)]">No packages used yet.</p>
           ) : (
             <div className="space-y-2.5">
               {topPackages.map(pkg => (
                 <div key={pkg.slug} className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-zinc-300 font-medium truncate capitalize">
+                  <span className="text-xs text-[var(--text)] font-medium truncate capitalize">
                     {pkg.slug.replace(/-/g, ' ')}
                   </span>
-                  <span className="text-xs font-bold text-purple-300 shrink-0 bg-purple-400/10 border border-purple-400/20 px-1.5 py-0.5 rounded-full">
+                  <span className="text-xs font-bold text-[var(--actext)] shrink-0 bg-[var(--acbg)] border border-[var(--acbd)] px-1.5 py-0.5 rounded-full">
                     ×{pkg.count}
                   </span>
                 </div>
@@ -276,13 +260,13 @@ async function DashboardExtras() {
             </div>
           )}
           <Link href="/dashboard/templates/new" className="block mt-4">
-            <Button size="sm" variant="ghost" className="w-full justify-between text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-xl text-xs px-2 group">
+            <Button size="sm" variant="ghost" className="w-full justify-between text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg3)] rounded-xl text-xs px-2 group">
               Explore packages
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </Link>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -298,14 +282,14 @@ function HeaderSkeleton() {
     <div className="space-y-4 animate-pulse">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <div className="h-9 w-56 bg-zinc-800/60 rounded-lg" />
-          <div className="h-4 w-72 bg-zinc-800/40 rounded mt-2" />
+          <div className="h-9 w-56 bg-[var(--bg2)] rounded-lg" />
+          <div className="h-4 w-72 bg-[var(--bg3)] rounded mt-2" />
         </div>
-        <div className="h-8 w-32 bg-zinc-800/40 rounded-full" />
+        <div className="h-8 w-32 bg-[var(--acbg)] rounded-full" />
       </div>
       <div className="flex gap-3">
-        <div className="h-10 w-36 bg-cyan-900/20 border border-cyan-900/30 rounded-xl" />
-        <div className="h-10 w-32 bg-zinc-800/30 border border-white/10 rounded-xl" />
+        <div className="h-10 w-36 bg-[var(--acbg)] border border-[var(--acbd)] rounded-xl" />
+        <div className="h-10 w-32 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl" />
       </div>
     </div>
   );
@@ -315,9 +299,9 @@ function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 animate-pulse">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="bg-zinc-900/50 border border-white/10 rounded-xl p-4 md:p-6">
-          <div className="h-3 w-24 bg-zinc-800/60 rounded mb-3" />
-          <div className="h-8 w-16 bg-zinc-800/40 rounded-lg" />
+        <div key={i} className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 md:p-6">
+          <div className="h-3 w-24 bg-[var(--bg3)] rounded mb-3" />
+          <div className="h-8 w-16 bg-[var(--bg3)] rounded-lg" />
         </div>
       ))}
     </div>
@@ -327,22 +311,22 @@ function StatsSkeleton() {
 function ExtrasSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-pulse">
-      <div className="md:col-span-2 bg-zinc-900/50 border border-white/10 rounded-xl p-5">
+      <div className="md:col-span-2 bg-[var(--text)] rounded-xl p-5">
         <div className="flex gap-4">
-          <div className="w-12 h-12 rounded-full bg-zinc-800/60 shrink-0" />
+          <div className="w-12 h-12 rounded-full bg-white/10 shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 w-20 bg-zinc-800/60 rounded" />
-            <div className="h-5 w-40 bg-zinc-800/40 rounded" />
-            <div className="h-3 w-24 bg-zinc-800/30 rounded" />
+            <div className="h-3 w-20 bg-white/10 rounded" />
+            <div className="h-5 w-40 bg-white/10 rounded" />
+            <div className="h-3 w-24 bg-white/5 rounded" />
           </div>
         </div>
       </div>
-      <div className="bg-zinc-900/50 border border-white/10 rounded-xl p-4 space-y-3">
-        <div className="h-3 w-32 bg-zinc-800/60 rounded" />
+      <div className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 space-y-3">
+        <div className="h-3 w-32 bg-[var(--bg3)] rounded" />
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex justify-between">
-            <div className="h-3 w-28 bg-zinc-800/40 rounded" />
-            <div className="h-5 w-8 bg-purple-800/30 rounded-full" />
+            <div className="h-3 w-28 bg-[var(--bg3)] rounded" />
+            <div className="h-5 w-8 bg-[var(--acbg)] rounded-full" />
           </div>
         ))}
       </div>
@@ -353,20 +337,20 @@ function ExtrasSkeleton() {
 function SessionsSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
-      <div className="h-5 w-40 bg-zinc-800/50 rounded-lg" />
+      <div className="h-5 w-40 bg-[var(--bg2)] rounded-lg" />
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="bg-zinc-900/40 border border-white/8 rounded-xl p-4">
+        <div key={i} className="bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4">
           <div className="flex items-center gap-4">
             <div className="flex-1 space-y-2">
               <div className="flex gap-2">
-                <div className="h-4 bg-zinc-700/50 rounded" style={{ width: `${120 + i * 40}px` }} />
-                <div className="h-5 w-20 bg-zinc-700/30 rounded-full" />
+                <div className="h-4 bg-[var(--bg3)] rounded" style={{ width: `${120 + i * 40}px` }} />
+                <div className="h-5 w-20 bg-[var(--bg3)] rounded-full" />
               </div>
-              <div className="h-3 w-28 bg-zinc-800/50 rounded" />
+              <div className="h-3 w-28 bg-[var(--bg3)] rounded" />
             </div>
             <div className="flex gap-2">
-              <div className="h-8 w-16 bg-zinc-800/30 rounded-lg" />
-              <div className="h-8 w-14 bg-zinc-800/30 rounded-lg" />
+              <div className="h-8 w-16 bg-[var(--bg3)] rounded-lg" />
+              <div className="h-8 w-14 bg-[var(--bg3)] rounded-lg" />
             </div>
           </div>
         </div>

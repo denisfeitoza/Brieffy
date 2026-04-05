@@ -53,9 +53,7 @@ export function MultiSliderQuestion({ sliders, onConfirm, disabled, initialValue
             disabled={disabled}
             className="
               px-8 py-3 rounded-2xl font-bold text-sm tracking-wide
-              bg-gradient-to-r from-cyan-500 to-blue-600
-              text-white shadow-[0_0_20px_rgba(6,182,212,0.3)]
-              hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]
+              bg-[var(--orange)] text-white shadow-xl hover:opacity-90
               hover:scale-[1.02] active:scale-[0.98]
               transition-all duration-200
               disabled:opacity-40 disabled:cursor-not-allowed
@@ -97,10 +95,10 @@ function SingleMiniSlider({
       style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}
     >
       <div className="flex items-center justify-between mt-2">
-        <span className="text-sm font-medium text-zinc-100 leading-tight">
+        <span className="text-sm font-medium text-black leading-tight">
           {slider.label}
         </span>
-        <span className="text-lg font-black text-cyan-400 tabular-nums">
+        <span className="text-lg font-black text-[var(--orange)] tabular-nums">
           {value}
         </span>
       </div>
@@ -119,27 +117,27 @@ function SingleMiniSlider({
           [&::-webkit-slider-thumb]:appearance-none
           [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
           [&::-webkit-slider-thumb]:rounded-full
-          [&::-webkit-slider-thumb]:bg-cyan-400
-          [&::-webkit-slider-thumb]:shadow-[0_0_12px_rgba(6,182,212,0.8)]
+          [&::-webkit-slider-thumb]:bg-[var(--orange)]
+          [&::-webkit-slider-thumb]:shadow-md
           [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing
           [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125
           [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5
-          [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-cyan-400
+          [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--orange)]
           [&::-moz-range-thumb]:cursor-grab
           [&::-webkit-slider-runnable-track]:bg-transparent
           [&::-moz-range-track]:bg-transparent
         "
         style={{
-          background: `linear-gradient(to right, rgba(6,182,212,1) ${progress}%, rgba(255,255,255,0.08) ${progress}%)`
+          background: `linear-gradient(to right, var(--orange) ${progress}%, rgba(0,0,0,0.1) ${progress}%)`
         }}
       />
 
       {/* Min/Max Labels */}
       <div className="flex justify-between mt-2">
-        <span className="text-[11px] text-zinc-500 font-medium">
+        <span className="text-[11px] text-gray-400 font-medium">
           {slider.minLabel || slider.min}
         </span>
-        <span className="text-[11px] text-zinc-500 font-medium">
+        <span className="text-[11px] text-gray-400 font-medium">
           {slider.maxLabel || slider.max}
         </span>
       </div>

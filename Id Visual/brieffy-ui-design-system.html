@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brieffy — UI Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #ff6029;
+    --orange-light: #fff2ed;
+    --orange-mid: #ffcfbc;
+    --orange-dark-bg: #2a1008;
+    --orange-dark-bd: #5a2010;
+  }
+  [data-theme="light"] {
+    --bg: #ffffff;
+    --bg2: #f5f5f4;
+    --bg3: #ebebea;
+    --surface: #ffffff;
+    --bd: #e8e8e5;
+    --bd-strong: #c8c8c4;
+    --text: #000000;
+    --text2: #5a5a57;
+    --text3: #9e9e9a;
+    --acbg: #fff2ed;
+    --acbd: #ffcfbc;
+    --actext: #ff6029;
+    --inv-bg: #000000;
+    --inv-text: #ffffff;
+    --inv-text2: rgba(255,255,255,0.55);
+  }
+  [data-theme="dark"] {
+    --bg: #0a0a0a;
+    --bg2: #141414;
+    --bg3: #1e1e1e;
+    --surface: #111111;
+    --bd: #222222;
+    --bd-strong: #333333;
+    --text: #ffffff;
+    --text2: #888885;
+    --text3: #4a4a47;
+    --acbg: #2a1008;
+    --acbd: #5a2010;
+    --actext: #ff6029;
+    --inv-bg: #ffffff;
+    --inv-text: #000000;
+    --inv-text2: rgba(0,0,0,0.55);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); line-height:1.5; transition:background .3s,color .3s; }
+
+  /* NAV BAR */
+  .topbar { position:sticky; top:0; z-index:99; background:var(--bg); border-bottom:1px solid var(--bd); padding:12px 56px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar-logo { font-size:16px; font-weight:700; letter-spacing:-0.02em; color:var(--text); }
+  .topbar-logo span { color:var(--orange); }
+  .switcher { display:flex; border:1px solid var(--bd); border-radius:100px; overflow:hidden; }
+  .sw-btn { padding:8px 20px; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; border:none; background:transparent; color:var(--text3); transition:all .2s; }
+  .sw-btn.on-light { background:#fff; color:#000; border-radius:100px; }
+  .sw-btn.on-dark  { background:#000; color:#fff; border-radius:100px; }
+
+  /* COVER */
+  .cover { padding:88px 56px 72px; border-bottom:1px solid var(--bd); min-height:86vh; display:flex; flex-direction:column; justify-content:space-between; }
+  .cover-pill { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; background:var(--acbg); border:1px solid var(--acbd); border-radius:100px; font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--actext); margin-bottom:40px; }
+  .cover-title { font-size:clamp(60px,9vw,116px); font-weight:700; letter-spacing:-0.045em; line-height:.95; color:var(--text); margin-bottom:28px; }
+  .cover-title .ac { color:var(--orange); }
+  .cover-title .ol { -webkit-text-stroke:2px var(--text); color:transparent; }
+  .cover-desc { font-size:18px; color:var(--text2); max-width:420px; line-height:1.65; }
+  .cover-foot { display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid var(--bd); padding-top:28px; margin-top:56px; }
+  .cover-meta { font-size:12px; color:var(--text3); line-height:2; }
+  .cover-nums { display:flex; gap:40px; }
+  .cn-val { font-size:30px; font-weight:700; letter-spacing:-0.04em; color:var(--text); }
+  .cn-val span { color:var(--orange); }
+  .cn-lbl { font-size:10px; color:var(--text3); letter-spacing:.08em; text-transform:uppercase; margin-top:2px; }
+
+  /* SECTION */
+  .sec { padding:80px 56px; border-bottom:1px solid var(--bd); }
+  .sec-tag { font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--orange); margin-bottom:12px; }
+  .sec-title { font-size:clamp(28px,4vw,54px); font-weight:700; letter-spacing:-0.035em; line-height:1.05; color:var(--text); margin-bottom:52px; }
+  .divider { height:1px; background:var(--bd); margin:40px 0; }
+
+  /* THEMES PANEL */
+  .themes-wrap { border:1px solid var(--bd); border-radius:22px; overflow:hidden; }
+  .themes-row { display:grid; grid-template-columns:1fr 1fr; }
+  .tp { padding:48px 40px; display:flex; flex-direction:column; gap:24px; }
+  .tp.lp { background:#ffffff; }
+  .tp.dp { background:#0a0a0a; border-left:1px solid #1a1a1a; }
+  .tp-tag { font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#ff6029; }
+  .tp-title { font-size:26px; font-weight:700; letter-spacing:-0.03em; line-height:1.15; }
+  .lp .tp-title { color:#000; }
+  .dp .tp-title { color:#fff; }
+  .tp-desc { font-size:13px; line-height:1.7; }
+  .lp .tp-desc { color:#5a5a57; }
+  .dp .tp-desc { color:#555552; }
+  .palette-row { display:flex; gap:8px; }
+  .pchip { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .pchip-box { width:40px; height:40px; border-radius:10px; }
+  .pchip-hex { font-size:9px; font-weight:500; }
+  .lp .pchip-hex { color:#9e9e9a; }
+  .dp .pchip-hex { color:#444441; }
+  /* demo cards */
+  .demo-stat-l { font-size:26px; font-weight:700; letter-spacing:-0.03em; color:#000; }
+  .demo-stat-l span,.demo-stat-d span { color:#ff6029; }
+  .demo-stat-d { font-size:26px; font-weight:700; letter-spacing:-0.03em; color:#fff; }
+  .demo-lbl-l { font-size:11px; color:#9e9e9a; margin-top:2px; }
+  .demo-lbl-d { font-size:11px; color:#3a3a37; margin-top:2px; }
+  .demo-bar-l { height:5px; background:#e8e8e5; border-radius:100px; overflow:hidden; margin-top:10px; }
+  .demo-bar-d { height:5px; background:#222; border-radius:100px; overflow:hidden; margin-top:10px; }
+  .demo-fill { height:100%; background:#ff6029; border-radius:100px; }
+  .demo-bub-ai-l { background:#f0f0ee; color:#000; padding:10px 14px; border-radius:14px; border-bottom-left-radius:3px; font-size:12px; }
+  .demo-bub-ai-d { background:#1e1e1e; color:#fff; padding:10px 14px; border-radius:14px; border-bottom-left-radius:3px; font-size:12px; }
+  .demo-bub-u-l { background:#000; color:#fff; padding:10px 14px; border-radius:14px; border-bottom-right-radius:3px; font-size:12px; align-self:flex-end; }
+  .demo-bub-u-d { background:#fff; color:#000; padding:10px 14px; border-radius:14px; border-bottom-right-radius:3px; font-size:12px; align-self:flex-end; }
+  .demo-btn-l { padding:11px 18px; background:#000; color:#fff; border:none; border-radius:100px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; }
+  .demo-btn-d { padding:11px 18px; background:#fff; color:#000; border:none; border-radius:100px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; }
+  .demo-btn-o { padding:11px 16px; background:#ff6029; color:#000; border:none; border-radius:100px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+  .demo-ac-l { background:#fff2ed; border:1px solid #ffcfbc; border-radius:12px; padding:14px; }
+  .demo-ac-d { background:#2a1008; border:1px solid #5a2010; border-radius:12px; padding:14px; }
+  .demo-ac-tag { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#ff6029; margin-bottom:4px; }
+  .demo-ac-val-l { font-size:13px; font-weight:600; color:#000; }
+  .demo-ac-val-d { font-size:13px; font-weight:600; color:#fff; }
+  .demo-ac-sub-l { font-size:11px; color:#9e9e9a; margin-top:2px; }
+  .demo-ac-sub-d { font-size:11px; color:#3a3a37; margin-top:2px; }
+
+  /* note row under themes */
+  .note-row { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--bd); }
+  .note-cell { padding:28px 32px; background:var(--surface); }
+  .note-cell + .note-cell { border-left:1px solid var(--bd); }
+  .note-label { font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--orange); margin-bottom:10px; }
+  .note-text { font-size:13px; color:var(--text2); line-height:1.7; }
+
+  /* COLORS */
+  .color-row { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--bd); border-radius:20px; overflow:hidden; }
+  .cswatch { padding:44px 28px 28px; display:flex; flex-direction:column; justify-content:flex-end; min-height:210px; }
+  .cswatch + .cswatch { border-left:1px solid var(--bd); }
+  .cswatch.bk { background:#000; }
+  .cswatch.wh { background:#fff; }
+  .cswatch.or { background:#ff6029; }
+  .cname { font-size:20px; font-weight:700; letter-spacing:-0.02em; }
+  .chex  { font-size:12px; letter-spacing:.04em; opacity:.5; margin-top:4px; }
+  .cuse  { font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.4; margin-top:10px; }
+  .bk .cname,.bk .chex,.bk .cuse { color:#fff; }
+  .wh .cname,.wh .chex,.wh .cuse { color:#000; }
+  .or .cname,.or .chex,.or .cuse { color:#000; }
+
+  .orange-vars { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-top:28px; }
+  .ov { border:1px solid var(--bd); border-radius:14px; overflow:hidden; }
+  .ov-swatch { height:52px; }
+  .ov-body { padding:12px; }
+  .ov-hex { font-size:12px; font-weight:700; color:var(--text); }
+  .ov-use { font-size:11px; color:var(--text3); margin-top:2px; }
+  .ov-theme { font-size:10px; color:var(--orange); margin-top:4px; font-weight:600; }
+
+  /* TYPE */
+  .type-row { display:flex; align-items:baseline; gap:28px; padding:26px 0; border-bottom:1px solid var(--bd); }
+  .type-meta { width:110px; flex-shrink:0; font-size:10px; color:var(--text3); letter-spacing:.06em; text-transform:uppercase; line-height:2; }
+  .t-display { font-size:62px; font-weight:700; letter-spacing:-0.045em; line-height:1; color:var(--text); }
+  .t-h1 { font-size:38px; font-weight:700; letter-spacing:-0.035em; line-height:1.1; color:var(--text); }
+  .t-h2 { font-size:26px; font-weight:600; letter-spacing:-0.025em; color:var(--text); }
+  .t-h3 { font-size:19px; font-weight:600; letter-spacing:-0.01em; color:var(--text); }
+  .t-body { font-size:17px; color:var(--text2); line-height:1.65; }
+  .t-label { font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--orange); }
+
+  /* COMPONENTS GRID */
+  .comp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:2px; background:var(--bd); border:1px solid var(--bd); border-radius:20px; overflow:hidden; }
+  .comp-cell { background:var(--surface); padding:30px; display:flex; flex-direction:column; gap:18px; }
+  .comp-lbl { font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); }
+
+  /* buttons */
+  .btn { display:inline-flex; align-items:center; justify-content:center; padding:12px 22px; border-radius:100px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; border:1.5px solid transparent; letter-spacing:-0.01em; }
+  .btn-p { background:var(--text); color:var(--bg); border-color:var(--text); }
+  .btn-o { background:var(--orange); color:#000; border-color:var(--orange); }
+  .btn-out { background:transparent; color:var(--text); border-color:var(--bd-strong); }
+  .btn-g { background:var(--bg2); color:var(--text); padding:10px 20px; font-size:13px; }
+  .btn-col { display:flex; flex-direction:column; gap:9px; }
+
+  /* tags */
+  .tag { padding:6px 13px; border-radius:100px; font-size:13px; font-weight:500; display:inline-block; }
+  .tag-ol { border:1px solid var(--bd-strong); color:var(--text); background:transparent; }
+  .tag-fl { background:var(--text); color:var(--bg); border:1px solid var(--text); }
+  .tag-ac { background:var(--acbg); color:var(--actext); border:1px solid var(--acbd); }
+  .tg-row { display:flex; flex-wrap:wrap; gap:7px; }
+
+  /* input */
+  .inp { width:100%; padding:12px 14px; border:1.5px solid var(--bd); border-radius:12px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text); background:var(--bg); outline:none; }
+  .inp.act { border-color:var(--orange); }
+  .inp-lbl { font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--text2); margin-bottom:5px; }
+  .inp-wrap { margin-bottom:10px; }
+  .chat-inp { display:flex; align-items:center; gap:9px; padding:10px 13px; border:1.5px solid var(--bd); border-radius:100px; background:var(--bg); }
+  .chat-inp input { flex:1; border:none; outline:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); background:transparent; }
+  .send { width:28px; height:28px; background:var(--text); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .send svg { width:12px; height:12px; fill:var(--bg); }
+
+  /* info cards */
+  .icard { background:var(--bg2); border-radius:13px; padding:16px; }
+  .icard-stat { font-size:28px; font-weight:700; letter-spacing:-0.03em; color:var(--text); }
+  .icard-stat span { color:var(--orange); }
+  .icard-title { font-size:13px; font-weight:600; color:var(--text); margin-top:2px; }
+  .icard-desc { font-size:11px; color:var(--text3); margin-top:2px; }
+  .ocard { background:var(--orange); border-radius:13px; padding:16px; }
+  .ocard .icard-title { color:#000; }
+  .ocard .icard-desc { color:rgba(0,0,0,.55); }
+
+  /* score */
+  .sc-item { margin-bottom:13px; }
+  .sc-row { display:flex; justify-content:space-between; margin-bottom:5px; }
+  .sc-lbl { font-size:13px; font-weight:500; color:var(--text); }
+  .sc-val { font-size:13px; font-weight:700; color:var(--text); }
+  .sc-val.hi { color:var(--orange); }
+  .sc-bar { height:5px; background:var(--bg3); border-radius:100px; overflow:hidden; }
+  .sc-fill { height:100%; border-radius:100px; }
+  .sc-fill.dk { background:var(--text); }
+  .sc-fill.or { background:var(--orange); }
+
+  /* chat bubbles */
+  .chat-stack { display:flex; flex-direction:column; gap:11px; }
+  .chat-row { display:flex; gap:9px; align-items:flex-end; }
+  .chat-row.usr { flex-direction:row-reverse; }
+  .bbl { padding:10px 14px; font-size:13px; line-height:1.5; max-width:80%; border-radius:15px; }
+  .bbl-ai { background:var(--bg2); color:var(--text); border-bottom-left-radius:3px; }
+  .bbl-u { background:var(--text); color:var(--bg); border-bottom-right-radius:3px; }
+  .bbl-opt { display:inline-block; padding:6px 11px; border:1px solid var(--bd-strong); border-radius:100px; font-size:12px; color:var(--text); cursor:pointer; background:var(--bg); }
+  .bbl-opts { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .av { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+
+  /* PHONE FRAMES */
+  .screens { display:grid; grid-template-columns:repeat(auto-fit,minmax(238px,1fr)); gap:36px; align-items:start; }
+  .scr-lbl { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-bottom:14px; }
+  .phone { background:var(--text); border-radius:40px; padding:9px; display:inline-flex; }
+  .screen { background:var(--bg); border-radius:32px; overflow:hidden; width:252px; min-height:580px; display:flex; flex-direction:column; }
+  .stat-bar { display:flex; justify-content:space-between; padding:12px 18px 4px; font-size:11px; font-weight:700; color:var(--text); }
+  .ph-content { padding:8px 18px 16px; flex:1; overflow:hidden; display:flex; flex-direction:column; }
+  .nav { display:flex; justify-content:space-around; align-items:center; padding:12px 10px 10px; border-top:1px solid var(--bd); }
+  .ni { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:9px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--text3); cursor:pointer; }
+  .ni.on { color:var(--text); }
+  .nd { width:4px; height:4px; border-radius:50%; background:var(--orange); margin-top:1px; }
+
+  .skill-row { display:flex; align-items:center; gap:9px; padding:10px 11px; border:1px solid var(--bd); border-radius:11px; margin-bottom:7px; background:var(--bg); }
+  .sk-icon { width:32px; height:32px; border-radius:8px; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .sk-name { font-size:12px; font-weight:600; color:var(--text); }
+  .sk-desc { font-size:10px; color:var(--text3); }
+  .sk-add { width:24px; height:24px; border-radius:50%; border:1.5px solid var(--bd-strong); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--text3); flex-shrink:0; }
+  .sk-add.on { background:var(--text); border-color:var(--text); color:var(--bg); font-size:10px; font-weight:700; }
+
+  .out-lbl { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin-bottom:4px; }
+  .out-val { font-size:13px; font-weight:500; color:var(--text); line-height:1.5; }
+  .out-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+  .out-tag { padding:4px 9px; background:var(--bg2); border-radius:100px; font-size:11px; color:var(--text2); }
+  .out-tag.hl { background:var(--acbg); color:var(--actext); border:1px solid var(--acbd); }
+
+  /* PRINCIPLES */
+  .princ-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:2px; background:var(--bd); border:1px solid var(--bd); border-radius:20px; overflow:hidden; }
+  .pr { background:var(--surface); padding:28px; }
+  .pr-num { font-size:42px; font-weight:700; letter-spacing:-0.04em; color:var(--bg3); line-height:1; margin-bottom:12px; }
+  .pr-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:7px; }
+  .pr-desc { font-size:12px; color:var(--text2); line-height:1.65; }
+
+  /* RULES */
+  .rules { display:grid; grid-template-columns:1fr 1fr; gap:2px; background:var(--bd); border:1px solid var(--bd); border-radius:20px; overflow:hidden; }
+  .rp { background:var(--surface); padding:30px; }
+  .r-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:9px; }
+  .r-item { font-size:13px; color:var(--text2); padding:8px 13px; background:var(--bg2); border-radius:8px; margin-bottom:7px; }
+
+  /* FOOTER */
+  .footer { background:var(--text); padding:56px; display:flex; justify-content:space-between; align-items:center; }
+  [data-theme="dark"] .footer { background:var(--bg2); border-top:1px solid var(--bd); }
+  .ft-logo { font-size:36px; font-weight:700; letter-spacing:-0.04em; color:var(--bg); }
+  [data-theme="dark"] .ft-logo { color:var(--text); }
+  .ft-logo span { color:var(--orange); }
+  .ft-sub { font-size:12px; margin-top:8px; opacity:.4; font-family:'DM Sans',sans-serif; color:var(--bg); }
+  [data-theme="dark"] .ft-sub { color:var(--text); }
+  .ft-meta { font-size:12px; color:var(--text3); text-align:right; line-height:2; }
+
+  @media(max-width:900px) {
+    .cover,.sec,.footer { padding:40px 22px; }
+    .topbar { padding:12px 22px; }
+    .themes-row,.note-row,.rules { grid-template-columns:1fr; }
+    .tp.dp { border-left:none; border-top:1px solid #1a1a1a; }
+    .note-cell+.note-cell { border-left:none; border-top:1px solid var(--bd); }
+    .screens { grid-template-columns:repeat(2,1fr); }
+    .cover-nums { gap:20px; }
+    .color-row { grid-template-columns:1fr; }
+    .cswatch+.cswatch { border-left:none; border-top:1px solid var(--bd); }
+  }
+  @media(max-width:560px) {
+    .screens { grid-template-columns:1fr; }
+    .footer { flex-direction:column; gap:20px; align-items:flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">brieffy<span>.</span></div>
+  <div class="switcher">
+    <button class="sw-btn on-light" id="bl" onclick="st('light')">☀ Light</button>
+    <button class="sw-btn" id="bd" onclick="st('dark')">◑ Dark</button>
+  </div>
+</div>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-pill">UI Design System · v1.0</div>
+  <div>
+    <div class="cover-title">Design<br><span class="ac">System</span><span class="ol">.</span></div>
+    <div class="cover-desc">Dois temas, uma identidade. Light e Dark — mesma marca, personalidades distintas. Mobile-first, leve, com o essencial na palma da mão.</div>
+  </div>
+  <div class="cover-foot">
+    <div class="cover-meta">brieffy.com · simplify your requirements<br>DM Sans · #000 · #fff · #ff6029</div>
+    <div class="cover-nums">
+      <div><div class="cn-val">2<span>×</span></div><div class="cn-lbl">Temas</div></div>
+      <div><div class="cn-val">3<span>.</span></div><div class="cn-lbl">Cores</div></div>
+      <div><div class="cn-val">4<span>+</span></div><div class="cn-lbl">Telas</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TEMAS -->
+<div class="sec">
+  <div class="sec-tag">01 — Themes</div>
+  <div class="sec-title">Light &amp; Dark<br>dois modos, uma marca</div>
+
+  <div class="themes-wrap">
+    <div class="themes-row">
+
+      <!-- LIGHT -->
+      <div class="tp lp">
+        <div>
+          <div class="tp-tag">Tema Light</div>
+          <div class="tp-title" style="margin-top:8px;">Branco com<br>laranja leve</div>
+        </div>
+        <div class="tp-desc">Fundo branco puro. Superfícies em #f5f5f4. O laranja aparece suavizado: fundo #fff2ed, borda #ffcfbc, texto #ff6029. Clareza máxima para uso diurno.</div>
+        <div class="palette-row">
+          <div class="pchip"><div class="pchip-box" style="background:#fff;border:1.5px solid #e8e8e5;"></div><div class="pchip-hex">#fff</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#f5f5f4;border:1.5px solid #e8e8e5;"></div><div class="pchip-hex">#f5f5f4</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#000;"></div><div class="pchip-hex">#000</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#ff6029;"></div><div class="pchip-hex">#ff6029</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#fff2ed;border:1.5px solid #ffcfbc;"></div><div class="pchip-hex">#fff2ed</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:#f5f5f4;border-radius:13px;padding:15px;border:1px solid #e8e8e5;">
+            <div class="demo-stat-l">87<span>%</span></div>
+            <div class="demo-lbl-l">Score diagnóstico</div>
+            <div class="demo-bar-l"><div class="demo-fill" style="width:87%"></div></div>
+          </div>
+          <div class="demo-ac-l">
+            <div class="demo-ac-tag">IA extraiu ✓</div>
+            <div class="demo-ac-val-l">E-commerce D2C</div>
+            <div class="demo-ac-sub-l">Segmento</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="demo-bub-ai-l">Qual o perfil dos seus clientes?</div>
+          <div class="demo-bub-u-l" style="align-self:flex-end;">PMEs de e-commerce</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="demo-btn-l" style="flex:1;">Criar briefing →</button>
+          <button class="demo-btn-o">✦</button>
+        </div>
+      </div>
+
+      <!-- DARK -->
+      <div class="tp dp">
+        <div>
+          <div class="tp-tag">Tema Dark</div>
+          <div class="tp-title">Preto com<br>laranja vibrante</div>
+        </div>
+        <div class="tp-desc">Fundo preto #0a0a0a. Superfícies em #141414. O laranja aparece em plena força: #ff6029 sobre preto cria contraste brutal. Acento escuro #2a1008 / borda #5a2010.</div>
+        <div class="palette-row">
+          <div class="pchip"><div class="pchip-box" style="background:#0a0a0a;border:1.5px solid #222;"></div><div class="pchip-hex" style="color:#444;">#0a0a0a</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#141414;border:1.5px solid #222;"></div><div class="pchip-hex" style="color:#444;">#141414</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#fff;"></div><div class="pchip-hex" style="color:#444;">#fff</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#ff6029;"></div><div class="pchip-hex" style="color:#444;">#ff6029</div></div>
+          <div class="pchip"><div class="pchip-box" style="background:#2a1008;border:1.5px solid #5a2010;"></div><div class="pchip-hex" style="color:#444;">#2a1008</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:#1a1a1a;border-radius:13px;padding:15px;border:1px solid #2a2a2a;">
+            <div class="demo-stat-d">87<span>%</span></div>
+            <div class="demo-lbl-d">Score diagnóstico</div>
+            <div class="demo-bar-d"><div class="demo-fill" style="width:87%"></div></div>
+          </div>
+          <div class="demo-ac-d">
+            <div class="demo-ac-tag">IA extraiu ✓</div>
+            <div class="demo-ac-val-d">E-commerce D2C</div>
+            <div class="demo-ac-sub-d">Segmento</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="demo-bub-ai-d">Qual o perfil dos seus clientes?</div>
+          <div class="demo-bub-u-d" style="align-self:flex-end;">PMEs de e-commerce</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="demo-btn-d" style="flex:1;">Criar briefing →</button>
+          <button class="demo-btn-o">✦</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTE ROW -->
+    <div class="note-row">
+      <div class="note-cell">
+        <div class="note-label">Laranja no Light</div>
+        <div class="note-text">O #ff6029 puro é reservado para texto de destaque, ícones e CTAs. Nos backgrounds de acento usa-se <strong style="color:var(--text);">#fff2ed</strong> com borda <strong style="color:var(--text);">#ffcfbc</strong> — laranja presente sem agredir o olho.</div>
+      </div>
+      <div class="note-cell">
+        <div class="note-label">Laranja no Dark</div>
+        <div class="note-text">O #ff6029 aparece puro, sem filtro — contraste máximo sobre preto. Backgrounds de acento usam <strong style="color:var(--text);">#2a1008</strong> com borda <strong style="color:var(--text);">#5a2010</strong> para manter coerência com a cor primária sem saturar demais.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CORES -->
+<div class="sec">
+  <div class="sec-tag">02 — Colors</div>
+  <div class="sec-title">Paleta<br>3 cores, infinita combinação</div>
+  <div class="color-row">
+    <div class="cswatch bk"><div class="cname">Preto</div><div class="chex">#000000</div><div class="cuse">65% · Dominante · Texto / Dark BG</div></div>
+    <div class="cswatch wh"><div class="cname">Branco</div><div class="chex">#FFFFFF</div><div class="cuse">25% · Superfície · Light BG</div></div>
+    <div class="cswatch or"><div class="cname">Laranja</div><div class="chex">#FF6029</div><div class="cuse">10% · Acento · CTAs / Scores</div></div>
+  </div>
+  <div class="orange-vars">
+    <div class="ov"><div class="ov-swatch" style="background:#ff6029;"></div><div class="ov-body"><div class="ov-hex">#ff6029</div><div class="ov-use">Botões / Score / Texto acento</div><div class="ov-theme">Light + Dark</div></div></div>
+    <div class="ov"><div class="ov-swatch" style="background:#fff2ed;border-bottom:1px solid #ffcfbc;"></div><div class="ov-body"><div class="ov-hex">#fff2ed</div><div class="ov-use">Fundo de acento</div><div class="ov-theme">Light only</div></div></div>
+    <div class="ov"><div class="ov-swatch" style="background:#ffcfbc;"></div><div class="ov-body"><div class="ov-hex">#ffcfbc</div><div class="ov-use">Borda de acento</div><div class="ov-theme">Light only</div></div></div>
+    <div class="ov"><div class="ov-swatch" style="background:#2a1008;border-bottom:1px solid #5a2010;"></div><div class="ov-body"><div class="ov-hex">#2a1008</div><div class="ov-use">Fundo de acento</div><div class="ov-theme">Dark only</div></div></div>
+    <div class="ov"><div class="ov-swatch" style="background:#5a2010;"></div><div class="ov-body"><div class="ov-hex">#5a2010</div><div class="ov-use">Borda de acento</div><div class="ov-theme">Dark only</div></div></div>
+  </div>
+</div>
+
+<!-- TIPO -->
+<div class="sec">
+  <div class="sec-tag">03 — Typography</div>
+  <div class="sec-title">DM Sans<br>hierarquia clara</div>
+  <div>
+    <div class="type-row"><div class="type-meta">Display<br>62 / 700</div><div class="t-display">Briefings.</div></div>
+    <div class="type-row"><div class="type-meta">Título 1<br>38 / 700</div><div class="t-h1">Seu projeto começa aqui</div></div>
+    <div class="type-row"><div class="type-meta">Título 2<br>26 / 600</div><div class="t-h2">Converse com a IA adaptativa</div></div>
+    <div class="type-row"><div class="type-meta">Título 3<br>19 / 600</div><div class="t-h3">Resultados estruturados em 5 minutos</div></div>
+    <div class="type-row"><div class="type-meta">Corpo<br>17 / 400</div><div class="t-body">Transforme horas de reunião em minutos de conversa com IA que extrai insights profundos do seu negócio.</div></div>
+    <div class="type-row" style="border:none;padding-bottom:0;"><div class="type-meta">Label<br>11 / 600</div><div class="t-label">Skills disponíveis · Branding · Marketing · IA</div></div>
+  </div>
+</div>
+
+<!-- COMPONENTS -->
+<div class="sec">
+  <div class="sec-tag">04 — Components</div>
+  <div class="sec-title">Componentes<br>de interface</div>
+  <div class="comp-grid">
+
+    <div class="comp-cell">
+      <div class="comp-lbl">Botões</div>
+      <div class="btn-col">
+        <button class="btn btn-p">Criar briefing →</button>
+        <button class="btn btn-o">Começar grátis →</button>
+        <button class="btn btn-out">Ver exemplo</button>
+        <button class="btn btn-g" style="border-radius:100px;">Cancelar</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7;">Um botão primário por tela. Laranja exclusivo para conversão / CTA principal.</div>
+    </div>
+
+    <div class="comp-cell">
+      <div class="comp-lbl">Tags & Chips</div>
+      <div style="margin-bottom:12px;"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Padrão</div><div class="tg-row"><div class="tag tag-ol">E-commerce</div><div class="tag tag-ol">B2B SaaS</div></div></div>
+      <div style="margin-bottom:12px;"><div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Selecionado</div><div class="tg-row"><div class="tag tag-fl">Marketing Digital</div></div></div>
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Destaque IA</div><div class="tg-row"><div class="tag tag-ac">Score 87% ✓</div><div class="tag tag-ac">IA extraiu</div></div></div>
+    </div>
+
+    <div class="comp-cell">
+      <div class="comp-lbl">Campos</div>
+      <div class="inp-wrap"><div class="inp-lbl">Nome da empresa</div><input class="inp" placeholder="Ex: Agência Pulse" /></div>
+      <div class="inp-wrap"><div class="inp-lbl" style="color:var(--orange);">Segmento (ativo)</div><input class="inp act" value="Marketing Digital" /></div>
+      <div class="inp-wrap" style="margin:0;"><div class="inp-lbl">Chat input</div><div class="chat-inp"><input placeholder="Digite ou fale..." /><div class="send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></div></div></div>
+    </div>
+
+    <div class="comp-cell">
+      <div class="comp-lbl">Cards de info</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="icard"><div class="icard-stat">87<span>%</span></div><div class="icard-title">Score</div><div class="icard-desc">Diagnóstico</div></div>
+        <div class="icard"><div class="icard-stat">5<span>m</span></div><div class="icard-title">Tempo</div><div class="icard-desc">vs 2h reunião</div></div>
+      </div>
+      <div class="ocard"><div class="icard-title">Briefing completo</div><div class="icard-desc" style="color:rgba(0,0,0,.55);">Output estruturado com insights e estratégias prontas.</div></div>
+    </div>
+
+    <div class="comp-cell">
+      <div class="comp-lbl">Score / Diagnóstico</div>
+      <div>
+        <div class="sc-item"><div class="sc-row"><span class="sc-lbl">Clareza de marca</span><span class="sc-val hi">92%</span></div><div class="sc-bar"><div class="sc-fill or" style="width:92%"></div></div></div>
+        <div class="sc-item"><div class="sc-row"><span class="sc-lbl">Maturidade digital</span><span class="sc-val">78%</span></div><div class="sc-bar"><div class="sc-fill dk" style="width:78%"></div></div></div>
+        <div class="sc-item"><div class="sc-row"><span class="sc-lbl">Definição de público</span><span class="sc-val">85%</span></div><div class="sc-bar"><div class="sc-fill dk" style="width:85%"></div></div></div>
+        <div class="sc-item" style="margin:0;"><div class="sc-row"><span class="sc-lbl">Posicionamento</span><span class="sc-val">61%</span></div><div class="sc-bar"><div class="sc-fill dk" style="width:61%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="comp-cell">
+      <div class="comp-lbl">Chat com IA</div>
+      <div class="chat-stack">
+        <div class="chat-row"><div class="av" style="background:var(--text);color:var(--bg);font-size:9px;">AI</div><div><div class="bbl bbl-ai">Qual o perfil dos seus clientes ideais?</div><div class="bbl-opts"><div class="bbl-opt">PMEs</div><div class="bbl-opt">E-commerce</div><div class="bbl-opt">Startups</div></div></div></div>
+        <div class="chat-row usr"><div class="av" style="background:var(--bg2);color:var(--text);">AC</div><div class="bbl bbl-u">PMEs de e-commerce D2C</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TELAS -->
+<div class="sec">
+  <div class="sec-tag">05 — Screens</div>
+  <div class="sec-title">Telas do app<br>mobile-first</div>
+  <div class="screens">
+
+    <!-- HOME -->
+    <div>
+      <div class="scr-lbl">Home · Dashboard</div>
+      <div class="phone"><div class="screen">
+        <div class="stat-bar"><span>9:41</span><span style="font-size:9px;">▮▮▮ ◈</span></div>
+        <div class="ph-content">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+            <div><div style="font-size:17px;font-weight:700;letter-spacing:-0.03em;color:var(--text);">Olá, Ana 👋</div><div style="font-size:10px;color:var(--text3);margin-top:1px;">3 briefings ativos</div></div>
+            <div class="av" style="width:34px;height:34px;background:var(--orange);color:#000;font-weight:800;font-size:10px;">AC</div>
+          </div>
+          <div style="background:var(--text);border-radius:16px;padding:16px;margin-bottom:10px;">
+            <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--bg);opacity:.45;margin-bottom:5px;">Último briefing</div>
+            <div style="font-size:14px;font-weight:700;color:var(--bg);margin-bottom:2px;">Projeto Zaino</div>
+            <div style="font-size:10px;color:var(--bg);opacity:.5;margin-bottom:10px;">Concluído · Score 91%</div>
+            <div style="height:4px;background:rgba(255,255,255,.12);border-radius:100px;overflow:hidden;"><div style="width:91%;height:100%;background:#ff6029;border-radius:100px;"></div></div>
+          </div>
+          <button class="btn btn-o" style="width:100%;border-radius:11px;padding:11px;font-size:12px;margin-bottom:12px;">+ Novo briefing</button>
+          <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:7px;">Recentes</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);">
+              <div class="av" style="width:28px;height:28px;background:var(--acbg);color:var(--actext);font-size:9px;border:1px solid var(--acbd);">MK</div>
+              <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--text);">DevLab · Web App</div><div style="font-size:9px;color:var(--text3);">Em andamento</div></div>
+              <div class="tag tag-ac" style="font-size:9px;padding:3px 7px;">67%</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);">
+              <div class="av" style="width:28px;height:28px;background:var(--bg2);color:var(--text);font-size:9px;">BR</div>
+              <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--text);">BrandForce</div><div style="font-size:9px;color:var(--text3);">Concluído</div></div>
+              <div class="tag tag-fl" style="font-size:9px;padding:3px 7px;">✓</div>
+            </div>
+          </div>
+        </div>
+        <div class="nav">
+          <div class="ni on"><span style="font-size:15px;">⌂</span><span>Home</span><div class="nd"></div></div>
+          <div class="ni"><span style="font-size:15px;">◫</span><span>Briefs</span></div>
+          <div class="ni"><span style="font-size:15px;">✦</span><span>Skills</span></div>
+          <div class="ni"><span style="font-size:15px;">○</span><span>Perfil</span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- BRIEFING -->
+    <div>
+      <div class="scr-lbl">Sessão de briefing</div>
+      <div class="phone"><div class="screen">
+        <div class="stat-bar"><span>9:41</span><span style="font-size:9px;">▮▮▮ ◈</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:5px 16px 10px;border-bottom:1px solid var(--bd);">
+          <span style="font-size:15px;color:var(--text);">←</span>
+          <div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--text);">DevLab</div><div style="font-size:9px;color:var(--text3);">Web / App Briefing</div></div>
+          <div class="tag tag-ac" style="font-size:9px;padding:3px 7px;">67%</div>
+        </div>
+        <div style="padding:5px 16px 2px;"><div style="height:3px;background:var(--bg3);border-radius:100px;overflow:hidden;"><div style="width:67%;height:100%;background:var(--orange);border-radius:100px;"></div></div></div>
+        <div class="ph-content" style="padding-top:12px;gap:10px;">
+          <div class="chat-row"><div class="av" style="width:26px;height:26px;background:var(--text);color:var(--bg);font-size:9px;">AI</div><div class="bbl bbl-ai" style="font-size:12px;">Que tipo de app vocês precisam?</div></div>
+          <div class="chat-row usr"><div class="bbl bbl-u" style="font-size:12px;">Painel de gestão de estoque com WhatsApp.</div></div>
+          <div class="chat-row"><div class="av" style="width:26px;height:26px;background:var(--text);color:var(--bg);font-size:9px;">AI</div><div><div class="bbl bbl-ai" style="font-size:12px;">Vocês têm design ou partem do zero?</div><div class="bbl-opts" style="margin-top:5px;"><div class="bbl-opt" style="font-size:10px;padding:4px 9px;">Zero</div><div class="bbl-opt" style="font-size:10px;padding:4px 9px;">Wireframes</div><div class="bbl-opt" style="font-size:10px;padding:4px 9px;">Pronto</div></div></div></div>
+        </div>
+        <div style="padding:9px 13px 13px;border-top:1px solid var(--bd);">
+          <div class="chat-inp" style="padding:8px 11px;">
+            <input placeholder="Responda ou fale..." style="font-size:12px;" />
+            <div class="send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div>
+      <div class="scr-lbl">Output · Resultado</div>
+      <div class="phone"><div class="screen">
+        <div class="stat-bar"><span>9:41</span><span style="font-size:9px;">▮▮▮ ◈</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:5px 16px 10px;border-bottom:1px solid var(--bd);">
+          <span style="font-size:15px;color:var(--text);">←</span>
+          <div style="font-size:12px;font-weight:700;color:var(--text);">Projeto Zaino</div>
+        </div>
+        <div class="ph-content" style="overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:12px;padding:13px;background:var(--bg2);border-radius:13px;margin-bottom:13px;">
+            <svg width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="25" r="19" fill="none" stroke="var(--bg3)" stroke-width="4.5"/><circle cx="25" cy="25" r="19" fill="none" stroke="#ff6029" stroke-width="4.5" stroke-dasharray="109 10" stroke-linecap="round" transform="rotate(-90 25 25)"/></svg>
+            <div><div style="font-size:22px;font-weight:700;letter-spacing:-0.03em;color:var(--text);">91<span style="color:#ff6029;">%</span></div><div style="font-size:10px;color:var(--text3);">Score diagnóstico</div><div style="font-size:9px;color:var(--orange);font-weight:600;margin-top:2px;">Excelente ✓</div></div>
+          </div>
+          <div style="margin-bottom:12px;"><div class="out-lbl">Segmento</div><div class="out-val">Distribuição · B2B Wholesale</div></div>
+          <div style="margin-bottom:12px;"><div class="out-lbl">Público-alvo</div><div class="out-tags"><div class="out-tag hl">Revendedores</div><div class="out-tag hl">Lojas físicas</div><div class="out-tag">Importadores</div></div></div>
+          <div style="margin-bottom:12px;"><div class="out-lbl">Dores</div><div class="out-val" style="font-size:12px;">Estoque manual sem IMEI e automação WhatsApp.</div></div>
+          <div style="margin-bottom:14px;"><div class="out-lbl">Estratégias</div><div class="out-tags"><div class="out-tag">CRM WhatsApp</div><div class="out-tag">Painel IMEI</div></div></div>
+          <button class="btn btn-p" style="width:100%;border-radius:11px;padding:11px;font-size:12px;margin-bottom:6px;">Baixar documento ↓</button>
+          <button class="btn btn-g" style="width:100%;border-radius:11px;padding:9px;font-size:11px;">Compartilhar link</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- SKILLS -->
+    <div>
+      <div class="scr-lbl">Skills</div>
+      <div class="phone"><div class="screen">
+        <div class="stat-bar"><span>9:41</span><span style="font-size:9px;">▮▮▮ ◈</span></div>
+        <div class="ph-content">
+          <div style="font-size:17px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:2px;">Skills</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:11px;">Monte seu briefing</div>
+          <input class="inp" placeholder="Buscar skills..." style="border-radius:100px;padding:8px 13px;font-size:11px;margin-bottom:13px;" />
+          <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-bottom:7px;">Adicionados</div>
+          <div class="skill-row" style="border-color:var(--orange);"><div class="sk-icon">🎨</div><div style="flex:1;"><div class="sk-name">Branding</div><div class="sk-desc">Identidade e tom</div></div><div class="sk-add on">✓</div></div>
+          <div class="skill-row" style="border-color:var(--orange);"><div class="sk-icon">📱</div><div style="flex:1;"><div class="sk-name">Web / App</div><div class="sk-desc">Escopo técnico</div></div><div class="sk-add on">✓</div></div>
+          <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:7px;margin-top:11px;">Disponíveis</div>
+          <div class="skill-row"><div class="sk-icon">📣</div><div style="flex:1;"><div class="sk-name">Marketing</div><div class="sk-desc">Campanhas</div></div><div class="sk-add">+</div></div>
+          <div class="skill-row"><div class="sk-icon">🤖</div><div style="flex:1;"><div class="sk-name">IA & Automação</div><div class="sk-desc">Fluxos</div></div><div class="sk-add">+</div></div>
+        </div>
+        <div style="padding:9px 13px 13px;border-top:1px solid var(--bd);">
+          <button class="btn btn-p" style="width:100%;border-radius:11px;padding:11px;font-size:11px;">Criar com 2 skills →</button>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PRINCÍPIOS -->
+<div class="sec">
+  <div class="sec-tag">06 — Principles</div>
+  <div class="sec-title">Os 5 princípios<br>de design</div>
+  <div class="princ-grid">
+    <div class="pr"><div class="pr-num">01</div><div class="pr-title">Palma da mão primeiro</div><div class="pr-desc">Tudo que importa está a um toque. Ações primárias sempre visíveis, nunca enterradas em menus.</div></div>
+    <div class="pr"><div class="pr-num">02</div><div class="pr-title">Zero ruído visual</div><div class="pr-desc">Espaço em branco é conteúdo. Cada elemento compete por atenção — se não contribui, não existe.</div></div>
+    <div class="pr"><div class="pr-num">03</div><div class="pr-title">Laranja com propósito</div><div class="pr-desc">#ff6029 apenas onde a ação importa: CTAs, scores, progresso. Nunca decorativo, sempre funcional.</div></div>
+    <div class="pr"><div class="pr-num">04</div><div class="pr-title">Conversa como núcleo</div><div class="pr-desc">Chat é a interface principal. Opções rápidas reduzem atrito. Voz é cidadã de primeira classe.</div></div>
+    <div class="pr"><div class="pr-num">05</div><div class="pr-title">Feedback instantâneo</div><div class="pr-desc">Score em tempo real, progresso visível. O usuário nunca se pergunta "e agora?".</div></div>
+  </div>
+</div>
+
+<!-- REGRAS -->
+<div class="sec">
+  <div class="sec-tag">07 — Rules</div>
+  <div class="sec-title">Regras de ouro</div>
+  <div class="rules">
+    <div class="rp"><div class="r-title"><span style="font-size:17px;">✅</span> Sempre fazer</div>
+      <div class="r-item">Preto como cor dominante em ambos os temas</div>
+      <div class="r-item">Laranja suavizado no Light (bg #fff2ed)</div>
+      <div class="r-item">Laranja puro vibrante no Dark (#ff6029)</div>
+      <div class="r-item">Espaço generoso entre elementos</div>
+      <div class="r-item">Uma ação primária por tela</div>
+      <div class="r-item">DM Sans em todas as situações</div>
+      <div class="r-item">Labels em UPPERCASE + letter-spacing</div>
+    </div>
+    <div class="rp"><div class="r-title"><span style="font-size:17px;">❌</span> Nunca fazer</div>
+      <div class="r-item">Cores além de preto / branco / #ff6029</div>
+      <div class="r-item">Gradientes ou sombras pesadas</div>
+      <div class="r-item">Dois botões primários na mesma tela</div>
+      <div class="r-item">Laranja puro como fundo no Light</div>
+      <div class="r-item">Texto menor que 12px em mobile</div>
+      <div class="r-item">Mais de 3 níveis de hierarquia visual</div>
+      <div class="r-item">Ícones sem label na nav bar</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div><div class="ft-logo">brieffy<span>.</span></div><div class="ft-sub">simplify your requirements</div></div>
+  <div class="ft-meta">UI Design System v1.0<br>Light &amp; Dark Themes<br>© 2026 Brieffy</div>
+</div>
+
+<script>
+  function st(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('bl').className = 'sw-btn' + (t==='light' ? ' on-light' : '');
+    document.getElementById('bd').className = 'sw-btn' + (t==='dark'  ? ' on-dark'  : '');
+  }
+</script>
+</body>
+</html>

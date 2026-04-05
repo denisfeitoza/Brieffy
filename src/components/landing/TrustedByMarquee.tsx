@@ -23,12 +23,12 @@ function LogoBadge({ name }: { name: string }) {
     .join("")
     .slice(0, 2);
   return (
-    <div className="flex items-center gap-3 px-6 py-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm shrink-0">
+    <div className="flex items-center gap-3 px-6 py-3 rounded-2xl border border-black/[0.06] bg-black/[0.02] backdrop-blur-sm shrink-0">
       <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white"
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-black"
         style={{
-          background: `linear-gradient(135deg, oklch(0.65 0.25 255 / 30%), #06b6d4${30})`,
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: `linear-gradient(135deg, #ff602950, #ffcfbc30)`,
+          border: "1px solid rgba(0,0,0,0.08)",
         }}
       >
         {initials}
@@ -62,8 +62,8 @@ export function TrustedByMarquee() {
       {/* Marquee Track */}
       <div className="relative">
         {/* Fade edges */}
-        <div className="absolute left-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-r from-[oklch(0.10_0.02_260)] to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-l from-[oklch(0.10_0.02_260)] to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
 
         <motion.div
           className="flex gap-4"

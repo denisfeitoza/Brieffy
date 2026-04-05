@@ -266,8 +266,8 @@ export function DynamicInput({
       {/* Already-answered badge */}
       {hasAnswered && (
         <div className="flex mb-6 mt-[-10px]">
-          <div className="bg-neutral-800/50 text-neutral-300 px-4 py-3 rounded-2xl flex items-center gap-3 border border-neutral-800">
-            <CheckCircle2 className="w-5 h-5 text-green-400/80" />
+          <div className="bg-white text-gray-500 px-4 py-3 rounded-2xl flex items-center gap-3 border border-gray-200 shadow-sm">
+            <CheckCircle2 className="w-5 h-5 text-green-500" />
             <span>
               {Array.isArray(activeMessage.userAnswer)
                 ? activeMessage.userAnswer.join(", ")
@@ -291,16 +291,16 @@ export function DynamicInput({
             isDiscoveryPhase={isDiscoveryPhase}
           />
           <div className="flex flex-col items-center gap-1.5 mt-2 w-full">
-            <div className="flex items-center gap-1.5 text-indigo-400/70 text-xs font-medium animate-in fade-in duration-700">
+            <div className="flex items-center gap-1.5 text-[var(--orange)] text-xs font-medium animate-in fade-in duration-700">
               <Mic className="w-3.5 h-3.5" />
               <span>{t.audioHint}</span>
             </div>
-            <div className="text-neutral-600 font-inter text-sm hidden sm:flex gap-4 px-2 items-center justify-center w-full">
+            <div className="text-gray-500 font-inter text-sm hidden sm:flex gap-4 px-2 items-center justify-center w-full">
               <span>
-                <b className="font-semibold text-neutral-400">Enter</b> {t.enterToSend}
+                <b className="font-semibold text-gray-400">Enter</b> {t.enterToSend}
               </span>
               <span>
-                <b className="font-semibold text-neutral-400">Shift + Enter</b> {t.shiftToSkip}
+                <b className="font-semibold text-gray-400">Shift + Enter</b> {t.shiftToSkip}
               </span>
             </div>
           </div>

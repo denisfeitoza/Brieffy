@@ -17,7 +17,7 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 export default function LandingPage() {
   return (
     <LanguageProvider>
-      <main className="min-h-screen bg-[oklch(0.10_0.02_260)] text-white overflow-x-hidden">
+      <main className="min-h-screen bg-white text-black overflow-x-hidden selection:bg-[#ff6029]/20">
         <LandingNavbar />
         <HeroSection />
         <TrustedByMarquee />

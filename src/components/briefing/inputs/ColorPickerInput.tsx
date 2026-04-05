@@ -75,11 +75,11 @@ export function ColorPickerInput({
     const mainCount = mainColors.length || Math.min(2, Math.ceil(ansArray.length / 2));
     return (
       <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
-        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
-          <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
+        <div className="flex flex-col items-center justify-center p-8 rounded-3xl bg-white border border-gray-200 shadow-xl">
+          <span className="text-sm font-semibold tracking-widest text-[var(--orange)] uppercase mb-2 text-center">
             Paleta Final
           </span>
-          <p className="text-[11px] text-neutral-500 mb-6 text-center">Sua paleta de marca selecionada</p>
+          <p className="text-[11px] text-gray-500 mb-6 text-center">Sua paleta de marca selecionada</p>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
             {ansArray.map((hex: string, idx: number) => (
               <div key={idx} className="group flex flex-col items-center gap-3 relative">
@@ -88,10 +88,10 @@ export function ColorPickerInput({
                   style={{ backgroundColor: hex }}
                 />
                 <div className="flex flex-col items-center mt-1">
-                  <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider whitespace-nowrap">
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider whitespace-nowrap">
                     {idx < mainCount ? "Principal" : "Detalhe"}
                   </span>
-                  <span className="text-xs font-mono text-neutral-300 mt-1 px-2 py-0.5 rounded-md bg-neutral-900/50 border border-neutral-800">
+                  <span className="text-xs font-mono text-gray-500 mt-1 px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200">
                     {hex}
                   </span>
                 </div>
@@ -102,7 +102,7 @@ export function ColorPickerInput({
             <div className="flex gap-4 mt-8">
               <Button
                 variant="outline"
-                className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm"
+                className="h-11 px-5 rounded-full border-gray-200 bg-white text-gray-500 shadow-sm hover:bg-gray-50 hover:text-black text-sm"
                 onClick={() => setColorWizardStep(1)}
               >
                 Editar Cores
@@ -128,8 +128,8 @@ export function ColorPickerInput({
     <div
       className={`cursor-pointer group flex flex-col items-center gap-3 p-4 rounded-2xl relative transition-all border-2 ${
         isSelected
-          ? "border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--color-primary),0.2)]"
-          : "border-white/5 hover:border-white/20"
+          ? "border-[var(--orange)] bg-[var(--orange)]/10 shadow-md"
+          : "border-gray-200 hover:border-[var(--orange)]/50 hover:bg-[var(--orange)]/5"
       }`}
       onClick={onToggle}
     >
@@ -158,14 +158,14 @@ export function ColorPickerInput({
         </div>
       </div>
       <div className="flex flex-col items-center z-10 pointer-events-none">
-        <span className="text-xs font-mono text-neutral-300">{hex}</span>
+        <span className="text-xs font-mono text-gray-500">{hex}</span>
       </div>
     </div>
   );
 
   const HintInput = ({ onConfirm }: { onConfirm: () => void }) => (
     <div className="w-full max-w-sm mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <label className="text-[11px] text-neutral-400 uppercase tracking-wider mb-2 block text-center">
+      <label className="text-[11px] text-gray-400 uppercase tracking-wider mb-2 block text-center">
         Descreva o estilo que você quer
       </label>
       <div className="flex gap-2">
@@ -174,7 +174,7 @@ export function ColorPickerInput({
           value={colorHint}
           onChange={(e) => setColorHint(e.target.value)}
           placeholder="Ex: verde neon, tons pastéis..."
-          className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-black placeholder-gray-400 focus:outline-[var(--orange)] focus:ring-[var(--orange)] shadow-sm"
           autoFocus
           enterKeyHint="done"
           onKeyDown={(e) => {
@@ -182,7 +182,7 @@ export function ColorPickerInput({
           }}
         />
         <Button
-          className="rounded-xl bg-primary hover:bg-primary/90 text-white px-4"
+          className="rounded-xl bg-[var(--orange)] hover:opacity-90 text-white px-4"
           onClick={onConfirm}
           disabled={isFetchingColors}
         >
@@ -200,11 +200,11 @@ export function ColorPickerInput({
   if (colorWizardStep === 1) {
     return (
       <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in zoom-in duration-500">
-        <div className="flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
-          <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
+        <div className="flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl bg-white border border-gray-200 shadow-xl">
+          <span className="text-sm font-semibold tracking-widest text-[var(--orange)] uppercase mb-2 text-center">
             {t.step1Title}
           </span>
-          <p className="text-[12px] text-neutral-500 mb-6 text-center max-w-md">
+          <p className="text-[12px] text-gray-500 mb-6 text-center max-w-md">
             A IA sugeriu cores com base nas suas respostas.{" "}
             {isOnboarding
               ? "Selecione 1 cor principal para sua marca."
@@ -213,8 +213,8 @@ export function ColorPickerInput({
 
           {isFetchingColors && suggestedMainColors.length === 0 ? (
             <div className="py-12 flex flex-col items-center">
-              <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-              <p className="text-neutral-400 font-medium">Gerando paleta com base no seu perfil...</p>
+              <Loader2 className="w-10 h-10 animate-spin text-[var(--orange)] mb-4" />
+              <p className="text-gray-500 font-medium">Gerando paleta com base no seu perfil...</p>
             </div>
           ) : (
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -250,7 +250,7 @@ export function ColorPickerInput({
           <div className="flex flex-wrap justify-center gap-3 mt-6">
             <Button
               variant="outline"
-              className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm"
+              className="h-11 px-5 rounded-full border-gray-200 bg-white shadow-sm text-gray-500 hover:bg-gray-50 hover:text-black text-sm"
               onClick={() => {
                 if (showHintInput) { setColorHint(""); fetchInitialColors(); }
                 else setShowHintInput(true);
@@ -261,7 +261,7 @@ export function ColorPickerInput({
               {showHintInput ? "Gerar sem dica" : t.generateMore}
             </Button>
             <Button
-              className="h-11 px-6 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.4)] transition-all hover:scale-105 text-sm"
+              className="h-11 px-6 rounded-full bg-black hover:bg-neutral-800 text-white shadow-xl transition-all hover:scale-105 text-sm"
               onClick={() => {
                 if (selectedMainColors.length >= 1) {
                   setShowHintInput(false);
@@ -283,17 +283,17 @@ export function ColorPickerInput({
   // Step 2: Detail Colors
   return (
     <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
-      <div className="flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl">
+      <div className="flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl bg-white border border-gray-200 shadow-xl">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-[10px] text-neutral-500 uppercase tracking-wider mr-2">Principais:</span>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider mr-2">Principais:</span>
           {mainColors.map((hex, i) => (
             <div key={i} className="w-8 h-8 rounded-full border border-white/10" style={{ backgroundColor: hex }} title={hex} />
           ))}
         </div>
-        <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2 text-center">
+        <span className="text-sm font-semibold tracking-widest text-[var(--orange)] uppercase mb-2 text-center">
           Cores de Detalhe
         </span>
-        <p className="text-[12px] text-neutral-500 mb-6 text-center max-w-md">
+        <p className="text-[12px] text-gray-500 mb-6 text-center max-w-md">
           {isOnboarding
             ? "Escolha 1 cor de detalhe que complementa sua cor principal."
             : "Escolha 1 ou 2 cores de detalhe que complementam suas cores principais."}
@@ -301,8 +301,8 @@ export function ColorPickerInput({
 
         {isFetchingColors && suggestedColors.length === 0 ? (
           <div className="py-12 flex flex-col items-center">
-            <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-            <p className="text-neutral-400 font-medium">Gerando cores que harmonizam com sua paleta...</p>
+            <Loader2 className="w-10 h-10 animate-spin text-[var(--orange)] mb-4" />
+            <p className="text-gray-500 font-medium">Gerando cores que harmonizam com sua paleta...</p>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -338,14 +338,14 @@ export function ColorPickerInput({
         <div className="flex flex-wrap justify-center gap-3 mt-6">
           <Button
             variant="outline"
-            className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm"
+            className="h-11 px-5 rounded-full border-gray-200 bg-white shadow-sm text-gray-500 hover:bg-gray-50 hover:text-black text-sm"
             onClick={() => { setShowHintInput(false); setColorHint(""); setColorWizardStep(1); }}
           >
             {t.back}
           </Button>
           <Button
             variant="outline"
-            className="h-11 px-5 rounded-full border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm"
+            className="h-11 px-5 rounded-full border-gray-200 bg-white shadow-sm text-gray-500 hover:bg-gray-50 hover:text-black text-sm"
             onClick={() => {
               if (showHintInput) { setColorHint(""); fetchDetailColors(); }
               else setShowHintInput(true);
@@ -356,7 +356,7 @@ export function ColorPickerInput({
             {showHintInput ? "Gerar sem dica" : t.generateMore}
           </Button>
           <Button
-            className="h-11 px-6 rounded-full bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(var(--color-primary),0.4)] transition-all hover:scale-105 text-sm"
+            className="h-11 px-6 rounded-full bg-black hover:bg-neutral-800 text-white shadow-xl transition-all hover:scale-105 text-sm"
             onClick={() => doSubmit([...mainColors, ...selectedSuggestions])}
             disabled={selectedSuggestions.length < 1 || isLoading || isSubmittingLocal}
           >

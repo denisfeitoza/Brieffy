@@ -112,11 +112,11 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         placeholder={placeholder}
         className={`w-full transition-all font-inter pr-32 pl-6 rounded-2xl ${
           isRecording 
-            ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30 text-red-100 placeholder:text-red-400/80 animate-pulse' 
-            : 'bg-neutral-900/50 border-neutral-800 text-white placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-indigo-500 focus-visible:border-indigo-500'
+            ? 'bg-red-50/50 border-red-500/50 ring-2 ring-red-500/30 text-red-900 placeholder:text-red-500/80 animate-pulse' 
+            : 'bg-white border-gray-200 text-black placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--orange)]/20 focus-visible:border-[var(--orange)] shadow-sm'
         } ${
           isDiscoveryPhase
-            ? `h-20 md:h-24 text-lg md:text-xl ${!isRecording ? 'border-indigo-500/20' : ''}`
+            ? `h-20 md:h-24 text-lg md:text-xl ${!isRecording ? 'border-[var(--orange)]/30 shadow-md' : ''}`
             : 'h-14 md:h-16 text-base md:text-lg'
         }`}
         spellCheck="false"
@@ -129,7 +129,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
         {isTranscribing ? (
           <div className="h-12 w-12 rounded-xl flex items-center justify-center">
-            <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin" />
+            <RefreshCw className="w-5 h-5 text-[var(--orange)] animate-spin" />
           </div>
         ) : (
           <Button
@@ -139,7 +139,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
             } ${
               isRecording
                 ? "bg-red-500 text-white hover:bg-red-600 animate-pulse shadow-red-500/30"
-                : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/30"
+                : "bg-white text-[var(--orange)] border border-gray-100 hover:bg-[var(--orange)]/5 shadow-sm"
             }`}
             onClick={() => (isRecording ? stopRecording() : startRecording())}
             style={!isRecording ? {
@@ -152,10 +152,10 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
 
         <Button
           size="icon"
-          className={`h-12 w-12 rounded-xl transition-colors shadow-lg shadow-white/5 ${
+          className={`h-12 w-12 rounded-xl transition-colors shadow-sm ${
             isAddAction && inputText.trim()
-              ? "bg-indigo-500 text-white hover:bg-indigo-600"
-              : "bg-white text-black hover:bg-neutral-200"
+              ? "bg-black text-white hover:bg-neutral-800"
+              : "bg-black text-white hover:bg-neutral-800 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
           }`}
           disabled={
             isAddAction

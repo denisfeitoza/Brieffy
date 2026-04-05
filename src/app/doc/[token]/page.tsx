@@ -19,7 +19,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ token
   const token = decoded.replace(/[^a-zA-Z0-9_-]/g, '');
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] font-sans selection:bg-[var(--orange)]/30">
       <Suspense fallback={<div className="h-screen flex items-center justify-center">Carregando...</div>}>
          <PublicDocumentView token={token} />
       </Suspense>

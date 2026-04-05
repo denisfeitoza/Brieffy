@@ -12,9 +12,16 @@ const DEFAULT_BRANDING: BrandingInfo = {
   tagline: '',
   website: '',
 };
-import { createClient } from "./supabase/client";
-
-const supabase = createClient();
+import {
+  ensureSessionInDb,
+  persistSnapshotInDb,
+  logInteractionInDb,
+  clearFutureInteractionsInDb,
+  updateSessionStateInDb,
+  updateInteractionSignalInDb,
+  markSessionAsFinishedInDb,
+  finalizeDocumentInDb
+} from "@/lib/services/briefingTracker";
 
 const BriefingContext = createContext<BriefingContextType | undefined>(undefined);
 
@@ -36,27 +43,6 @@ function lsLoad<T>(key: string): T | null {
 
 function lsRemove(key: string) {
   try { localStorage.removeItem(LS_PREFIX + key); } catch { /* SSR */ }
-}
-
-// ================================================================
-// SUPABASE RETRY — retries transient failures (network, 5xx)
-// ================================================================
-async function supabaseRetry(
-  fn: () => Promise<{ error: unknown }>,
-  maxRetries = 2
-): Promise<{ error: unknown }> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const result = await fn();
-    if (!result.error) return result;
-    if (attempt < maxRetries) {
-      console.warn(`[Supabase] Retry ${attempt + 1}/${maxRetries}`);
-      await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-    } else {
-      console.error('[Supabase] All retries exhausted:', result.error);
-      return result;
-    }
-  }
-  return { error: 'Retry logic error' };
 }
 
 export interface SerializedTemplate {
@@ -228,26 +214,12 @@ export function BriefingProvider({
     if (sessionCreatedRef.current) return null; // Prevent race condition
     sessionCreatedRef.current = true;
 
-    try {
-      const { data, error } = await supabase
-        .from('briefing_sessions')
-        .insert([{ 
-          status: 'in_progress',
-          template_id: activeTemplate?.id || null 
-        }])
-        .select('id')
-        .single();
-        
-      if (!error && data) {
-        setSessionId(data.id);
-        return data.id;
-      } else {
-        console.error("Falha ao iniciar sessão no Supabase:", error);
-        sessionCreatedRef.current = false;
-        return null;
-      }
-    } catch (err) {
-      console.error("Falha ao iniciar sessão:", err);
+    const newSessionId = await ensureSessionInDb(activeTemplate?.id || null);
+    
+    if (newSessionId) {
+      setSessionId(newSessionId);
+      return newSessionId;
+    } else {
       sessionCreatedRef.current = false;
       return null;
     }
@@ -445,16 +417,7 @@ export function BriefingProvider({
       ts: Date.now(),
     });
 
-    supabaseRetry(() =>
-      supabase.from('briefing_sessions').update({
-        messages_snapshot: snapshot,
-        current_step_index: newStepIndex,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sid)
-    ).then(({ error }) => {
-      if (error) console.error('[Snapshot] Failed to persist after retries:', error);
-    });
+    persistSnapshotInDb(sid, snapshot, newStepIndex);
   }, [existingSessionId, sessionId, chosenLanguage]);
 
   const submitAnswer = async (answer: string | string[] | number) => {
@@ -497,49 +460,20 @@ export function BriefingProvider({
     // Log Interaction to Database — UPSERT with retry for network resilience
     let interactionId: string | null = null;
     if (activeSessionId) {
-      try {
-        const upsertPayload = {
-          session_id: activeSessionId,
-          step_order: currentStepIndex,
-          question_type: currentMsgToLog.questionType || 'text',
-          question_text: currentMsgToLog.content,
-          options_offered: currentMsgToLog.options ? currentMsgToLog.options : null,
-          user_answer: answer,
-          is_depth_question: currentMsgToLog.isDepthQuestion || false,
-        };
+      interactionId = await logInteractionInDb(
+        activeSessionId,
+        currentStepIndex,
+        currentMsgToLog.questionType || 'text',
+        currentMsgToLog.content,
+        currentMsgToLog.options ? currentMsgToLog.options : null,
+        answer,
+        currentMsgToLog.isDepthQuestion || false
+      );
 
-        for (let attempt = 0; attempt <= 2; attempt++) {
-          const { data: intData, error: intError } = await supabase
-            .from('briefing_interactions')
-            .upsert(upsertPayload, { onConflict: 'session_id,step_order' })
-            .select('id')
-            .single();
-
-          if (!intError && intData) {
-            interactionId = intData.id;
-            break;
-          }
-          if (attempt < 2) {
-            console.warn(`[Interaction] Retry ${attempt + 1}/2`);
-            await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-          } else {
-            console.error("Erro ao salvar interação após retries:", intError);
-          }
-        }
-
-        // When re-answering a past step (went back), remove stale future interactions
-        // because the AI will generate new questions from this point forward
-        if (currentStepIndex < messages.length - 1) {
-          supabase.from('briefing_interactions')
-            .delete()
-            .eq('session_id', activeSessionId)
-            .gt('step_order', currentStepIndex)
-            .then(({ error }: { error: unknown }) => {
-              if (error) console.error('Erro ao limpar interações futuras:', error);
-            });
-        }
-      } catch (dbErr) {
-        console.error("Erro ao inserir interação:", dbErr);
+      // When re-answering a past step (went back), remove stale future interactions
+      // because the AI will generate new questions from this point forward
+      if (currentStepIndex < messages.length - 1) {
+        clearFutureInteractionsInDb(activeSessionId, currentStepIndex);
       }
     }
 
@@ -659,22 +593,20 @@ export function BriefingProvider({
           sessionUpdate.detected_signals = detectedSignalsRef.current;
         }
 
-        supabaseRetry(() =>
-          supabase.from('briefing_sessions').update(sessionUpdate).eq('id', activeSessionId)
-        ).then(({ error }) => {
-          if (error) console.error('Erro ao salvar progresso da sessão após retries:', error);
-        });
+        // Auto session_name from company_name — only on first extraction
+        const companyName = mergedState.company_name;
+        if (companyName && typeof companyName === 'string' && companyName.trim()) {
+          sessionUpdate.session_name = companyName.trim();
+        }
+
+        updateSessionStateInDb(activeSessionId, sessionUpdate);
 
         if (interactionId) {
           const interactionUpdate: Record<string, unknown> = {};
           if (data.inferences) interactionUpdate.inferences = data.inferences;
           if (newSignals.length > 0) interactionUpdate.detected_signal = newSignals[0].summary;
           if (Object.keys(interactionUpdate).length > 0) {
-            supabaseRetry(() =>
-              supabase.from('briefing_interactions').update(interactionUpdate).eq('id', interactionId!)
-            ).then(({ error }) => {
-              if (error) console.error('Erro ao atualizar interação após retries:', error);
-            });
+            updateInteractionSignalInDb(interactionId, interactionUpdate);
           }
         }
       }
@@ -686,7 +618,7 @@ export function BriefingProvider({
 
         // BUG-06 FIX: Always persist metrics BEFORE redirecting (even for onboarding)
         const persistPromise = activeSessionId
-          ? supabase.from('briefing_sessions').update({ 
+          ? markSessionAsFinishedInDb(activeSessionId, { 
               status: 'finished', 
               company_info: (data.updates && Object.keys(data.updates).length > 0)
                 ? { ...briefingStateRef.current, ...data.updates }
@@ -699,10 +631,6 @@ export function BriefingProvider({
               engagement_summary: data.engagement_summary || { overall: engagementLevel, by_area: {} },
               data_completeness: data.data_completeness || null,
               updated_at: new Date().toISOString()
-            })
-            .eq('id', activeSessionId)
-            .then(({error}: {error: unknown}) => {
-              if (error) console.error("Erro ao fechar sessão no DB:", error);
             })
           : Promise.resolve();
 
@@ -930,17 +858,13 @@ export function BriefingProvider({
       // Persist the document and link data to the session in DB
       const docSessionId = sessionId;
       if (docSessionId) {
-        supabase.from('briefing_sessions').update({
+        finalizeDocumentInDb(docSessionId, {
           final_assets: { ...assets, document: data.document },
           document_content: data.document,
           edit_token: newToken,
           edit_passphrase: currentPassphrase,
           detected_signals: detectedSignalsRef.current,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', docSessionId)
-        .then(({ error }: { error: unknown }) => {
-          if (error) console.error("Erro ao salvar documento no DB:", error);
         });
       }
     } catch (error) {
