@@ -48,9 +48,10 @@ interface GenerateLinkModalProps {
   templateId: string;
   templateName: string;
   existingSession?: { id: string; edit_passphrase?: string | null };
+  children?: React.ReactElement;
 }
 
-export function GenerateLinkModal({ templateId, templateName, existingSession }: GenerateLinkModalProps) {
+export function GenerateLinkModal({ templateId, templateName, existingSession, children }: GenerateLinkModalProps) {
   const router = useRouter();
   const { t, language } = useDashboardLanguage();
   const [open, setOpen] = useState(false);
@@ -194,46 +195,25 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
     if (!sessionName.trim()) return;
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const res = await fetch('/api/sessions/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId,
+          sessionName: sessionName.trim(),
+          initialContext: initialContext.trim(),
+          selectedPackages: selectedSlugs,
+          editPassphrase: editPassphrase.trim()
+        })
+      });
 
-      // ── Quota validation ────────────────────────────────────
-      if (user) {
-        const { data: quota } = await supabase
-          .from('briefing_quotas')
-          .select('used_briefings, max_briefings, is_blocked')
-          .eq('user_id', user.id)
-          .single();
+      const data = await res.json();
 
-        if (quota?.is_blocked) {
-          toast.error(language === 'pt' ? 'Sua conta está bloqueada. Contate o suporte.' : language === 'es' ? 'Tu cuenta está bloqueada. Contacta soporte.' : 'Your account is blocked. Contact support.');
-          setLoading(false);
-          return;
-        }
-
-        if (quota && quota.used_briefings >= quota.max_briefings) {
-          toast.error(language === 'pt' ? `Você atingiu o limite de ${quota.max_briefings} briefings. Faça upgrade do seu plano.` : language === 'es' ? `Has alcanzado el límite de ${quota.max_briefings} briefings. Actualiza tu plan.` : `You've reached your limit of ${quota.max_briefings} briefings. Please upgrade your plan.`);
-          setLoading(false);
-          return;
-        }
+      if (!res.ok) {
+        toast.error(data.error || (language === 'pt' ? 'Erro ao gerar link.' : language === 'es' ? 'Error al generar enlace.' : 'Error generating link.'));
+        setLoading(false);
+        return;
       }
-
-      const { data, error } = await supabase
-        .from('briefing_sessions')
-        .insert([{
-          template_id: templateId,
-          session_name: sessionName.trim(),
-          initial_context: initialContext.trim() || null,
-          selected_packages: selectedSlugs,
-          edit_passphrase: editPassphrase.trim() || null,
-          access_password: null,
-          status: 'pending',
-          user_id: user?.id || null,
-        }])
-        .select('id')
-        .single();
-
-      if (error) throw error;
 
       const host = window.location.origin;
       const link = `${host}/b/${data.id}`;
@@ -302,17 +282,21 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill">
-            <Share2 className="w-4 h-4 mr-2" />
-            {t('modal.generateLinkBtn')}
-          </Button>
-        }
-      />
+      {children ? (
+        <DialogTrigger render={children} />
+      ) : (
+        <DialogTrigger
+          render={
+            <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill">
+              <Share2 className="w-4 h-4 mr-2" />
+              {t('modal.generateLinkBtn')}
+            </Button>
+          }
+        />
+      )}
 
       <DialogContent 
-        className={`bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] transition-all duration-500 overflow-hidden ${
+        className={`bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] transition-all duration-500 ${
           step === 'create' ? 'sm:max-w-[780px]' : 'sm:max-w-[460px]'
         }`}
         style={{ fontFamily: '"DM Sans", sans-serif' }}
@@ -333,7 +317,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
               </DialogDescription>
             </DialogHeader>
 
-            <div className="overflow-y-auto max-h-[65vh] pr-1 -mr-1 space-y-5 py-2 custom-scrollbar">
+            <div className="space-y-5 py-2">
 
               {/* ── Session Name ─────────────────────────────────── */}
               <div className="space-y-2">
@@ -610,8 +594,8 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                   <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2 px-1">
                     {t('modal.accessLink')}
                   </label>
-                  <div className="flex items-center gap-2 p-1.5 bg-[var(--bg2)] border border-[var(--bd)] rounded-full group transition-colors hover:border-[var(--bd-strong)]">
-                    <div className="pl-4 pr-2 text-sm font-medium text-[var(--text2)] truncate flex-1">
+                  <div className="flex items-center gap-2 p-1.5 bg-[var(--bg2)] border border-[var(--bd)] rounded-full group transition-colors hover:border-[var(--bd-strong)] overflow-hidden">
+                    <div className="pl-4 pr-2 text-sm font-medium text-[var(--text2)] truncate flex-1 min-w-0">
                       {generatedLink}
                     </div>
                     <Button

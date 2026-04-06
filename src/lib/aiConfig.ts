@@ -62,17 +62,16 @@ export interface FormatConfig {
 }
 
 export function getFormatConfig(overrides?: SettingsOverride): FormatConfig {
-  // If undefined we default to "true" (enabled) for backwards compatibility
-  const getBool = (val: string | undefined): boolean => val !== "false";
+  const getBool = (val: string | undefined, defaultVal: boolean = true): boolean => val !== undefined ? val === "true" : defaultVal;
   return {
-    single_choice: getBool(overrides?.briefing_format_single_choice),
-    multiple_choice: getBool(overrides?.briefing_format_multiple_choice),
-    boolean_toggle: getBool(overrides?.briefing_format_boolean_toggle),
-    card_selector: getBool(overrides?.briefing_format_card_selector),
-    slider: getBool(overrides?.briefing_format_slider),
-    multi_slider: getBool(overrides?.briefing_format_multi_slider),
-    color_picker: getBool(overrides?.briefing_format_color_picker),
-    file_upload: getBool(overrides?.briefing_format_file_upload),
+    single_choice: getBool(overrides?.briefing_format_single_choice, true),
+    multiple_choice: getBool(overrides?.briefing_format_multiple_choice, true),
+    boolean_toggle: getBool(overrides?.briefing_format_boolean_toggle, true),
+    card_selector: getBool(overrides?.briefing_format_card_selector, true),
+    slider: getBool(overrides?.briefing_format_slider, false),
+    multi_slider: getBool(overrides?.briefing_format_multi_slider, false),
+    color_picker: getBool(overrides?.briefing_format_color_picker, true),
+    file_upload: getBool(overrides?.briefing_format_file_upload, true),
   };
 }
 

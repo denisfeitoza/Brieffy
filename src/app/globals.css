@@ -304,8 +304,8 @@
 
 /* Mic button glow — orange brand color */
 @keyframes mic-glow {
-  0%, 100% { box-shadow: none; color: var(--text3); }
-  50% { box-shadow: 0 0 12px rgba(255, 96, 41, 0.35); color: var(--orange); }
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 12px rgba(255, 96, 41, 0.65); }
 }
 
 /* ============================================

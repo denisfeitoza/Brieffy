@@ -83,17 +83,17 @@ function StepProgress({ current }: { current: 1 | 2 | 3 }) {
             flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all duration-500 shrink-0
             ${current >= s.n
               ? 'bg-brieffy-orange text-black font-extrabold shadow-[0_0_12px_rgba(255,96,41,0.3)]'
-              : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 border border-zinc-200 dark:border-zinc-800'
+              : 'bg-brieffy-surface text-brieffy-text3 border border-brieffy-border'
             }
           `}>
             {current > i + 1 ? <CheckCircle2 className="w-4 h-4" /> : s.n}
           </div>
           <span className={`label-caps ml-1.5 hidden sm:block ${
-            current >= s.n ? 'text-foreground' : 'text-zinc-500'
+            current >= s.n ? 'text-foreground' : 'text-brieffy-text3'
           }`}>{s.label}</span>
           {i < steps.length - 1 && (
             <div className={`flex-1 h-[1.5px] mx-2 transition-colors duration-500 ${
-              current > s.n ? 'bg-brieffy-orange/40' : 'bg-zinc-200 dark:bg-zinc-800'
+              current > s.n ? 'bg-brieffy-orange/40' : 'bg-brieffy-border'
             }`} />
           )}
         </div>
@@ -261,24 +261,23 @@ export default function NewBriefingWizard() {
     setError(null);
     
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const res = await fetch('/api/sessions/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: createdTemplateId,
+          sessionName: name.trim(),
+          initialContext: initialContext.trim() || undefined,
+          selectedPackages: selectedSlugs,
+          editPassphrase: editPassphrase.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
       
-      const { data, error: dbError } = await supabase
-        .from('briefing_sessions')
-        .insert([{
-          template_id: createdTemplateId,
-          session_name: name.trim(),
-          initial_context: initialContext.trim() || null,
-          selected_packages: selectedSlugs,
-          edit_passphrase: editPassphrase.trim() || undefined,
-          status: 'pending',
-          user_id: user?.id || null,
-        }])
-        .select('id')
-        .single();
-      
-      if (dbError) throw dbError;
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao gerar link');
+      }
       
       const host = window.location.origin;
       setGeneratedLink(`${host}/b/${data.id}`);
@@ -341,7 +340,7 @@ export default function NewBriefingWizard() {
       <div className="flex flex-col gap-4">
         <Link
           href="/dashboard/templates"
-          className="inline-flex items-center text-sm font-bold label-caps text-zinc-500 hover:text-brieffy-orange transition-colors w-fit"
+          className="inline-flex items-center text-sm font-bold label-caps text-brieffy-text3 hover:text-foreground transition-colors w-fit"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
           Voltar
@@ -352,7 +351,7 @@ export default function NewBriefingWizard() {
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
               Criar <span className="text-brieffy-orange">Briefing</span>
             </h1>
-            <p className="text-zinc-500 mt-1 text-sm font-medium">
+            <p className="text-brieffy-text2 mt-1 text-sm font-medium">
               Configure o que a IA deve explorar e gere o link para seu cliente.
             </p>
           </div>
@@ -388,32 +387,32 @@ export default function NewBriefingWizard() {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-6"
           >
-            <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-2xl p-5 sm:p-8 space-y-7">
+            <div className="bg-brieffy-surface border border-brieffy-border rounded-2xl p-5 sm:p-8 space-y-7">
               
               {/* ── Name ──────────────────────── */}
               <div className="space-y-2.5">
                 <label className="label-caps-accent">
-                  Nome do Briefing <span className="text-red-500">*</span>
+                  Nome do Briefing <span className="text-brieffy-orange">*</span>
                 </label>
                 <Input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Ex: Rebrand Acme Corp 2026"
-                  className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/40 h-12 text-sm rounded-xl placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all font-medium"
+                  className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 h-12 text-sm rounded-xl placeholder:text-brieffy-text3 transition-all font-medium shadow-none"
                 />
               </div>
               
               {/* ── Purpose ───────────────────── */}
               <div className="space-y-2.5">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-brieffy-orange/10 border border-brieffy-orange/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-brieffy-orange-light border border-brieffy-orange-border flex items-center justify-center shrink-0 mt-0.5">
                     <Target className="w-4 h-4 text-brieffy-orange" />
                   </div>
                   <div>
-                    <label className="label-caps">
-                      O que você precisa descobrir? <span className="text-red-500">*</span>
+                    <label className="label-caps !text-foreground">
+                      O que você precisa descobrir? <span className="text-brieffy-orange">*</span>
                     </label>
-                    <p className="text-xs text-zinc-500 mt-0.5 font-medium">
+                    <p className="text-xs text-brieffy-text3 mt-0.5 font-medium">
                       A IA vai usar isso como bússola para guiar toda a conversa.
                     </p>
                   </div>
@@ -422,21 +421,21 @@ export default function NewBriefingWizard() {
                   value={purpose}
                   onChange={e => setPurpose(e.target.value)}
                   placeholder="Ex: Entender a identidade atual da marca, o público-alvo e os planos de crescimento para redesenhar o posicionamento visual."
-                  className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/30 rounded-xl resize-y min-h-[100px] placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-sm leading-relaxed transition-all font-medium"
+                  className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm leading-relaxed transition-all font-medium shadow-none"
                 />
               </div>
 
               {/* ── Context (Fixed) ───────────── */}
               <div className="space-y-2.5">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <Brain className="w-4 h-4 text-zinc-400" />
+                  <div className="w-8 h-8 rounded-lg bg-background border border-brieffy-border flex items-center justify-center shrink-0 mt-0.5">
+                    <Brain className="w-4 h-4 text-brieffy-text3" />
                   </div>
                   <div>
-                    <label className="label-caps">
-                      Contexto Prévio <span className="text-zinc-400 font-normal">(recomendado)</span>
+                    <label className="label-caps !text-foreground">
+                      Contexto Prévio <span className="text-brieffy-text3 font-normal">(recomendado)</span>
                     </label>
-                    <p className="text-xs text-zinc-500 mt-0.5 font-medium">
+                    <p className="text-xs text-brieffy-text3 mt-0.5 font-medium">
                       O que você já sabe sobre esse cliente? A IA adaptará as perguntas.
                     </p>
                   </div>
@@ -445,22 +444,22 @@ export default function NewBriefingWizard() {
                   value={initialContext}
                   onChange={e => setInitialContext(e.target.value)}
                   placeholder="Ex: Já fizemos o logotipo dele em 2023, agora ele quer expandir para o digital..."
-                  className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/30 rounded-xl resize-y min-h-[100px] placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-sm font-medium transition-all"
+                  className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm font-medium transition-all shadow-none"
                 />
               </div>
 
               {/* ── Sensitive Points (Depth Signals) ── */}
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <button
                   type="button"
                   onClick={() => setShowSignals(!showSignals)}
-                  className="flex items-center gap-2 label-caps text-zinc-400 hover:text-foreground transition-colors w-full group"
+                  className="flex items-center gap-2 label-caps text-brieffy-text3 hover:text-foreground transition-colors w-full group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 group-hover:border-zinc-300 dark:group-hover:border-zinc-600">
-                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ${showSignals ? 'rotate-180' : ''}`} />
+                  <div className="w-8 h-8 rounded-lg bg-background border border-brieffy-border flex items-center justify-center shrink-0 group-hover:border-foreground transition-colors">
+                    <ChevronDown className={`w-4 h-4 text-brieffy-text3 transition-transform duration-300 ${showSignals ? 'rotate-180' : ''}`} />
                   </div>
                   Pontos Sensíveis
-                  <span className="text-zinc-400 dark:text-zinc-600 font-normal">(opcional)</span>
+                  <span className="text-brieffy-text3 font-normal">(opcional)</span>
                 </button>
 
                 <AnimatePresence>
@@ -472,28 +471,28 @@ export default function NewBriefingWizard() {
                       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                       className="overflow-hidden space-y-4 pt-2"
                     >
-                      <div className="pl-9 space-y-1">
-                        <p className="text-xs text-zinc-500 font-medium">
+                      <div className="pl-10 space-y-1">
+                        <p className="text-xs text-brieffy-text2 font-medium">
                           IA explorará com atenção. Digite e separe por vírgula para adicionar.
                         </p>
-                        <p className="text-xs text-zinc-400 font-normal">
+                        <p className="text-xs text-brieffy-text3 font-normal">
                           Ex: resistência a preço, insatisfação com marca atual, prazos curtos
                         </p>
                       </div>
                       
                       {/* Tags */}
                       {depthSignals.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pl-9">
+                        <div className="flex flex-wrap gap-2 pl-10">
                           {depthSignals.map(signal => (
                             <span
                               key={signal}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brieffy-orange/5 border border-brieffy-orange/20 text-brieffy-orange text-xs font-bold"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brieffy-orange-light border border-brieffy-orange-border text-brieffy-orange text-[11px] font-bold"
                             >
                               {signal}
                               <button
                                 type="button"
                                 onClick={() => removeSignal(signal)}
-                                className="text-brieffy-orange/40 hover:text-red-500 transition-colors"
+                                className="text-brieffy-orange/60 hover:text-brieffy-orange transition-colors"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
@@ -502,13 +501,13 @@ export default function NewBriefingWizard() {
                         </div>
                       )}
                       
-                      <div className="pl-9">
+                      <div className="pl-10">
                         <Input
                           value={newSignal}
                           onChange={handleSignalChange}
                           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
                           placeholder="Adicionar ponto sensível..."
-                          className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/30 h-11 rounded-xl text-sm font-medium transition-all"
+                          className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 h-11 rounded-xl text-sm font-medium transition-all shadow-none placeholder:text-brieffy-text3"
                         />
                       </div>
                     </motion.div>
@@ -521,7 +520,7 @@ export default function NewBriefingWizard() {
             <Button
               onClick={handleContinueToPackages}
               disabled={isTransitioning || !name.trim() || !purpose.trim()}
-              className="w-full h-14 text-base font-bold rounded-full bg-brieffy-orange hover:bg-brieffy-orange/90 text-black shadow-[0_4px_20px_rgba(255,96,41,0.2)] transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2 active:scale-[0.98]"
+              className="w-full h-12 text-sm font-bold rounded-full bg-foreground text-background hover:opacity-90 transition-all duration-300 disabled:opacity-40 shadow-none gap-2"
             >
               {isTransitioning ? (
                 <>
@@ -549,7 +548,7 @@ export default function NewBriefingWizard() {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-6"
           >
-            <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-2xl p-5 sm:p-8 space-y-7">
+            <div className="bg-brieffy-surface border border-brieffy-border rounded-2xl p-5 sm:p-8 space-y-7">
               
               {/* Header */}
               <div className="space-y-1">
@@ -557,7 +556,7 @@ export default function NewBriefingWizard() {
                   <Sparkles className="w-5 h-5 text-brieffy-orange" />
                   Skills da IA
                 </h2>
-                <p className="text-sm font-medium text-zinc-500">
+                <p className="text-sm font-medium text-brieffy-text2">
                   A IA selecionou as ferramentas ideais. Toque para personalizar.
                 </p>
               </div>
@@ -569,10 +568,10 @@ export default function NewBriefingWizard() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="flex items-start gap-3 px-4 py-4 rounded-xl bg-brieffy-orange/[0.03] border border-brieffy-orange/10"
+                    className="flex items-start gap-3 px-4 py-4 rounded-xl bg-background border border-brieffy-border"
                   >
-                    <Wand2 className="w-4 h-4 text-brieffy-orange flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed italic">
+                    <Wand2 className="w-4 h-4 text-brieffy-text3 flex-shrink-0 mt-0.5" />
+                    <p className="text-[13px] text-brieffy-text2 font-medium leading-relaxed italic">
                       &quot;{aiReasoning}&quot;
                     </p>
                   </motion.div>
@@ -580,10 +579,10 @@ export default function NewBriefingWizard() {
               </AnimatePresence>
               
               {/* Stats & Filter Bar */}
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-white/5">
+              <div className="flex items-center justify-between pb-2 border-b border-brieffy-border">
                 <div className="flex items-center gap-2">
-                  <span className="label-caps !text-xs text-zinc-400">Seleção:</span>
-                  <span className="text-xs font-bold text-brieffy-orange bg-brieffy-orange/10 px-2 py-0.5 rounded-full border border-brieffy-orange/20">
+                  <span className="label-caps !text-[10px] text-brieffy-text3">Seleção:</span>
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-brieffy-orange bg-brieffy-orange-light px-2 py-0.5 rounded-full border border-brieffy-orange-border">
                     {selectedSlugs.length} Ativas
                   </span>
                 </div>
@@ -593,7 +592,7 @@ export default function NewBriefingWizard() {
               <div className="space-y-6">
                 {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                   <div key={dept} className="space-y-3">
-                    <p className="label-caps text-zinc-400 px-1">
+                    <p className="label-caps text-brieffy-text3 px-1">
                       {DEPT_LABELS[dept] || dept}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -611,48 +610,43 @@ export default function NewBriefingWizard() {
                             whileTap={{ scale: 0.98 }}
                             className={`
                               relative flex items-center gap-3.5 px-4 py-4 rounded-xl text-left transition-all duration-300
-                              border outline-none group
+                              border outline-none group bg-background
                               ${isSelected
-                                ? `bg-white dark:bg-black/20 border-zinc-200 dark:border-white/10 shadow-sm`
-                                : 'bg-zinc-100/50 dark:bg-transparent border-zinc-100 dark:border-white/5 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 hover:border-zinc-200 dark:hover:border-white/10'
+                                ? 'border-foreground shadow-sm'
+                                : 'border-brieffy-border hover:border-brieffy-text3'
                               }
                             `}
                           >
                             {/* Icon container */}
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
-                              isSelected ? `${colors.bg} ${colors.border} border` : 'bg-zinc-200 dark:bg-zinc-800'
-                            }`}>
-                              <IconComp className={`w-4.5 h-4.5 ${isSelected ? colors.text : 'text-zinc-500'}`} />
+                            <div className="w-10 h-10 rounded-xl bg-brieffy-surface flex items-center justify-center shrink-0">
+                              <IconComp className={`w-4.5 h-4.5 ${isSelected ? 'text-brieffy-orange' : 'text-brieffy-text3'}`} />
                             </div>
                             
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold tracking-tight transition-colors ${isSelected ? 'text-foreground' : 'text-zinc-500'}`}>
+                                <span className="text-[13px] font-bold tracking-tight transition-colors text-foreground">
                                   {pkg.name}
                                 </span>
                                 {isAiSuggested && isSelected && (
-                                  <span className="shrink-0 text-[10px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-full bg-brieffy-orange text-black">IA</span>
+                                  <span className="shrink-0 text-[9px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-full bg-brieffy-orange text-black">IA</span>
                                 )}
                               </div>
-                              <p className={`text-xs font-medium mt-0.5 truncate ${isSelected ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                              <p className="text-[11px] font-medium mt-0.5 truncate text-brieffy-text3">
                                 Explorar {pkg.name.toLowerCase()}
                               </p>
                             </div>
                             
                             {/* Custom Checkbox */}
-                            <div className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all duration-300 ${
+                            <div className={`w-6 h-6 rounded-full border-[1.5px] border-brieffy-border flex items-center justify-center shrink-0 transition-all duration-300 text-brieffy-text3 ${
                               isSelected
-                                ? 'border-brieffy-orange bg-brieffy-orange'
-                                : 'border-zinc-300 dark:border-zinc-700'
+                                ? '!border-foreground !bg-foreground text-background'
+                                : ''
                             }`}>
-                              {isSelected && (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                >
-                                  <CheckCircle2 className="w-4 h-4 text-black" />
-                                </motion.div>
+                              {isSelected ? (
+                                <span className="text-[10px] font-bold">✓</span>
+                              ) : (
+                                <Plus className="w-3.5 h-3.5" />
                               )}
                             </div>
                           </motion.button>
@@ -755,7 +749,7 @@ export default function NewBriefingWizard() {
             exit="exit"
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-2xl p-6 sm:p-12">
+            <div className="bg-brieffy-surface border border-brieffy-border rounded-2xl p-6 sm:p-12">
               <div className="flex flex-col items-center justify-center space-y-8">
                 
                 {/* Success Icon */}
@@ -768,7 +762,7 @@ export default function NewBriefingWizard() {
                 
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-black text-foreground tracking-tight">Briefing Criado! ✨</h3>
-                  <p className="text-sm font-medium text-zinc-500 max-w-sm leading-relaxed mx-auto">
+                  <p className="text-sm font-medium text-brieffy-text2 max-w-sm leading-relaxed mx-auto">
                     Agora é só compartilhar o link {editPassphrase ? 'e a senha' : ''} com seu cliente para começarem.
                   </p>
                 </div>
@@ -777,13 +771,13 @@ export default function NewBriefingWizard() {
                 <div className="w-full max-w-lg space-y-3">
                   
                   {/* Link Card */}
-                  <div className="group relative flex items-center justify-between gap-3 p-3 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl transition-all hover:border-brieffy-orange/30">
+                  <div className="group relative flex items-center justify-between gap-3 p-3 bg-background border border-brieffy-border rounded-2xl transition-all hover:border-brieffy-orange/30">
                     <div className="flex items-center gap-3 pl-2 flex-1 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                        <Link2 className="w-4 h-4 text-zinc-400" />
+                      <div className="w-8 h-8 rounded-lg bg-brieffy-surface border border-brieffy-border flex items-center justify-center shrink-0">
+                        <Link2 className="w-4 h-4 text-brieffy-text3" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="label-caps !text-xs text-zinc-400 mb-0.5">Link do Briefing</p>
+                        <p className="label-caps !text-xs text-brieffy-text3 mb-0.5">Link do Briefing</p>
                         <p className="text-sm font-bold text-foreground truncate select-all">{generatedLink}</p>
                       </div>
                     </div>
@@ -791,8 +785,8 @@ export default function NewBriefingWizard() {
                       onClick={copyLink}
                       className={`h-11 px-4 rounded-xl shrink-0 font-bold text-xs label-caps transition-all ${
                         copied
-                          ? 'bg-green-500 text-white hover:bg-green-600'
-                          : 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'
+                          ? 'bg-green-500 text-white hover:bg-green-600 border border-green-600'
+                          : 'bg-foreground text-background hover:opacity-90 shadow-none'
                       }`}
                     >
                       {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -802,13 +796,13 @@ export default function NewBriefingWizard() {
                   
                   {/* Password Card (Only if defined) */}
                   {editPassphrase && (
-                    <div className="flex items-center justify-between gap-3 p-3 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl">
+                    <div className="flex items-center justify-between gap-3 p-3 bg-background border border-brieffy-border rounded-2xl">
                       <div className="flex items-center gap-3 pl-2 flex-1">
-                        <div className="w-8 h-8 rounded-lg bg-brieffy-orange/10 flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-brieffy-orange/10 border border-brieffy-orange/20 flex items-center justify-center shrink-0">
                           <Lock className="w-4 h-4 text-brieffy-orange" />
                         </div>
                         <div>
-                          <p className="label-caps !text-xs text-zinc-400 mb-0.5">Senha de Acesso</p>
+                          <p className="label-caps !text-xs text-brieffy-text3 mb-0.5">Senha de Acesso</p>
                           <p className="text-sm font-black text-foreground tracking-widest uppercase">{editPassphrase}</p>
                         </div>
                       </div>
@@ -821,8 +815,8 @@ export default function NewBriefingWizard() {
                   onClick={shareAll}
                   className={`w-full max-w-lg h-15 rounded-full gap-3 font-bold text-base transition-all duration-300 ${
                     shared
-                      ? 'bg-green-500 text-white shadow-[0_0_30px_rgba(34,197,94,0.3)]'
-                      : 'bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-white/10 text-foreground hover:border-brieffy-orange shadow-lg'
+                      ? 'bg-green-500 text-white shadow-[0_0_30px_rgba(34,197,94,0.3)] border-green-600'
+                      : 'bg-background border-[1.5px] border-brieffy-border text-foreground hover:border-brieffy-orange/50 shadow-sm'
                   }`}
                 >
                   {shared ? <CheckCircle2 className="w-5 h-5" /> : <Share2 className="w-5 h-5 text-brieffy-orange" />}
@@ -834,7 +828,7 @@ export default function NewBriefingWizard() {
                   <Button
                     variant="outline"
                     onClick={() => router.push(`/dashboard/${sessionId}`)}
-                    className="h-14 border-zinc-200 dark:border-white/10 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-full font-bold label-caps"
+                    className="h-14 border-[1.5px] border-brieffy-border text-brieffy-text3 hover:text-foreground hover:bg-brieffy-surface rounded-full font-bold label-caps"
                   >
                     Gerenciar Briefing
                   </Button>
@@ -854,7 +848,7 @@ export default function NewBriefingWizard() {
                       setCreatedTemplateId(null);
                       setError(null);
                     }}
-                    className="h-14 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 rounded-full font-bold label-caps flex items-center justify-center gap-2"
+                    className="h-14 bg-foreground text-background hover:opacity-90 rounded-full font-bold label-caps flex items-center justify-center gap-2 shadow-none"
                   >
                     <Plus className="w-4 h-4" />
                     Novo Briefing

@@ -77,6 +77,7 @@ interface DynamicInputProps {
   voiceLanguage?: string;
   messages?: Message[];
   isDiscoveryPhase?: boolean;
+  showVoiceTutorial?: boolean;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ export function DynamicInput({
   voiceLanguage = "pt",
   messages = [],
   isDiscoveryPhase = false,
+  showVoiceTutorial = false,
 }: DynamicInputProps) {
   const t = I18N[voiceLanguage] || I18N["pt"];
   const { isOnboarding } = useBriefing();
@@ -289,6 +291,7 @@ export function DynamicInput({
             hasUserAnswer={Boolean(activeMessage.userAnswer)}
             voiceLanguage={voiceLanguage}
             isDiscoveryPhase={isDiscoveryPhase}
+            showVoiceTutorial={showVoiceTutorial}
           />
           <div className="flex flex-col items-center gap-1.5 mt-2 w-full">
             <div className="flex items-center gap-1.5 text-[var(--orange)] text-xs font-medium animate-in fade-in duration-700">

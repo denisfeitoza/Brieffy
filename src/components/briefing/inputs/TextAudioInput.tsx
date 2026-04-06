@@ -3,8 +3,9 @@
 import { useRef, useImperativeHandle, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, ArrowRight, RefreshCw } from "lucide-react";
+import { Mic, ArrowRight, RefreshCw, Square } from "lucide-react";
 import { useAudioRecorder } from "./shared/useAudioRecorder";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface TextAudioInputHandle {
   focus: () => void;
@@ -25,6 +26,7 @@ interface TextAudioInputProps {
   voiceLanguage: string;
   placeholderOverride?: string;
   isDiscoveryPhase?: boolean;
+  showVoiceTutorial?: boolean;
 }
 
 export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputProps>(function TextAudioInput({
@@ -41,6 +43,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
   voiceLanguage,
   placeholderOverride,
   isDiscoveryPhase = false,
+  showVoiceTutorial = false,
 }, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -127,6 +130,35 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         data-enable-grammarly="false"
       />
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+        <AnimatePresence>
+          {showVoiceTutorial && !isRecording && !inputText && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 5, scale: 0.95 }}
+              transition={{ delay: 0.5, duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
+              className="absolute bottom-[calc(100%+14px)] right-4 bg-gray-900 text-white p-4 rounded-[1.25rem] shadow-2xl w-72 pointer-events-none origin-bottom-right z-50 flex items-start gap-4 border border-white/10"
+            >
+              <div className="bg-[var(--orange)] rounded-[0.85rem] p-2.5 shrink-0 shadow-lg shadow-[var(--orange)]/30">
+                <Mic className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex flex-col pt-0.5">
+                <span className="font-bold text-[11px] text-[var(--orange)] uppercase tracking-wider mb-1">
+                  {voiceLanguage === 'pt' ? 'Dica de Ouro' : voiceLanguage === 'es' ? 'Consejo de Oro' : 'Pro Tip'}
+                </span>
+                <span className="font-semibold text-[15px] mb-1">
+                  {voiceLanguage === 'pt' ? 'Ganhe tempo com a Voz!' : voiceLanguage === 'es' ? '¡Ahorra tiempo con la Voz!' : 'Save time with Voice!'}
+                </span>
+                <span className="text-[13px] text-gray-300 leading-relaxed">
+                  {voiceLanguage === 'pt' ? 'Falar é até 4x mais rápido do que digitar. Teste na sua resposta!' : voiceLanguage === 'es' ? 'Hablar es hasta 4 veces más rápido que escribir. ¡Pruébalo!' : 'Speaking is up to 4x faster than typing. Try it out!'}
+                </span>
+              </div>
+              {/* Pointer triangle */}
+              <div className="absolute -bottom-2 right-20 w-4 h-4 bg-gray-900 border-r border-b border-white/10 rotate-45 rounded-sm" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {isTranscribing ? (
           <div className="h-12 w-12 rounded-xl flex items-center justify-center">
             <RefreshCw className="w-5 h-5 text-[var(--orange)] animate-spin" />
@@ -139,14 +171,15 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
             } ${
               isRecording
                 ? "bg-red-500 text-white hover:bg-red-600 animate-pulse shadow-red-500/30"
-                : "bg-white text-[var(--orange)] border border-gray-100 hover:bg-[var(--orange)]/5 shadow-sm"
+                : "bg-[var(--orange)] text-white hover:bg-[var(--orange)]/90 shadow-[var(--orange)]/30"
             }`}
             onClick={() => (isRecording ? stopRecording() : startRecording())}
-            style={!isRecording ? {
-              animation: isDiscoveryPhase ? 'mic-glow 2s ease-in-out 1s infinite' : 'mic-glow 3s ease-in-out 1.5s infinite',
-            } : undefined}
           >
-            <Mic className={isDiscoveryPhase ? 'w-6 h-6' : 'w-5 h-5'} />
+            {isRecording ? (
+              <Square className={`${isDiscoveryPhase ? 'w-6 h-6' : 'w-5 h-5'} fill-current`} />
+            ) : (
+              <Mic className={`${isDiscoveryPhase ? 'w-6 h-6' : 'w-5 h-5'} text-white`} />
+            )}
           </Button>
         )}
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "crypto";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
 // BUG-05 FIX: Lazy client to avoid build-time env var crash
 function getSupabaseAdmin() {
@@ -24,6 +25,16 @@ function safeCompare(a: string, b: string): boolean {
 
 export async function POST(req: Request) {
   try {
+    const ip = getRequestIP(req);
+    // Strict rate limit to prevent brute force on passphrase
+    const rl = checkRateLimit(`doc_verify:${ip}`, { maxRequests: 5, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Tente novamente em 1 minuto." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const { token, passphrase } = await req.json();
 
     if (!token || !passphrase) {

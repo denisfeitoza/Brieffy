@@ -18,6 +18,32 @@ if (typeof window !== "undefined") {
     }
     originalConsoleError.apply(console, args);
   };
+
+  // Previne crashes do React causados por extensões (como o Google Tradutor)
+  // que modificam o DOM (injeta tags <font> no lugar de TextNodes).
+  if (typeof Node === "function" && Node.prototype) {
+    const originalRemoveChild = Node.prototype.removeChild;
+    Node.prototype.removeChild = function <T extends Node>(this: Node, child: T): T {
+      if (child.parentNode !== this) {
+        if (typeof console !== "undefined") {
+          console.warn("DOM Exception prevented by extension workaround (removeChild).");
+        }
+        return child;
+      }
+      return originalRemoveChild.call(this, child) as T;
+    };
+
+    const originalInsertBefore = Node.prototype.insertBefore;
+    Node.prototype.insertBefore = function <T extends Node>(this: Node, newNode: T, referenceNode: Node | null): T {
+      if (referenceNode && referenceNode.parentNode !== this) {
+        if (typeof console !== "undefined") {
+          console.warn("DOM Exception prevented by extension workaround (insertBefore).");
+        }
+        return newNode;
+      }
+      return originalInsertBefore.call(this, newNode, referenceNode) as T;
+    };
+  }
 }
 
 export function Providers({ children }: { children: ReactNode }) {

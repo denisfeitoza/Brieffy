@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "crypto";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,15 @@ function safeCompare(a: string, b: string): boolean {
 
 export async function POST(req: Request) {
   try {
+    const ip = getRequestIP(req);
+    const rl = checkRateLimit(`doc_save:${ip}`, { maxRequests: 20, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Você atingiu o limite de requisições. Tente novamente em alguns instantes." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const { editToken, passphrase, documentContent } = await req.json();
 
     if (!editToken || !passphrase || documentContent === undefined) {

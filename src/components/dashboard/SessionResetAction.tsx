@@ -31,8 +31,7 @@ export function SessionResetAction({ sessionId }: { sessionId: string }) {
 
       toast.success('Briefing resetado com sucesso!');
       
-      // Redirect to the active briefing view
-      router.push(`/b/${sessionId}`);
+      // Update the page data instead of redirecting
       router.refresh();
     } catch (error) {
       console.error(error);

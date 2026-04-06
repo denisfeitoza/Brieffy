@@ -7,7 +7,7 @@ import { AILoadingSplash } from "./AILoadingSplash";
 import { ClientThankYouScreen } from "./ClientThankYouScreen";
 import { Button } from "@/components/ui/button";
 
-import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut } from "lucide-react";
+import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut, FastForward } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { DynamicInput } from "./DynamicInput";
@@ -324,6 +324,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   voiceLanguage={chosenLanguage}
                   messages={messages}
                   isDiscoveryPhase={isDiscoveryPhase}
+                  showVoiceTutorial={currentStepIndex === 1}
                 />
               )}
             </div>
@@ -339,13 +340,47 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   {t.goBackAdjust}
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => submitAnswer('(skipped)')}
-                  className="text-gray-400 hover:text-gray-600 rounded-full px-6 h-12 text-sm"
-                >
-                  {chosenLanguage === 'en' ? 'Skip' : 'Pular'}
-                </Button>
+                <div className="relative shrink-0 flex justify-end">
+                  <AnimatePresence>
+                    {currentStepIndex === 6 && !inputText && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                        transition={{ delay: 0.5, duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
+                        className="absolute bottom-[calc(100%+8px)] right-0 bg-gray-900 border border-white/10 text-white p-4 rounded-[1.25rem] shadow-2xl w-72 pointer-events-none origin-bottom-right z-50 flex items-start gap-4"
+                      >
+                        <div className="bg-gray-700/50 rounded-[0.85rem] p-2.5 shrink-0 shadow-inner border border-white/5">
+                          <FastForward className="w-5 h-5 text-gray-300" />
+                        </div>
+                        <div className="flex flex-col pt-0.5 text-left">
+                          <span className="font-bold text-[11px] text-gray-400 uppercase tracking-wider mb-1">
+                            {chosenLanguage === 'pt' ? 'Opcional' : chosenLanguage === 'es' ? 'Opcional' : 'Optional'}
+                          </span>
+                          <span className="font-semibold text-[15px] mb-1 leading-tight">
+                            {chosenLanguage === 'pt' ? 'Pule se quiser!' : chosenLanguage === 'es' ? '¡Omita si lo desea!' : 'Skip if needed!'}
+                          </span>
+                          <span className="text-[13px] text-gray-300 leading-relaxed">
+                            {chosenLanguage === 'pt' 
+                              ? 'Se a pergunta não fizer sentido para o momento atual da empresa, fique à vontade para pular.' 
+                              : chosenLanguage === 'es' 
+                              ? 'Si la pregunta no tiene sentido para el contexto actual, siéntete libre de omitirla.' 
+                              : 'If this question doesn\'t make sense for your current context, feel free to skip it.'}
+                          </span>
+                        </div>
+                        {/* Pointer triangle */}
+                        <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gray-900 border-r border-b border-white/10 rotate-45 rounded-sm" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => submitAnswer('(skipped)')}
+                    className="text-gray-400 hover:text-gray-600 rounded-full px-6 h-12 text-sm transition-colors"
+                  >
+                    {chosenLanguage === 'en' ? 'Skip' : 'Pular'}
+                  </Button>
+                </div>
               </div>
             )}
         </div>

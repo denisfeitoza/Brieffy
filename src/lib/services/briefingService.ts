@@ -315,13 +315,23 @@ export async function getUserQuota() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data: quota } = await supabase
     .from('briefing_quotas')
     .select('*')
     .eq('user_id', user.id)
     .single();
 
-  return data;
+  const { count: sessionCount } = await supabase
+    .from('briefing_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .not('template_id', 'is', null);
+
+  if (quota) {
+    quota.used_briefings = sessionCount || 0;
+  }
+
+  return quota;
 }
 
 // ========================

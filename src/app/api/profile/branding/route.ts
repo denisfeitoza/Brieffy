@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
 // BUG-02 FIX: This endpoint is intentionally public (serves the briefing wizard share page),
 // but we now validate the userId UUID format to prevent injection/enumeration attacks,
@@ -19,6 +20,14 @@ const supabase = createClient(
 // Used by the public briefing wizard to display the owner's branding
 export async function GET(request: Request) {
   try {
+    const ip = getRequestIP(request);
+    const rl = checkRateLimit(`profile_branding:${ip}`, { maxRequests: 60, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Você atingiu o limite de requisições. Tente novamente em alguns instantes." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 

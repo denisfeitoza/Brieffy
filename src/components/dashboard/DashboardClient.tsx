@@ -16,6 +16,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { exportSessionsAsZip } from '@/lib/exportZip';
 import { useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
+import { toast } from 'sonner';
 
 interface Session {
   id: string;
@@ -85,15 +86,20 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
   };
 
   const handleDelete = async (sessionId: string) => {
-    if (!confirm('Are you sure you want to delete this briefing? This action cannot be undone.')) return;
+    const isPt = language === 'pt';
+    const isEs = language === 'es';
+    if (!confirm(isPt ? 'Tem certeza que deseja apagar este briefing? Esta ação não pode ser desfeita.' : isEs ? '¿Estás seguro de que quieres eliminar este briefing? Esta acción no se puede deshacer.' : 'Are you sure you want to delete this briefing? This action cannot be undone.')) return;
     setDeletingId(sessionId);
     try {
-      const supabase = createClient();
-      await supabase.from('briefing_interactions').delete().eq('session_id', sessionId);
-      await supabase.from('briefing_sessions').delete().eq('id', sessionId);
+      const res = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete session');
+      toast.success(isPt ? 'Briefing apagado!' : isEs ? '¡Briefing eliminado!' : 'Briefing deleted!');
       router.refresh();
     } catch (error) {
       console.error('Failed to delete session:', error);
+      toast.error(isPt ? 'Erro ao apagar briefing. Tente novamente.' : isEs ? 'Error al eliminar el briefing. Inténtalo de nuevo.' : 'Error deleting briefing. Please try again.');
     } finally {
       setDeletingId(null);
     }

@@ -384,6 +384,56 @@ async function SessionContent({ id }: { id: string }) {
         </div>
       </div>
 
+      {/* ── TIMELINE DO STATUS ─────────────────────────── */}
+      {(() => {
+        const isFinished = session.status === 'finished';
+        const hasResponded = interactions.length > 0;
+        
+        let s1 = 'complete', s2 = 'upcoming', s3 = 'upcoming';
+        
+        if (isFinished) {
+          s1 = 'complete'; s2 = 'complete'; s3 = 'complete';
+        } else if (hasResponded) {
+          s1 = 'complete'; s2 = 'current'; s3 = 'upcoming';
+        } else {
+          s1 = 'current'; s2 = 'upcoming'; s3 = 'upcoming';
+        }
+
+        const steps = [
+          { name: 'Briefing Aberto', status: s1, icon: FileText },
+          { name: 'Respondendo', status: s2, icon: MessageSquare },
+          { name: 'Concluído', status: s3, icon: CheckCircle2 },
+        ];
+        return (
+          <div className="mb-10 pt-6 pb-8 print:hidden">
+            <nav aria-label="Progress">
+              <ol role="list" className="flex items-center w-full justify-between max-w-2xl mx-auto">
+                {steps.map((step, stepIdx) => (
+                  <li key={step.name} className="relative flex flex-col items-center flex-1">
+                    {stepIdx !== steps.length - 1 && (
+                      <div className={`absolute top-5 left-[50%] w-full h-[2px] ${step.status === 'complete' ? 'bg-[var(--orange)]' : 'bg-[var(--bd-strong)]'}`} aria-hidden="true" />
+                    )}
+                    
+                    <div 
+                      className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full ring-[6px] ring-[var(--bg)]
+                      ${step.status === 'complete' ? 'bg-[var(--orange)] text-white' : 
+                        step.status === 'current' ? 'border-2 border-[var(--orange)] bg-[var(--bg)] text-[var(--orange)]' : 
+                        'border-2 border-[var(--bd-strong)] bg-[var(--bg)] text-[var(--text3)]'}`}>
+                      <step.icon className="h-4 w-4" aria-hidden="true" />
+                    </div>
+                    <div className="absolute top-14 whitespace-nowrap text-center">
+                      <span className={`text-[11px] font-bold tracking-wider uppercase ${step.status === 'complete' || step.status === 'current' ? 'text-[var(--text)]' : 'text-[var(--text3)]'}`}>
+                        {step.name}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </div>
+        );
+      })()}
+
       {/* ── PEQUENO RESUMO DA SESSÃO ───────────────────── */}
       {(qualityScore !== null || (detectedSignals && detectedSignals.length > 0)) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[var(--bg2)] border border-[var(--bd)] p-4 rounded-2xl mb-6 print:hidden">
