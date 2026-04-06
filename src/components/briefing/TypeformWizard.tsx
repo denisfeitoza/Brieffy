@@ -7,7 +7,7 @@ import { AILoadingSplash } from "./AILoadingSplash";
 import { ClientThankYouScreen } from "./ClientThankYouScreen";
 import { Button } from "@/components/ui/button";
 
-import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut, FastForward } from "lucide-react";
+import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut, FastForward, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { DynamicInput } from "./DynamicInput";
@@ -166,6 +166,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   const [isRecording, setIsRecording] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [accessUnlocked, setAccessUnlocked] = useState(!hasAccessPassword);
+  const [dismissedSkipHint, setDismissedSkipHint] = useState(false);
   
   const mainRef = useRef<HTMLElement>(null);
   const [prevStep, setPrevStep] = useState(currentStepIndex);
@@ -342,7 +343,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                 </Button>
                 <div className="relative shrink-0 flex justify-end">
                   <AnimatePresence>
-                    {currentStepIndex === 6 && !inputText && (
+                    {currentStepIndex === 6 && !inputText && !dismissedSkipHint && (
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -350,10 +351,16 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                         transition={{ delay: 0.5, duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
                         className="absolute bottom-[calc(100%+8px)] right-0 bg-gray-900 border border-white/10 text-white p-4 rounded-[1.25rem] shadow-2xl w-72 pointer-events-none origin-bottom-right z-50 flex items-start gap-4"
                       >
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setDismissedSkipHint(true); }}
+                          className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors pointer-events-auto"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                         <div className="bg-gray-700/50 rounded-[0.85rem] p-2.5 shrink-0 shadow-inner border border-white/5">
                           <FastForward className="w-5 h-5 text-gray-300" />
                         </div>
-                        <div className="flex flex-col pt-0.5 text-left">
+                        <div className="flex flex-col pt-0.5 text-left pr-4">
                           <span className="font-bold text-[11px] text-gray-400 uppercase tracking-wider mb-1">
                             {chosenLanguage === 'pt' ? 'Opcional' : chosenLanguage === 'es' ? 'Opcional' : 'Optional'}
                           </span>
