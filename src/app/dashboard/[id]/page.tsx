@@ -422,7 +422,14 @@ async function SessionContent({ id }: { id: string }) {
         {session.final_assets?.document ? (
           <div className="p-6 md:p-12 lg:p-16 print:p-0 print:pt-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--bd)]">
-              <h2 className="text-2xl font-bold text-[var(--text)]">Resposta</h2>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[var(--orange)] text-white flex items-center justify-center font-black text-xl relative overflow-hidden print:!bg-[#ff6029] print:!text-white">
+                  B
+                  <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-white rounded-full print:!bg-white"></div>
+                </div>
+                <span className="font-bold text-xl tracking-tight text-[var(--text)]">Brieffy</span>
+              </div>
+              
               <div className="flex flex-wrap items-center gap-2 print:hidden">
                 <CopyButtons
                   markdown={session.final_assets.document}
