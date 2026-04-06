@@ -329,3 +329,18 @@
 /* Force standard paddings for PDF if using Tailwind's print modifiers */
 .pdf-mode-active .print\:p-0 { padding: 0 !important; }
 .pdf-mode-active .print\:pt-4 { padding-top: 1rem !important; }
+
+/* Avoid chopping text lines in half across PDF pages */
+.pdf-mode-active p,
+.pdf-mode-active h1,
+.pdf-mode-active h2,
+.pdf-mode-active h3,
+.pdf-mode-active h4,
+.pdf-mode-active li,
+.pdf-mode-active pre,
+.pdf-mode-active blockquote,
+.pdf-mode-active img,
+.pdf-mode-active .prose-li {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
