@@ -14,8 +14,8 @@ export default async function Image() {
     (
       <div
         style={{
-          background: '#09090b', // fallback
-          backgroundImage: 'radial-gradient(ellipse at top, #18181b 0%, #09090b 100%)',
+          background: '#0a0a0a', // fallback
+          backgroundImage: 'radial-gradient(ellipse at top, #141414 0%, #0a0a0a 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -27,7 +27,7 @@ export default async function Image() {
         }}
       >
         <div style={{ display: 'flex', fontSize: 140, fontWeight: 800, letterSpacing: '-0.05em' }}>
-          Brieffy<span style={{ color: '#3b82f6' }}>.</span>
+          Brieffy<span style={{ color: '#ff6029' }}>.</span>
         </div>
         <div style={{ display: 'flex', fontSize: 48, fontWeight: 500, color: '#a1a1aa', marginTop: 24, letterSpacing: '-0.02em' }}>
           Smart Briefing AI

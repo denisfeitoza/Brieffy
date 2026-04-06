@@ -2,13 +2,13 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Brieffy - Smart Briefing AI',
-    short_name: 'Brieffy',
+    name: 'brieffy. - simplify your requirements',
+    short_name: 'brieffy.',
     description: 'Sistema Adaptativo de Briefing Inteligente e Marketing',
     start_url: '/',
     display: 'standalone',
-    background_color: '#09090b',
-    theme_color: '#09090b',
+    background_color: '#0a0a0a',
+    theme_color: '#0a0a0a',
     orientation: 'portrait-primary',
     icons: [
       {

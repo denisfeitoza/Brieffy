@@ -437,9 +437,11 @@ export function BriefingProvider({
       }
     }
 
+    let snapshotMessages: Message[] = [];
     setMessages((prev) => {
       const newMessages = [...prev];
       newMessages[currentStepIndex] = { ...newMessages[currentStepIndex], userAnswer: answer };
+      snapshotMessages = newMessages;
       return newMessages;
     });
 
@@ -447,6 +449,13 @@ export function BriefingProvider({
 
     const activeSessionPromise = ensureSession();
     
+    // Persist immediately so user doesn't lose answer if they refresh
+    activeSessionPromise.then(activeSessionId => {
+      if (activeSessionId) {
+        persistSnapshot(snapshotMessages, currentStepIndex, activeSessionId);
+      }
+    }).catch(() => {});
+
     const currentMsgToLog = messages[currentStepIndex];
     const interactionPromise = activeSessionPromise.then(activeSessionId => {
       if (activeSessionId) {

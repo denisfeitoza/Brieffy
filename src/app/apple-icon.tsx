@@ -11,8 +11,8 @@ export default function AppleIcon() {
     (
       <div
         style={{
-          background: '#09090b',
-          backgroundImage: 'radial-gradient(ellipse at top, #18181b 0%, #09090b 100%)',
+          background: '#0a0a0a',
+          backgroundImage: 'radial-gradient(ellipse at top, #141414 0%, #0a0a0a 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -24,7 +24,7 @@ export default function AppleIcon() {
           fontFamily: 'sans-serif',
         }}
       >
-        B<span style={{ color: '#3b82f6', marginLeft: 4 }}>.</span>
+        B<span style={{ color: '#ff6029', marginLeft: 4 }}>.</span>
       </div>
     ),
     { ...size }

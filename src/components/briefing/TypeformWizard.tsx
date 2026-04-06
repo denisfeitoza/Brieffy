@@ -324,43 +324,45 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: direction > 0 ? -60 : 60, scale: 0.98 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="flex-1 flex flex-col p-6 overflow-y-auto"
+        className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto"
       >
-        <div className="max-w-3xl mx-auto w-full flex flex-col space-y-8 md:space-y-12 py-12">
-           {/* Discovery Badge */}
-           {isDiscoveryPhase && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[var(--orange)]/5 border border-[var(--orange)]/20 text-[var(--orange)] text-sm font-medium w-fit"
-              >
-                <span className="w-2 h-2 rounded-full bg-[var(--orange)] animate-pulse" />
-                {chosenLanguage === 'en' ? 'Speak freely — the more details, the better' : 'Fale livremente — quanto mais detalhes, melhor'}
-              </motion.div>
-            )}
+        <div className="max-w-3xl mx-auto w-full flex flex-col flex-1 h-full min-h-full py-2 sm:py-6 md:py-12">
+          <div className="flex-1 flex flex-col space-y-6 md:space-y-8 shrink-0">
+            {/* Discovery Badge */}
+            {isDiscoveryPhase && (
+               <motion.div
+                 initial={{ opacity: 0, y: -8 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[var(--orange)]/5 border border-[var(--orange)]/20 text-[var(--orange)] text-sm font-medium w-fit"
+               >
+                 <span className="w-2 h-2 rounded-full bg-[var(--orange)] animate-pulse" />
+                 {chosenLanguage === 'en' ? 'Speak freely — the more details, the better' : 'Fale livremente — quanto mais detalhes, melhor'}
+               </motion.div>
+             )}
 
-            {/* Micro-feedback */}
-            {activeMessage?.microFeedback && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white border border-gray-200 shadow-sm w-fit max-w-md"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--orange)] mt-2 shrink-0" />
-                <span className="text-[13px] text-gray-500 font-medium">{activeMessage.microFeedback}</span>
-              </motion.div>
-            )}
+             {/* Micro-feedback */}
+             {activeMessage?.microFeedback && (
+               <motion.div
+                 initial={{ opacity: 0, y: 12 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white border border-gray-200 shadow-sm w-fit max-w-md"
+               >
+                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--orange)] mt-2 shrink-0" />
+                 <span className="text-[13px] text-gray-500 font-medium">{activeMessage.microFeedback}</span>
+               </motion.div>
+             )}
 
-            {/* Question Text */}
-            <h1 
-              className="text-2xl md:text-5xl font-medium tracking-tight text-[var(--text)] leading-tight"
-              style={{ fontFamily: `"${activeFont}", sans-serif` }}
-            >
-              {activeMessage?.content}
-            </h1>
+             {/* Question Text */}
+             <h1 
+               className="text-3xl md:text-5xl font-medium tracking-tight text-[var(--text)] leading-tight"
+               style={{ fontFamily: `"${activeFont}", sans-serif` }}
+             >
+               {activeMessage?.content}
+             </h1>
+          </div>
 
             {/* Input Area */}
-            <div className="w-full">
+            <div className="w-full mt-6 sm:mt-auto shrink-0 flex flex-col justify-end">
               {isLoading ? (
                 <AIThinkingAnimation 
                   language={chosenLanguage} 
@@ -440,7 +442,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
       {!showSplash && (
         <div className="flex flex-col h-full">
           {/* Header */}
-          <header className="flex items-center justify-between p-4 md:px-8 h-20 shrink-0 border-b border-[var(--bd)]">
+          <header className="flex items-center justify-between p-3 md:p-4 md:px-8 h-16 md:h-20 shrink-0 border-b border-[var(--bd)]">
             <div className="flex items-center gap-4">
               {currentStepIndex > 0 && !isFinished && (
                 <Button variant="ghost" size="icon" onClick={goBack} className="rounded-full w-10 h-10 border border-[var(--bd)] bg-white text-black hover:bg-gray-50">

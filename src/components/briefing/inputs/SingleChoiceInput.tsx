@@ -148,7 +148,7 @@ export function SingleChoiceInput({
                   key={optKey}
                   onClick={() => handleOptionClick(optText)}
                   disabled={isLoading || isSubmittingLocal}
-                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border transition-all text-center min-h-[160px] md:min-h-[200px] group cursor-pointer ${
+                  className={`flex flex-col items-center justify-center gap-3 p-4 sm:p-6 rounded-2xl border transition-all text-center min-h-[140px] md:min-h-[200px] group cursor-pointer ${
                     isNoneOption
                       ? "border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400"
                       : "border-gray-200 bg-white hover:bg-[var(--orange)]/5 hover:border-[var(--orange)]/30 shadow-sm hover:-translate-y-1"
@@ -280,7 +280,7 @@ export function SingleChoiceInput({
         <strong className="text-[var(--orange)] font-semibold text-[15px]">{t.onlyOneLabel}</strong>{" "}
         {t.optionLabel}
       </p>
-      <div className="flex flex-wrap gap-2 md:gap-3 items-center w-full">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center w-full">
         {options.map((opt, idx) => {
           const { text: optText, key: optKey } = parseOption(opt, idx);
           return (
@@ -290,7 +290,7 @@ export function SingleChoiceInput({
               size="lg"
               onClick={() => handleOptionClick(optText)}
               disabled={isLoading || isSubmittingLocal}
-              className="rounded-full bg-white border-gray-200 hover:border-[var(--orange)]/40 hover:bg-[var(--orange)]/5 text-black shadow-sm min-h-[48px] h-12 md:h-14 md:px-6 font-medium tracking-wide transition-all active:scale-[0.97]"
+              className="rounded-2xl sm:rounded-full bg-white border-gray-200 hover:border-[var(--orange)]/40 hover:bg-[var(--orange)]/5 text-black shadow-sm min-h-[56px] h-auto py-3 px-5 md:px-6 font-medium tracking-wide transition-all active:scale-[0.97] justify-start sm:justify-center text-left sm:text-center whitespace-normal break-words"
             >
               {optText}
             </Button>
@@ -302,7 +302,7 @@ export function SingleChoiceInput({
             size="lg"
             onClick={generateMoreOptions}
             disabled={isGeneratingMore || isLoading || isSubmittingLocal}
-            className="rounded-full text-[var(--orange)] hover:text-[#e05221] hover:bg-[var(--orange)]/10 h-12 md:h-14 font-medium"
+            className="rounded-full justify-center text-[var(--orange)] hover:text-[#e05221] hover:bg-[var(--orange)]/10 min-h-[56px] h-auto py-3 md:h-14 font-medium"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingMore ? "animate-spin" : ""}`} />
             {t.otherOptions}

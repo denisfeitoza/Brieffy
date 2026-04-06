@@ -11,25 +11,25 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Brieffy | Smart Briefing AI",
-  description: "Adaptive Intelligent Briefing System for diagnostics, marketing, and branding. Generate complete briefings in minutes with Brieffy.",
+  title: "brieffy. | simplify your requirements",
+  description: "Sistema Adaptativo de Briefing Inteligente para diagnósticos, marketing e branding. Extraia insights e consolide sua estratégia em minutos.",
   openGraph: {
-    title: "Brieffy | Smart Briefing AI",
-    description: "Adaptive Intelligent Briefing System for diagnostics, marketing, and branding.",
+    title: "brieffy. | simplify your requirements",
+    description: "Sistema Adaptativo de Briefing Inteligente para diagnósticos, marketing e branding.",
     url: "https://brieffy.com",
-    siteName: "Brieffy",
-    locale: "en_US",
-    alternateLocale: ["pt_BR", "es_ES"],
+    siteName: "brieffy.",
+    locale: "pt_BR",
+    alternateLocale: ["en_US", "es_ES"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Brieffy | Smart Briefing AI",
-    description: "Adaptive Intelligent Briefing System for diagnostics, marketing, and branding.",
+    title: "brieffy. | simplify your requirements",
+    description: "Sistema Adaptativo de Briefing Inteligente para diagnósticos, marketing e branding.",
   },
   appleWebApp: {
-    title: "Brieffy",
-    statusBarStyle: "default",
+    title: "brieffy.",
+    statusBarStyle: "black-translucent",
     capable: true,
   },
 };

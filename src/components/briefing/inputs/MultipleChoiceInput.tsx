@@ -85,7 +85,7 @@ export function MultipleChoiceInput({
           return (
             <label
               key={optKey}
-              className={`flex items-center gap-3 p-4 min-h-[48px] rounded-xl border cursor-pointer transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-3 p-4 sm:p-5 min-h-[56px] rounded-xl border cursor-pointer transition-all active:scale-[0.98] ${
                 isSelected
                   ? "border-[var(--orange)] bg-[var(--orange)]/5 ring-1 ring-[var(--orange)]/30"
                   : "border-gray-200 bg-white hover:border-[var(--orange)]/30 shadow-sm"
