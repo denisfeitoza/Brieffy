@@ -97,7 +97,7 @@ export async function POST(
     };
     const t = t_labels[chosenLanguage] || t_labels.pt;
 
-    const systemPrompt = `${t.role}\n\n${t.langRule}\n\n${t.task}\n\nTEMPLATE: ${templateName}\n\nDATA:\n${JSON.stringify(briefingState, null, 2)}\n\nTRANSCRIPT:\n${conversationTranscript}\n\nRULES:\n- Write in ${targetLang}\n- Be extremely detailed\n- Professional agency-level tone\n- ${t.watermark}`;
+    const systemPrompt = `${t.role}\n\n${t.langRule}\n\n${t.task}\n\nTEMPLATE: ${templateName}\n\nDATA:\n${JSON.stringify(briefingState, null, 2)}\n\nTRANSCRIPT:\n${conversationTranscript}\n\nRULES:\n- Write in ${targetLang}\n- Be extremely detailed\n- Professional agency-level tone\n- IT IS STRICTLY PROHIBITED TO USE EMOJIS ANYWHERE IN THE DOCUMENT.\n- ${t.watermark}`;
 
     // 3. Call LLM
     const res = await fetch(llmConfig.baseUrl, {
