@@ -101,7 +101,8 @@ const SECTION_PIPELINE = [
   { id: "delivery", title: "Expectations & Delivery", priority: 6 }
 ];
 
-const ABSOLUTE_MAX_QUESTIONS = 20;
+const BASE_MIN_QUESTIONS = 25;
+const ABSOLUTE_MAX_QUESTIONS = 50; // Just as a global fail-safe cap
 const MIN_MEANINGFUL_VALUE_LENGTH = 3;
 
 function calculateEngagement(history: { role: string; content: string }[]): 'high' | 'medium' | 'low' {
@@ -265,15 +266,21 @@ export async function POST(req: Request) {
     const currentBasalCoverage = calculateQualityBasalCoverage(currentState || {}, basalFields);
     const backendEngagement = calculateEngagement(history || []);
 
+    const packageCount = selectedPackages?.length || 0;
+    const minQuestions = BASE_MIN_QUESTIONS + (packageCount * 3); // Aumenta 3 perguntas por pacote ativo
+    
     let currentPhase: BriefingPhase = 'discovery';
-    if (questionCount >= 3 && currentBasalCoverage >= 0.2) currentPhase = 'confirm';
-    if (questionCount >= 6 && currentBasalCoverage >= 0.4) currentPhase = 'depth';
-    if (currentBasalCoverage >= perfConfig.basalThreshold && questionCount >= 8) currentPhase = 'finalize';
+    const confirmThreshold = Math.floor(minQuestions * 0.3); // ~8
+    const depthThreshold = Math.floor(minQuestions * 0.6); // ~15
+    
+    if (questionCount >= confirmThreshold && currentBasalCoverage >= 0.2) currentPhase = 'confirm';
+    if (questionCount >= depthThreshold && currentBasalCoverage >= 0.4) currentPhase = 'depth';
+    if (currentBasalCoverage >= perfConfig.basalThreshold && questionCount >= minQuestions) currentPhase = 'finalize';
 
     // ================================================================
     // CIRCUIT BREAKER — Hard limit enforced in code, not just prompt
     // ================================================================
-    const maxQForEngagement = backendEngagement === 'low' ? 8 : backendEngagement === 'medium' ? 12 : 16;
+    const maxQForEngagement = backendEngagement === 'low' ? minQuestions + 5 : backendEngagement === 'medium' ? minQuestions + 10 : minQuestions + 15;
     const effectiveMax = Math.min(maxQForEngagement, ABSOLUTE_MAX_QUESTIONS);
     const forceFinish = questionCount >= effectiveMax;
     if (forceFinish) {
@@ -339,7 +346,9 @@ export async function POST(req: Request) {
       generateMore,
       basalThreshold: perfConfig.basalThreshold,
       backendEngagement,
-      selectedPackages
+      selectedPackages,
+      minQuestions,
+      questionCount
     });
 
     const OUTPUT_FORMAT = buildOutputFormat(backendEngagement);

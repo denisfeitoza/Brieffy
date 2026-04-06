@@ -48,7 +48,7 @@ Variedade total de questionType. Varie tipos (nunca 3 consecutivos iguais).
 micro_feedback: max 1 a cada 3-4 perguntas. Sem emojis.
 </Fase>`,
   finalize: (forceFinish = false) => `<Fase nome="FINALIZAÇÃO">
-${forceFinish ? 'CIRCUIT BREAKER ATIVO: limite de perguntas atingido. Você DEVE finalizar AGORA com isFinished=true.' : ''}
+${forceFinish ? 'CIRCUIT BREAKER ATIVO: limite MÁXIMO absoluto de perguntas atingido. Você DEVE finalizar AGORA com isFinished=true.' : ''}
 Escaneie basalFieldsMissing + pacotes ativos. Se houver lacunas + engagement não baixo: 1-3 perguntas rápidas táteis.
 Se engagement="low": infira campos restantes (confiança 0.5-0.7).
 Quando isFinished=true inclua: session_quality_score (0-100).
@@ -82,13 +82,17 @@ interface BehaviorRulesParams {
   basalThreshold: number;
   backendEngagement: string;
   selectedPackages: string[];
+  minQuestions: number;
+  questionCount: number;
 }
 
 export function buildBehaviorRules(params: BehaviorRulesParams): string {
-  const { generateMore, basalThreshold, backendEngagement, selectedPackages } = params;
+  const { generateMore, basalThreshold, backendEngagement, selectedPackages, minQuestions, questionCount } = params;
   return `<RegrasDeComportamento>
 - ${generateMore ? 'generateMore=true: APENAS mude as opções, sem nova pergunta.' : 'Formule a PRÓXIMA pergunta.'}
-- Se basalCoverage>=${basalThreshold} E objetivos atingidos: isFinished=true, preencha assets.
+- MÍNIMO DE PERGUNTAS (ESTRUTURA MAIOR): O briefing DEVE ter no mínimo ${minQuestions} perguntas antes de ser finalizado. Vocês já fizeram ${questionCount} perguntas.
+- NUNCA finalize o briefing (isFinished=true) se o número atual de perguntas (${questionCount}) for menor que o mínimo de ${minQuestions}. Não se apresse! Continue explorando os pacotes e tópicos detalhadamente.
+- Se basalCoverage>=${basalThreshold} E objetivos atingidos E JÁ FEZ PELO MENOS ${minQuestions} PERGUNTAS: isFinished=true, preencha assets.
 - ANTI-REPETIÇÃO: Verifique <PreviousQuestions>. NUNCA gere pergunta semanticamente similar.
 - **FOCO EM PILARES CRÍTICOS**: Se os campos 'target_audience' (Público Alvo) ou 'brand_tone' (Tom de Voz) ainda estiverem vazios em <CurrentState>, você DEVE PRIORIZAR a coleta desses dados.
 - **MÚLTIPLA ESCOLHA PARA CAMPOS LIMITADOS**: Quando fizer perguntas sobre 'tone_of_voice' (tom de voz), personalidade ou canais de comunicação, NUNCA faça pergunta aberta ("text"). Você DEVE oferecer opções sugeridas usando os formatos 'single_choice' ou 'multiple_choice' para facilitar a resposta, já que tecnicamente existem escolhas limitadas nestes tópicos.

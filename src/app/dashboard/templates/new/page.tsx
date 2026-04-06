@@ -573,7 +573,7 @@ export default function NewBriefingWizard() {
                   >
                     <Wand2 className="w-4 h-4 text-brieffy-orange flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed italic">
-                      "{aiReasoning}"
+                      &quot;{aiReasoning}&quot;
                     </p>
                   </motion.div>
                 )}

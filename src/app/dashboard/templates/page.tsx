@@ -4,19 +4,51 @@ import { getTemplates } from '@/lib/services/briefingService';
 import { GenerateLinkModal } from '@/components/dashboard/GenerateLinkModal';
 import { TemplatesPageHeader, TemplatesEmptyState } from '@/components/dashboard/TemplatesI18n';
 import { Suspense } from 'react';
+import { DeleteSessionButton } from '@/components/dashboard/DeleteSessionButton';
+import { getUserQuota } from '@/lib/services/briefingService';
 
 export const dynamic = 'force-dynamic';
 
 // ── Async data component — streamed independently ──────────────────
 async function TemplatesList() {
-  const templates = await getTemplates();
+  const [templates, quota] = await Promise.all([
+    getTemplates(),
+    getUserQuota()
+  ]);
 
   if (!templates || templates.length === 0) {
     return <TemplatesEmptyState />;
   }
 
+  // Quota banner logic
+  const used = quota?.used_briefings || 0;
+  const max = quota?.max_briefings || 0;
+  const available = Math.max(0, max - used);
+  const isNearLimit = available <= 1;
+
   return (
-    <div className="grid grid-cols-1 mb-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="flex flex-col gap-6 mb-8">
+      {max > 0 && (
+        <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${isNearLimit ? 'bg-red-500/10 border-red-500/20' : 'bg-[var(--acbg)] border-[var(--acbd)]'}`}>
+          <div>
+            <h4 className={`text-sm font-bold ${isNearLimit ? 'text-red-500' : 'text-[var(--actext)]'}`}>
+              Briefings Disponíveis: {available} / {max}
+            </h4>
+            <p className="text-xs text-[var(--text2)] mt-0.5">
+              {isNearLimit 
+                ? 'Você está perto do limite ou já o atingiu. Adquira mais pacotes para continuar criando briefings.' 
+                : 'Você tem briefings sobrando. Use-os para gerar novos documentos estratégicos!'}
+            </p>
+          </div>
+          <Link href="/dashboard/packages" className="mt-3 sm:mt-0 shrink-0">
+            <button className={`px-4 py-2 text-xs font-bold rounded-full transition-colors ${isNearLimit ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-black text-[var(--orange)] hover:opacity-90'}`}>
+              Comprar mais
+            </button>
+          </Link>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {templates.map((template) => (
         <div
           key={template.id}
@@ -39,18 +71,6 @@ async function TemplatesList() {
                 </p>
               </div>
             )}
-            {template.depth_signals && template.depth_signals.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {template.depth_signals.slice(0, 3).map((signal: string) => (
-                  <span key={signal} className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--bg2)] text-[var(--text2)] border border-[var(--bd)] font-medium">
-                    {signal}
-                  </span>
-                ))}
-                {template.depth_signals.length > 3 && (
-                  <span className="text-[10px] text-[var(--text3)] self-center font-medium">+{template.depth_signals.length - 3}</span>
-                )}
-              </div>
-            )}
           </Link>
 
           <div className="px-6 pb-6 pt-0">
@@ -63,10 +83,14 @@ async function TemplatesList() {
                   edit_passphrase: template.briefing_sessions[0].edit_passphrase
                 } : undefined}
               />
+              {template.briefing_sessions?.[0] && (
+                <DeleteSessionButton sessionId={template.briefing_sessions[0].id} />
+              )}
             </div>
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }

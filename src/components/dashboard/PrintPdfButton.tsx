@@ -1,16 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let html2pdf: any;
-if (typeof window !== "undefined") {
-  import("html2pdf.js").then((mod) => {
-    html2pdf = mod.default || mod;
-  });
-}
 
 interface PrintPdfButtonProps {
   className?: string;
@@ -18,16 +11,30 @@ interface PrintPdfButtonProps {
 }
 
 export function PrintPdfButton({ className, pdfSelector = '.a4-document-container' }: PrintPdfButtonProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const handleGeneratePdf = async () => {
     try {
-      if (!html2pdf) {
-        toast.error('Utilitário PDF carregando ou indisponível.');
-        return;
-      }
+      if (isGenerating) return;
       
       const element = document.querySelector(pdfSelector);
       if (!element) {
         toast.error('Conteúdo do documento não encontrado.');
+        return;
+      }
+      
+      setIsGenerating(true);
+      toast.info('Preparando o documento PDF...');
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let html2pdf: any;
+      try {
+        const mod = await import('html2pdf.js');
+        html2pdf = mod.default || mod;
+      } catch (err) {
+        console.error("Erro importando html2pdf:", err);
+        toast.error('Erro ao carregar renderizador PDF.');
+        setIsGenerating(false);
         return;
       }
 
@@ -41,12 +48,23 @@ export function PrintPdfButton({ className, pdfSelector = '.a4-document-containe
 
       element.classList.add("pdf-mode-active");
       
+      interface JsPDFType {
+        internal: {
+          getNumberOfPages: () => number;
+          pageSize: { getWidth: () => number; getHeight: () => number };
+        };
+        setPage: (i: number) => void;
+        setFontSize: (size: number) => void;
+        setTextColor: (r: number, g: number, b: number) => void;
+        text: (text: string, x: number, y: number, options?: { align: string }) => void;
+      }
+
       await html2pdf()
         .from(element)
         .set(opt)
         .toPdf()
         .get('pdf')
-        .then((pdf: any) => {
+        .then((pdf: JsPDFType) => {
           const totalPages = pdf.internal.getNumberOfPages();
           for (let i = 1; i <= totalPages; i++) {
             pdf.setPage(i);
@@ -69,6 +87,8 @@ export function PrintPdfButton({ className, pdfSelector = '.a4-document-containe
       if (element) element.classList.remove("pdf-mode-active");
       toast.error('Falha ao gerar o PDF Premium.');
       console.error(e);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -76,11 +96,12 @@ export function PrintPdfButton({ className, pdfSelector = '.a4-document-containe
     <Button
        variant="outline"
        onClick={handleGeneratePdf}
+       disabled={isGenerating}
        className={`bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)] shadow-sm h-10 ${className?.replace('hidden sm:flex', '') || ''}`}
        title="Baixar PDF"
     >
        <Download className="w-4 h-4 mr-2" />
-       Baixar PDF
+       {isGenerating ? 'Gerando...' : 'Baixar PDF'}
     </Button>
   );
 }
