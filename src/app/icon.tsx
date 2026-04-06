@@ -24,7 +24,7 @@ export default function Icon() {
           fontFamily: 'sans-serif',
         }}
       >
-        B<span style={{ color: '#ff6029', marginLeft: 8 }}>.</span>
+        b<span style={{ color: '#ff6029', marginLeft: 8 }}>.</span>
       </div>
     ),
     { ...size }

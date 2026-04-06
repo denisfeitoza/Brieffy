@@ -16,6 +16,7 @@ import { humanizeFieldKey } from '@/lib/briefing/fieldLabels';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { GenerateDocumentAction } from '@/components/dashboard/GenerateDocumentAction';
 import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
+import { PrintPdfButton } from '@/components/dashboard/PrintPdfButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -192,17 +193,11 @@ async function SessionContent({ id }: { id: string }) {
             </div>
           )}
 
-          {/* ── BOTÃO IMPRIMIR ────────────────────────────────────── */}
+          {/* ── BOTOES DE PDF / IMPRIMIR ────────────────────────────────────── */}
           {session.final_assets?.document && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)] hidden sm:flex"
-              onClick={() => window.print()}
-              title="Imprimir / Salvar PDF"
-            >
-              <Printer className="w-4 h-4" />
-            </Button>
+            <div className="flex gap-2">
+              <PrintPdfButton className="shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)] hidden sm:flex" />
+            </div>
           )}
 
           {/* ── SHEET: MAIS OPÇÕES E METADADOS ──────────────────────── */}

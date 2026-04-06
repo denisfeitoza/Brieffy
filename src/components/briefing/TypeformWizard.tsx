@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { DynamicInput } from "./DynamicInput";
 import { InsightsPanel } from "./InsightsPanel";
 import { BrandedLogo } from "./BrandedLogo";
@@ -237,84 +236,21 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   // ==========================
 
   const renderContent = () => {
-    // 1. FINISHED STATE (Document Editor)
+    // 1. FINISHED STATE (Thank You Screen)
     if (isFinished) {
       return (
-        <motion.div
-          key="finished-view"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col h-full bg-white"
-        >
-          <DocumentEditor 
-            initialContent={generatedDocument!} 
-            onSave={async (newContent) => {
-               const res = await fetch("/api/document/save", {
-                 method: "POST",
-                 headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({
-                   editToken,
-                   passphrase: editPassphrase,
-                   documentContent: newContent
-                 })
-               });
-               if (!res.ok) throw new Error("Erro ao salvar.");
-            }}
-          />
-        </motion.div>
+        <ClientThankYouScreen 
+          branding={branding}
+          activeColor={activeColor}
+          activeCompanyName={activeCompanyName}
+          activeFont={activeFont}
+          t={t}
+          messages={messages}
+        />
       );
     }
 
-    // 2. UPLOAD/GENERATE STATE
-    if (isUploadStep || isGeneratingDocument) {
-      return (
-        <motion.div
-          key="upload-view"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-8"
-        >
-          {isGeneratingDocument ? (
-            <div className="space-y-6">
-               <AIThinkingAnimation 
-                  language={chosenLanguage} 
-                  brandColor={activeColor}
-                  accentColor={branding.brand_accent || '#000000'}
-                />
-                <h2 className="text-2xl font-medium text-[var(--text)]">{t.generatingDoc}</h2>
-                <p className="text-gray-500 max-w-sm mx-auto">
-                  {t.analyzingResponses.replace('{count}', messages.length.toString())}
-                </p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-4">
-                <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-[var(--text)] leading-tight" style={{ fontFamily: '"DM Sans", sans-serif' }}>
-                  {documentError ? 'Algo deu errado' : t.allSet}
-                </h1>
-                <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed">
-                  {documentError ? documentError : t.uploadRef}
-                </p>
-              </div>
 
-              <div className={`w-24 h-24 rounded-full flex items-center justify-center ${documentError ? 'bg-red-50' : 'bg-[var(--orange)]/10'}`}>
-                {documentError ? <span className="text-4xl">⚠️</span> : <Sparkles className="w-10 h-10 text-[var(--orange)]" />}
-              </div>
-              
-              <Button 
-                onClick={generateDocument}
-                className={`w-full max-w-md h-16 text-lg font-bold rounded-full transition-all ${
-                  documentError ? 'bg-red-600 text-white' : 'bg-[var(--orange)] text-black hover:opacity-90'
-                }`}
-              >
-                {documentError ? 'Tentar Novamente' : <>{t.generateDiag} <ArrowRight className="w-5 h-5 ml-2" /></>}
-              </Button>
-            </>
-          )}
-        </motion.div>
-      );
-    }
 
     // 3. WIZARD FLOW
     return (

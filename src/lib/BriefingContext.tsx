@@ -598,7 +598,10 @@ export function BriefingProvider({
           try { localStorage.setItem('brieffy_just_onboarded', Date.now().toString()); } catch {}
           window.location.href = '/dashboard';
         } else {
-          setIsUploadStep(true);
+          // Auto-generate doc
+          if (!generatedDocument && !isGeneratingDocument) {
+            generateDocument();
+          }
         }
       } else {
         if (data.engagement_level) setEngagementLevel(data.engagement_level);
