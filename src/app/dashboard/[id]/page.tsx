@@ -423,10 +423,11 @@ async function SessionContent({ id }: { id: string }) {
           <div className="p-6 md:p-12 lg:p-16 print:p-0 print:pt-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--bd)]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[var(--orange)] text-white flex items-center justify-center font-black text-xl relative overflow-hidden print:!bg-[#ff6029] print:!text-white">
-                  B
-                  <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-white rounded-full print:!bg-white"></div>
-                </div>
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+                  <rect width="32" height="32" rx="9" fill="#ff6029" />
+                  <circle cx="26" cy="6" r="2.5" fill="white" />
+                  <text x="16" y="23.5" fontFamily="system-ui, -apple-system, sans-serif" fontSize="21" fontWeight="900" fill="white" textAnchor="middle">B</text>
+                </svg>
                 <span className="font-bold text-xl tracking-tight text-[var(--text)]">Brieffy</span>
               </div>
               
