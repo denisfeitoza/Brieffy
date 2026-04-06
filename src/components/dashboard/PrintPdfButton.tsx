@@ -48,25 +48,14 @@ export function PrintPdfButton({ className, pdfSelector = '.a4-document-containe
   };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={handlePrint}
-        className={className}
-        title="Imprimir (Padrão)"
-      >
-        <Printer className="w-4 h-4" />
-      </Button>
-      <Button
-         variant="default"
-         onClick={handleGeneratePdf}
-         className={`bg-[var(--orange)] hover:opacity-90 text-white shadow-sm ${className?.replace('hidden sm:flex', '')}`}
-         title="Baixar PDF Premium"
-      >
-         <Download className="w-4 h-4 mr-2" />
-         PDF Premium
-      </Button>
-    </>
+    <Button
+       variant="outline"
+       onClick={handleGeneratePdf}
+       className={`bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)] shadow-sm h-10 ${className?.replace('hidden sm:flex', '')}`}
+       title="Baixar PDF"
+    >
+       <Download className="w-4 h-4 mr-2" />
+       Baixar PDF
+    </Button>
   );
 }

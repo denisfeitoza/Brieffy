@@ -11,14 +11,13 @@ export default function Icon() {
     (
       <div
         style={{
-          background: '#0a0a0a',
-          backgroundImage: 'radial-gradient(ellipse at top, #141414 0%, #0a0a0a 100%)',
+          background: '#ff6029',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#ff6029',
+          color: 'white',
           fontSize: 320,
           fontWeight: 800,
           fontFamily: 'sans-serif',

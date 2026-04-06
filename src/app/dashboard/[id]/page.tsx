@@ -1,5 +1,7 @@
 import { getSessionById, getInteractionsBySession } from '@/lib/services/briefingService';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -184,21 +186,7 @@ async function SessionContent({ id }: { id: string }) {
         </div>
 
         <div className="flex items-center gap-2 self-start md:self-auto shrink-0 w-full md:w-auto">
-          {session.final_assets?.document && (
-            <div className="flex-1 md:flex-none">
-              <CopyButtons
-                markdown={session.final_assets.document}
-                html={simpleMarkdownToHtml(session.final_assets.document)}
-              />
-            </div>
-          )}
-
-          {/* ── BOTOES DE PDF / IMPRIMIR ────────────────────────────────────── */}
-          {session.final_assets?.document && (
-            <div className="flex gap-2">
-              <PrintPdfButton className="shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)] hidden sm:flex" />
-            </div>
-          )}
+          {/* ── EXPORT BOTÕES MOVIDOS PARA O MENU "MAIS OPÇÕES" ───────────────── */}
 
           {/* ── SHEET: MAIS OPÇÕES E METADADOS ──────────────────────── */}
           <Sheet>
@@ -394,12 +382,12 @@ async function SessionContent({ id }: { id: string }) {
                       <FileText className="w-4 h-4 text-[var(--text2)]" />
                       Exportar Documento
                     </h3>
-                    <div className="flex flex-col gap-3 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 lg:gap-3 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 w-full">
                       <CopyButtons
                         markdown={session.final_assets.document}
                         html={simpleMarkdownToHtml(session.final_assets.document)}
                       />
-                      <PrintPdfButton className="w-full bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg)] shadow-sm" />
+                      <PrintPdfButton className="flex-1 w-full" />
                     </div>
                   </section>
                 )}
@@ -479,6 +467,7 @@ async function SessionContent({ id }: { id: string }) {
       <div className="print:shadow-none print:border-0 print:m-0 print:p-0 bg-[var(--bg)] text-[var(--text)] border border-[var(--bd-strong)] shadow-sm rounded-2xl md:rounded-[2rem] overflow-hidden min-h-[60vh]">
         {session.final_assets?.document ? (
           <div className="p-6 md:p-12 lg:p-16 print:p-0 print:pt-4">
+            <h2 className="text-2xl font-bold text-[var(--text)] mb-6 pb-4 border-b border-[var(--bd)]">Resposta</h2>
             <div
               className="prose max-w-3xl mx-auto
                 prose-headings:font-bold prose-headings:tracking-tight
@@ -490,8 +479,11 @@ async function SessionContent({ id }: { id: string }) {
                 prose-strong:text-[var(--text)] prose-strong:font-bold
                 prose-blockquote:border-l-4 prose-blockquote:border-[var(--orange)] prose-blockquote:bg-[var(--bg2)] prose-blockquote:px-5 prose-blockquote:py-3 prose-blockquote:rounded-r-xl prose-blockquote:text-[var(--text2)] prose-blockquote:not-italic prose-blockquote:my-6
                 prose-a:text-[var(--orange)] prose-a:no-underline hover:prose-a:underline"
-              dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(session.final_assets.document) }}
-            />
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {session.final_assets.document}
+              </ReactMarkdown>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text3)] p-6 text-center">
