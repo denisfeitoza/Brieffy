@@ -165,7 +165,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { currentState, history, generateMore, activeTemplate, chosenLanguage, selectedPackages, detectedSignals: previousSignals, isResume } = body;
+    const { currentState, history, generateMore, activeTemplate, chosenLanguage, selectedPackages, detectedSignals: previousSignals, isResume, briefingPurpose: sessionPurpose, depthSignals: sessionDepthSignals } = body;
 
     // RESUME SUPPORT: when resuming, use the last real answer from history (not the __RESUME__ token)
     let answer = body.answer;
@@ -229,8 +229,8 @@ export async function POST(req: Request) {
       ? `Template: ${activeTemplate.name} (${activeTemplate.category}). Goals: ${activeTemplate.objectives.join(", ")}. Core fields: ${activeTemplate.core_fields.join(", ")}`
       : 'No template. General business interview.';
 
-    const briefingPurpose = activeTemplate?.briefing_purpose || '';
-    const depthSignals = activeTemplate?.depth_signals || [];
+    const briefingPurpose = sessionPurpose || activeTemplate?.briefing_purpose || '';
+    const depthSignals = sessionDepthSignals || activeTemplate?.depth_signals || [];
     const previousSignalsList = Array.isArray(previousSignals) ? previousSignals : [];
     const allPurposes = [briefingPurpose, ...packageData.purposes].filter(Boolean);
     const allDepthSignals = [...depthSignals, ...packageData.depthSignals];

@@ -6,7 +6,7 @@ import {
   Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu,
   Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck,
   Lightbulb, Shield, Server, ShoppingCart, Video,
-  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2, ShieldCheck,
+  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2, ShieldCheck, Target, X,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -60,6 +60,9 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
   // Form state
   const [sessionName, setSessionName] = useState('');
   const [initialContext, setInitialContext] = useState('');
+  const [briefingPurpose, setBriefingPurpose] = useState('');
+  const [depthSignals, setDepthSignals] = useState<string[]>([]);
+  const [newSignal, setNewSignal] = useState('');
   const [editPassphrase, setEditPassphrase] = useState('');
   const [accessPassword, setAccessPassword] = useState('');
   const [showContext, setShowContext] = useState(false);
@@ -133,6 +136,9 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
           setStep('create');
           setSessionName('');
           setInitialContext('');
+          setBriefingPurpose('');
+          setDepthSignals([]);
+          setNewSignal('');
           setEditPassphrase('');
           setAccessPassword('');
           setGeneratedLink('');
@@ -156,6 +162,27 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
         ? prev.filter(s => s !== slug)
         : [...prev, slug]
     );
+  };
+
+  const addSignal = (value: string = newSignal) => {
+    const signals = value.split(',').map(s => s.trim()).filter(s => s !== '' && !depthSignals.includes(s));
+    if (signals.length > 0) {
+      setDepthSignals(prev => [...prev, ...signals]);
+      setNewSignal('');
+    }
+  };
+
+  const handleSignalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.includes(',')) {
+      addSignal(value);
+    } else {
+      setNewSignal(value);
+    }
+  };
+
+  const removeSignal = (signal: string) => {
+    setDepthSignals(prev => prev.filter(s => s !== signal));
   };
 
   const suggestPackages = useCallback(async () => {
@@ -205,6 +232,8 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
           templateId,
           sessionName: sessionName.trim(),
           initialContext: initialContext.trim(),
+          briefingPurpose: briefingPurpose.trim(),
+          depthSignals,
           selectedPackages: selectedSlugs,
           editPassphrase: editPassphrase.trim(),
           accessPassword: accessPassword.trim()
@@ -341,6 +370,20 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                 />
               </div>
 
+              {/* ── Briefing Purpose ───────────────────────────── */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">2</span>
+                  Propósito <span className="text-[var(--actext)] lowercase font-medium">({t('modal.required')})</span>
+                </label>
+                <Input
+                  placeholder="Ex: Quero descobrir as maiores dores do meu cliente ideal..."
+                  value={briefingPurpose}
+                  onChange={(e) => setBriefingPurpose(e.target.value)}
+                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-12 text-base rounded-full px-6 placeholder:text-[var(--text3)]"
+                />
+              </div>
+
               {/* ── Context (Collapsible) ────────────────────────── */}
               <div className="space-y-2">
                 <button
@@ -348,7 +391,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                   onClick={() => setShowContext(!showContext)}
                   className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
                 >
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">2</span>
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">3</span>
                   {t('modal.priorContext')}
                   <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
                   <ChevronDown className={`w-4 h-4 text-[var(--text3)] ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
@@ -398,6 +441,50 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                 </AnimatePresence>
               </div>
 
+              {/* ── Depth Signals ───────────────────────────── */}
+              <div className="space-y-3">
+                <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">4</span>
+                  Pontos Sensíveis ou Limitadores <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
+                </label>
+                
+                <div className="relative">
+                  <div className="absolute left-3 top-3.5 z-10 flex items-center gap-1.5 pointer-events-none">
+                    <Target className="w-4 h-4 text-brieffy-text3" />
+                  </div>
+                  
+                  {depthSignals.length > 0 && (
+                    <div className="px-3 pt-3 flex flex-wrap gap-2 relative z-10 w-full mb-2">
+                      {depthSignals.map(signal => (
+                        <span 
+                          key={signal}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brieffy-surface border border-brieffy-border text-[13px] font-medium text-foreground shadow-sm"
+                        >
+                          {signal}
+                          <button
+                            type="button"
+                            onClick={() => removeSignal(signal)}
+                            className="w-4 h-4 flex items-center justify-center rounded bg-foreground/5 hover:bg-red-500 hover:text-white transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="pl-10">
+                    <Input
+                      value={newSignal}
+                      onChange={handleSignalChange}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
+                      placeholder="Ex: Evitar perguntas sobre faturamento..."
+                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 rounded-xl text-sm font-medium transition-all shadow-none placeholder:text-[var(--text3)]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* ── AI Reasoning Feedback ─────────────────────────── */}
               <AnimatePresence>
                 {aiReasoning && (
@@ -418,7 +505,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-1.5 sm:gap-2 shrink-0">
-                    <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">3</span>
+                    <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">5</span>
                     <span className="truncate">{t('modal.aiPackages')}</span>
                   </label>
                   {selectedSlugs.length > 0 && (
@@ -513,7 +600,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
               {/* ── Security & Passwords (Optional) ────────────────────────── */}
               <div className="space-y-4 pt-4 border-t border-[var(--bd)] mt-2">
                 <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                  <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">4</span>
+                  <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">6</span>
                   Segurança & Senhas
                   <span className="text-[var(--text3)] lowercase font-medium ml-1">
                     ({t('modal.optional')})

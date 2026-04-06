@@ -89,6 +89,8 @@ export function BriefingProvider({
   initialTimeoutMs,
   initialIsFinished,
   initialGeneratedDocument,
+  initialPurpose,
+  initialDepthSignals,
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;
@@ -111,6 +113,8 @@ export function BriefingProvider({
   savedStepIndex?: number;
   initialIsFinished?: boolean;
   initialGeneratedDocument?: string | null;
+  initialPurpose?: string;
+  initialDepthSignals?: string[];
 }) {
   const endpoint = useMemo(() => apiEndpoint || "/api/briefing", [apiEndpoint]);
   const branding = useMemo(() => initialBranding || DEFAULT_BRANDING, [initialBranding]);
@@ -316,6 +320,8 @@ export function BriefingProvider({
           chosenLanguage,
           selectedPackages,
           detectedSignals: detectedSignals.map(s => s.summary),
+          briefingPurpose: initialPurpose,
+          depthSignals: initialDepthSignals,
           isResume: true,
           sessionId: activeSessionId,
         }),
@@ -517,6 +523,8 @@ export function BriefingProvider({
           chosenLanguage: activeLanguage,
           selectedPackages,
           detectedSignals: detectedSignals.map(s => s.summary),
+          briefingPurpose: initialPurpose,
+          depthSignals: initialDepthSignals,
         }),
       });
 
@@ -680,6 +688,8 @@ export function BriefingProvider({
           activeTemplate,
           sessionId,
           detectedSignals: detectedSignals.map(s => s.summary),
+          briefingPurpose: initialPurpose,
+          depthSignals: initialDepthSignals,
         }),
       });
 

@@ -62,7 +62,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { sessionName, initialContext, selectedPackages, editPassphrase, accessPassword } = await request.json();
+  const { sessionName, initialContext, selectedPackages, editPassphrase, accessPassword, briefingPurpose, depthSignals } = await request.json();
 
   if (!sessionName) {
     return NextResponse.json({ error: 'Session name is required' }, { status: 400 });
@@ -77,6 +77,8 @@ export async function PATCH(
       selected_packages: selectedPackages || [],
       edit_passphrase: editPassphrase?.trim() || null,
       access_password: accessPassword?.trim() || null,
+      briefing_purpose: briefingPurpose?.trim() || null,
+      depth_signals: depthSignals || [],
       updated_at: new Date().toISOString()
     })
     .eq('id', id)

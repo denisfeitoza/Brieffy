@@ -126,6 +126,8 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        initialTimeoutMs={perfConfig.timeoutMs}
        initialIsFinished={session.status === 'finished'}
        initialGeneratedDocument={session.final_assets?.document || null}
+       initialPurpose={session.briefing_purpose || ''}
+       initialDepthSignals={session.depth_signals || []}
     >
       <main className="h-screen w-full bg-[var(--bg)] font-inter relative">
         <TypeformWizard 

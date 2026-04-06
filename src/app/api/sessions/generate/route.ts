@@ -16,7 +16,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const { templateId, sessionName, initialContext, selectedPackages, editPassphrase, accessPassword } = await req.json();
+    const { 
+      templateId, 
+      sessionName, 
+      initialContext, 
+      selectedPackages, 
+      editPassphrase, 
+      accessPassword,
+      briefingPurpose,
+      depthSignals
+    } = await req.json();
 
     if (!templateId || !sessionName) {
       return NextResponse.json({ error: "Nome da sessão e Template são obrigatórios." }, { status: 400 });
@@ -75,6 +84,8 @@ export async function POST(req: Request) {
         selected_packages: selectedPackages || [],
         edit_passphrase: editPassphrase?.trim() || null,
         access_password: accessPassword?.trim() || null,
+        briefing_purpose: briefingPurpose?.trim() || null,
+        depth_signals: depthSignals || [],
         status: 'pending',
         user_id: user.id,
       }])
