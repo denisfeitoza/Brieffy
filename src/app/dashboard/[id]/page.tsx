@@ -387,6 +387,23 @@ async function SessionContent({ id }: { id: string }) {
                   </section>
                 )}
 
+                {/* ── AÇÕES DO DOCUMENTO ──────────────────────────────────── */}
+                {session.final_assets?.document && (
+                  <section className="space-y-4">
+                    <h3 className="text-sm font-semibold text-[var(--text3)] uppercase tracking-wider flex items-center gap-2 px-1">
+                      <FileText className="w-4 h-4 text-[var(--text2)]" />
+                      Exportar Documento
+                    </h3>
+                    <div className="flex flex-col gap-3 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4">
+                      <CopyButtons
+                        markdown={session.final_assets.document}
+                        html={simpleMarkdownToHtml(session.final_assets.document)}
+                      />
+                      <PrintPdfButton className="w-full bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg)] shadow-sm" />
+                    </div>
+                  </section>
+                )}
+
                 {/* ── JSON RAW (collapsible) ──────────────────────────────── */}
                 {companyInfo && Object.keys(companyInfo).length > 0 && (
                   <details className="group bg-[var(--bg)] border border-[var(--bd)] rounded-xl overflow-hidden mt-6">

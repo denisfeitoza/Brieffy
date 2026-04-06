@@ -291,7 +291,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
              {/* Question Text */}
              <h1 
                className={`font-medium text-[var(--text)] transition-all duration-500 ${
-                 activeMessage?.inputType === 'text' || (activeMessage?.inputType === 'single_choice' && (activeMessage?.options?.length || 0) > 5)
+                 activeMessage?.questionType === 'text' || (activeMessage?.questionType === 'single_choice' && (activeMessage?.options?.length || 0) > 5)
                    ? 'text-[42px] sm:text-[56px] md:text-[68px] tracking-[-0.03em] leading-[1.05]'
                    : 'text-[30px] sm:text-[36px] md:text-[44px] tracking-[-0.02em] leading-[1.12] md:leading-[1.1]'
                }`}

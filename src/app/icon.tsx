@@ -18,13 +18,14 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'white',
+          color: '#ff6029',
           fontSize: 320,
           fontWeight: 800,
           fontFamily: 'sans-serif',
+          borderRadius: 120,
         }}
       >
-        b<span style={{ color: '#ff6029', marginLeft: 8 }}>.</span>
+        B<span style={{ color: 'white', marginLeft: 8 }}>.</span>
       </div>
     ),
     { ...size }
