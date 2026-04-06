@@ -88,6 +88,7 @@ export type FormattedValue =
   | { type: 'text'; value: string }
   | { type: 'tags'; values: string[] }
   | { type: 'url'; url: string; label: string }
+  | { type: 'url_list'; urls: { url: string; label: string }[] }
   | { type: 'color'; hex: string }
   | { type: 'keyvalue'; entries: { key: string; value: string }[] }
   | { type: 'empty' };
@@ -124,8 +125,34 @@ export function formatFieldValue(value: unknown): FormattedValue {
       .map((v) => (typeof v === 'object' ? JSON.stringify(v) : String(v)))
       .filter(Boolean);
     if (stringVals.length === 0) return { type: 'empty' };
-    // If only one long entry, treat as text
+    
+    const isMainlyUrls = stringVals.every(s => URL_REGEX.test(s.trim()));
+    if (isMainlyUrls) {
+      return {
+        type: 'url_list',
+        urls: stringVals.map(url => {
+          const trimmed = url.trim();
+          try {
+            return { url: trimmed, label: new URL(trimmed).hostname };
+          } catch {
+            return { url: trimmed, label: 'Link' };
+          }
+        })
+      };
+    }
+
+    // If only one long entry, treat as text (but check if it's multiple comma separated urls)
     if (stringVals.length === 1 && stringVals[0].length > 80) {
+       const possibleUrls = stringVals[0].split(',').map(s => s.trim());
+       if (possibleUrls.length > 1 && possibleUrls.every(s => URL_REGEX.test(s))) {
+         return {
+           type: 'url_list',
+           urls: possibleUrls.map(url => {
+             try { return { url, label: new URL(url).hostname }; }
+             catch { return { url, label: 'Link' }; }
+           })
+         };
+       }
       return { type: 'text', value: stringVals[0] };
     }
     return { type: 'tags', values: stringVals };

@@ -10,6 +10,7 @@ export const EXTRACTION_MODULE = `<MotorDeInferencia>
 Extraia dados EXPLÍCITOS (→updates) e IMPLÍCITOS (→inferences). Atribua confiança 0-1.
 Inferências ≥0.7 preenchem automaticamente. Leia nas entrelinhas: hesitação=incerteza, ênfase excessiva em concorrentes=insegurança, "fazemos tudo"=falta de foco.
 Se o usuário confirmar que não possui algo (ex: não tem concorrentes), preencha o campo respectivo com "(não possui)" ou "(desconhecido)" para indicar terminalidade.
+IMPORTANTÍSSIMO: Se a resposta do usuário contiver "[Anexos via UI]:", você DEVE extrair as URLs separadas por vírgula e salvá-las obrigatoriamente no objeto \`updates\` sob a chave exata "anexos" (não altere ou resuma a URL).
 Alvo: ≥2 campos avançados por turno.
 </MotorDeInferencia>`;
 

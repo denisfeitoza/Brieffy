@@ -92,10 +92,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
         setStep('done');
         const host = window.location.origin;
         setGeneratedLink(`${host}/b/${existingSession.id}`);
-        if (existingSession.edit_passphrase) setEditPassphrase(existingSession.edit_passphrase);
+        setEditPassphrase(existingSession.edit_passphrase || '');
       } else {
         if (packages.length === 0) fetchPackages();
-        if (!editPassphrase) generateCoolPassphrase();
+        // Do not auto-generate the passphrase so it remains genuinely optional
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -306,14 +306,14 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
         {step === 'create' && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-[var(--text)] tracking-tight">
-                <div className="w-10 h-10 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-[var(--actext)]" />
+              <DialogTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2 text-[var(--text)] tracking-tight">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--actext)]" />
                 </div>
-                {t('modal.newBriefing')}
+                <span className="truncate">{t('modal.newBriefing')}</span>
               </DialogTitle>
-              <DialogDescription className="text-[var(--text3)] text-sm">
-                {t('modal.intelligentEngine')}: <strong className="text-[var(--actext)] font-semibold">{templateName}</strong>
+              <DialogDescription className="text-[var(--text3)] text-xs sm:text-sm">
+                {t('modal.intelligentEngine')}: <strong className="text-[var(--actext)] font-semibold inline-block max-w-full align-bottom truncate">{templateName}</strong>
               </DialogDescription>
             </DialogHeader>
 
@@ -408,16 +408,16 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
 
               {/* ── Package Selection ─────────────────────────────── */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">3</span>
-                    {t('modal.aiPackages')}
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">3</span>
+                    <span className="truncate">{t('modal.aiPackages')}</span>
                   </label>
                   {selectedSlugs.length > 0 && (
-                    <span className="text-xs text-[var(--text3)] font-bold tracking-tight flex items-center gap-2">
-                      <span className="text-[var(--actext)]">{selectedSlugs.length}</span> {t('modal.selected').toUpperCase()}
+                    <span className="text-[10px] sm:text-xs text-[var(--text3)] font-bold tracking-tight flex items-center gap-1 sm:gap-2 truncate">
+                      <span className="text-[var(--actext)]">{selectedSlugs.length}</span> <span className="hidden sm:inline">{t('modal.selected').toUpperCase()}</span>
                       <span className="text-[var(--text3)] opacity-30">·</span>
-                      ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} {t('modal.questions').toUpperCase()}
+                      ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} <span className="hidden sm:inline">{t('modal.questions').toUpperCase()}</span>
                     </span>
                   )}
                 </div>
@@ -430,7 +430,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                   <div className="space-y-4">
                     {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                       <div key={dept}>
-                        <p className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-2 px-0.5">
+                        <p className="text-[10px] sm:text-xs font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-2 px-0.5 truncate">
                           {t(`dept.${dept}`)}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -611,29 +611,29 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
 
                 {/* ── Document Password ─────────────────────────────── */}
                 {editPassphrase && (
-                  <div className="p-4 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between">
-                    <div>
-                      <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] block mb-1">
+                  <div className="p-3 sm:p-4 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between gap-3 overflow-hidden">
+                    <div className="flex-1 min-w-0">
+                      <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] block mb-1 truncate">
                         {t('modal.documentPassword')}
                       </label>
-                      <code className="text-lg font-bold text-[var(--text)] tracking-wider">
+                      <code className="text-sm sm:text-lg font-bold text-[var(--text)] tracking-wider block truncate">
                         {editPassphrase}
                       </code>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)]">
-                      <Lock className="w-5 h-5" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)] shrink-0">
+                      <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                   </div>
                 )}
 
                 {/* ── Share CTA ─────────────────────────────────────── */}
-                <div className="pt-2">
+                <div className="pt-2 w-full">
                   <Button
                     onClick={copyInviteMessage}
-                    className="w-full h-12 text-sm font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all gap-2"
+                    className="w-full h-auto min-h-[48px] py-3 text-xs sm:text-sm font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all gap-2 whitespace-normal break-words leading-tight"
                   >
-                    <Share2 className="w-4 h-4" />
-                    {t('modal.copyInviteMessage').toUpperCase()}
+                    <Share2 className="w-4 h-4 shrink-0" />
+                    <span className="text-center">{t('modal.copyInviteMessage').toUpperCase()}</span>
                   </Button>
                   <p className="text-center text-xs text-[var(--text3)] mt-3 font-medium">
                     {t('modal.copyInviteMessageSub')}

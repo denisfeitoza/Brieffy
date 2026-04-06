@@ -67,11 +67,17 @@ export async function PUT(req: Request) {
     const promises = updates.map(({ key, value }) =>
       supabase!
         .from("app_settings")
-        .update({ value, updated_at: new Date().toISOString() })
-        .eq("key", key)
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" })
     );
 
-    await Promise.all(promises);
+    const results = await Promise.all(promises);
+    
+    // Check for any errors in the responses
+    for (const result of results) {
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+    }
 
     // BUG-10 FIX: Immediately bust the in-memory settings cache so the next
     // briefing request picks up the new values without waiting for TTL expiry.

@@ -88,6 +88,24 @@ function ValueRenderer({ value }: { value: FormattedValue }) {
         </a>
       );
 
+    case 'url_list':
+      return (
+        <div className="flex flex-col gap-1.5">
+          {value.urls.map((u, i) => (
+            <a
+              key={i}
+              href={u.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex max-w-fit items-center gap-1.5 text-sm text-[var(--orange)] hover:text-[#e8552a] transition-colors underline underline-offset-4 decoration-[var(--orange)]/30 hover:decoration-[var(--orange)]/60"
+            >
+              <ExternalLink className="w-3 h-3 shrink-0" />
+              <span className="truncate">{u.label}</span>
+            </a>
+          ))}
+        </div>
+      );
+
     case 'color':
       return (
         <div className="flex items-center gap-2.5">
