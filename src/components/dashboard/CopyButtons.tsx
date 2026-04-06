@@ -63,9 +63,9 @@ export function CopyButtons({ markdown, html }: CopyButtonsProps) {
         onClick={handleCopyRichText}
         variant="outline" 
         size="sm"
-        className="flex-1 w-full text-xs font-semibold bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)]"
+        className="flex-1 w-full text-sm font-semibold bg-[var(--bg)] border-[var(--bd-strong)] text-[var(--text)] hover:bg-[var(--bg2)] h-10"
       >
-        <Copy className="w-3.5 h-3.5 mr-2" />
+        <Copy className="w-4 h-4 mr-2" />
         {copiedRich ? 'Copiado' : 'Copiar'}
       </Button>
       
@@ -73,9 +73,9 @@ export function CopyButtons({ markdown, html }: CopyButtonsProps) {
         onClick={handleCopyMarkdown}
         variant="default"
         size="sm"
-        className="flex-1 w-full text-xs font-semibold bg-[var(--orange)] hover:bg-[#e8552a] text-black shadow-sm"
+        className="flex-1 w-full text-sm font-semibold bg-[var(--orange)] hover:bg-[#e8552a] text-black shadow-sm h-10"
       >
-        <Bot className="w-3.5 h-3.5 mr-2" />
+        <Bot className="w-4 h-4 mr-2" />
         {copiedMd ? 'Pronto para IA!' : 'Copiar para IA'}
       </Button>
     </div>

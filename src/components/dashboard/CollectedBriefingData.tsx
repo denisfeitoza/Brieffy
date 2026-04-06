@@ -51,7 +51,7 @@ function ValueRenderer({ value }: { value: FormattedValue }) {
   switch (value.type) {
     case 'empty':
       return (
-        <span className="text-xs text-zinc-600 italic">Não informado</span>
+        <span className="text-sm text-zinc-600 italic">Não informado</span>
       );
 
     case 'text':
@@ -67,7 +67,7 @@ function ValueRenderer({ value }: { value: FormattedValue }) {
           {value.values.map((tag, i) => (
             <span
               key={i}
-              className="text-[11px] font-medium bg-[var(--bg2)] text-[var(--text2)] px-2.5 py-1 rounded-md border border-[var(--bd-strong)] hover:bg-[var(--bg3)] transition-colors"
+              className="text-xs font-medium bg-[var(--bg2)] text-[var(--text2)] px-2.5 py-1 rounded-md border border-[var(--bd-strong)] hover:bg-[var(--bg3)] transition-colors"
             >
               {tag}
             </span>
@@ -141,7 +141,7 @@ function MiniProgress({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[10px] font-mono text-[var(--text3)]">
+      <span className="text-xs font-mono text-[var(--text3)]">
         {filled}/{total}
       </span>
     </div>
@@ -214,7 +214,7 @@ export default function CollectedBriefingData({
                 <p className="text-sm font-bold text-[var(--text)]">
                   Cobertura dos Campos Basais
                 </p>
-                <p className="text-xs text-[var(--text3)]">
+                <p className="text-sm text-[var(--text3)]">
                   {totalFilled} de {totalFields} campos preenchidos
                   {data.extras.length > 0 &&
                     ` + ${data.extras.length} campo(s) adicional(is)`}
@@ -291,7 +291,7 @@ export default function CollectedBriefingData({
                           <Circle className="w-3 h-3 text-[var(--text3)]" />
                         )}
                         <span
-                          className={`text-xs font-medium ${
+                          className={`text-sm font-medium ${
                             field.value.type !== 'empty'
                               ? 'text-[var(--text2)]'
                               : 'text-[var(--text3)]'
@@ -319,7 +319,7 @@ export default function CollectedBriefingData({
             <CardTitle className="text-sm font-bold text-[var(--text)] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[var(--orange)]" />
               Campos Adicionais (IA)
-              <span className="text-[10px] font-mono text-[var(--text3)] bg-[var(--bg3)] px-2 py-0.5 rounded-full">
+              <span className="text-xs font-mono text-[var(--text3)] bg-[var(--bg3)] px-2 py-0.5 rounded-full">
                 {data.extras.length}
               </span>
             </CardTitle>
@@ -331,7 +331,7 @@ export default function CollectedBriefingData({
                   key={field.key}
                   className="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4"
                 >
-                  <span className="text-xs font-medium text-[var(--text2)] shrink-0 sm:w-48">
+                  <span className="text-sm font-medium text-[var(--text2)] shrink-0 sm:w-48">
                     {field.label}
                   </span>
                   <div className="flex-1">

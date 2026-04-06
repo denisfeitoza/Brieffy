@@ -10,9 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { 
-  Settings, Cpu, Mic, Gauge, FileText, Save, 
+  Cpu, Mic, Gauge, Save, 
   Loader2, CheckCircle2, AlertCircle, Zap, Brain, 
-  Volume2, Clock, Target, LayoutTemplate 
+  Volume2, Target, LayoutTemplate 
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,7 +69,6 @@ const LANGUAGES = [
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [originalSettings, setOriginalSettings] = useState<Record<string, string>>({});
-  const [settingsMeta, setSettingsMeta] = useState<Record<string, SettingRow>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -90,7 +89,6 @@ export default function AdminSettingsPage() {
         });
         setSettings(map);
         setOriginalSettings(map);
-        setSettingsMeta(meta);
       } catch (err) {
         console.error("Failed to load settings:", err);
         toast.error("Failed to load settings");
@@ -135,7 +133,7 @@ export default function AdminSettingsPage() {
       toast.success("Settings saved successfully!", {
         description: `${changedSettings.length} setting(s) updated`,
       });
-    } catch (err) {
+    } catch (error) {
       toast.error("Failed to save settings");
     } finally {
       setIsSaving(false);

@@ -49,7 +49,8 @@ export function MultipleChoiceInput({
   const optionTitles = options.map((opt) => parseOption(opt, 0).text);
   const customTexts = selectedMultiples.filter((item) => !optionTitles.includes(item));
 
-  const isTextInputVisible = showTextInput || customTexts.length > 0 || inputText.trim().length > 0;
+  const hasOtherSelected = selectedMultiples.some(isOtherOption);
+  const isTextInputVisible = showTextInput || hasOtherSelected || customTexts.length > 0 || inputText.trim().length > 0;
 
   const specifyLabel = voiceLanguage === "pt"
     ? "Especifique abaixo o que deseja:"
@@ -69,6 +70,9 @@ export function MultipleChoiceInput({
       }
     } else {
       setSelectedMultiples(selectedMultiples.filter((item) => item !== optText));
+      if (isOtherOption(optText)) {
+        setShowTextInput(false);
+      }
     }
   };
 

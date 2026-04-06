@@ -78,8 +78,36 @@ PERGUNTAS SUGERIDAS (adapte ao contexto):
 
 REGRAS:
 - NUNCA pergunte "quais são seus concorrentes?" (interrogatório). Extraia via contexto.
+- Se o cliente disser explicitamente que NÃO possui concorrentes ou NÃO os conhece, RESPEITE e mude para precificação ou diferenciais imediatamente.
 - Se o cliente não mencionar preço, aborde de forma natural sem intimidar.
 - Cruze informações com campos basais (competitors, competitive_differentiator) — não duplique.`,
+  },
+  {
+    id: "primal-branding",
+    name: "Primal Branding® (A Base)",
+    description: "Os 7 pilares para criar uma marca com fãs: História, Crença, Ícones, Rituais, Palavras Sagradas, Antagonistas e Líder.",
+    department: "branding",
+    icon: "Flame",
+    suggested_slug: "primal_branding",
+    max_questions: 10,
+    briefing_purpose: "Construir a base de comunidade e lealdade da marca através dos 7 pilares do Primal Branding.",
+    depth_signals: ["comunidade", "fãs", "legado", "tribo", "cultura de marca"],
+    system_prompt_fragment: `SKILL: Primal Branding®
+CAMPOS ÚNICOS PARA EXTRAIR: creation_story, brand_creed, brand_icons, brand_rituals, sacred_words, brand_antagonists, brand_leader
+
+ESTRATÉGIA CONVERSACIONAL (Os 7 Pilares):
+1. HISTÓRIA DA CRIAÇÃO: "Como tudo começou? Qual foi o 'estalo' inicial?"
+2. A CRENÇA: "No que vocês acreditam piamente? O que é inegociável?"
+3. ÍCONES: "Que símbolos, cores ou sons fazem as pessoas saberem que é VOCÊS sem ver o logo?"
+4. RITUAIS: "Que ações repetitivas ou 'jeito de fazer' marcam a experiência com a marca?"
+5. PALAVRAS SAGRADAS: "Vocês usam termos únicos? Como chamam seus clientes ou processos?" (ex: Apple-Genius, Starbucks-Grande)
+6. ANTAGONISTAS/PAGÃOS: "Quem vocês NÃO são? Contra o que vocês lutam ou o que vocês evitam?"
+7. O LÍDER: "Quem é a cara da marca? Quem personifica esses valores?"
+
+REGRAS:
+- Não use o termo técnico "Primal Branding" com o cliente.
+- Extraia cada pilar através de narrativas.
+- Pule pilares que já foram respondidos em campos de Identidade.`,
   },
   {
     id: "campaign-launch",

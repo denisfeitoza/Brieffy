@@ -29,7 +29,7 @@ interface BriefingActionsMenuProps {
 }
 
 export function BriefingActionsMenu({ isOwner, isOnboarding }: Omit<BriefingActionsMenuProps, 'sessionId'>) {
-  const { sessionId } = useBriefing();
+  const { sessionId, resetBriefing } = useBriefing();
   const [isResetting, setIsResetting] = useState(false);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const router = useRouter();
@@ -43,22 +43,14 @@ export function BriefingActionsMenu({ isOwner, isOnboarding }: Omit<BriefingActi
   const handleReset = async () => {
     setIsResetting(true);
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/reset`, {
-        method: 'POST',
-      });
-
-      if (!res.ok) throw new Error('Falha ao resetar briefing');
-
+      await resetBriefing();
       toast.success('Briefing resetado com sucesso!');
-      
-      // Reload current page to start over
-      window.location.reload();
+      setShowConfirmReset(false);
     } catch (error) {
       console.error(error);
       toast.error('Erro ao resetar briefing. Tente novamente.');
     } finally {
       setIsResetting(false);
-      setShowConfirmReset(false);
     }
   };
 

@@ -32,8 +32,8 @@ export async function POST(
   try {
     await resetSession(id);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error resetting session API:', error);
-    return NextResponse.json({ error: error.message || 'Failed to reset session' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to reset session' }, { status: 500 });
   }
 }

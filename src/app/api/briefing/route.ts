@@ -126,15 +126,27 @@ function calculateQualityBasalCoverage(
   currentState: Record<string, unknown>,
   basalFields: string[]
 ): number {
-  let qualityCount = 0;
-  for (const field of basalFields) {
+  const collected = getCollectedBasalFields(currentState, basalFields);
+  return collected.length / Math.max(basalFields.length, 1);
+}
+
+function getCollectedBasalFields(
+  currentState: Record<string, unknown>,
+  basalFields: string[]
+): string[] {
+  const placeholders = ["(não possui)", "(desconhecido)", "(n/a)", "(none)", "(unknown)"];
+  return basalFields.filter(field => {
     const val = currentState?.[field];
-    if (!val) continue;
-    if (typeof val === 'string' && val.trim().length < MIN_MEANINGFUL_VALUE_LENGTH) continue;
-    if (Array.isArray(val) && val.length === 0) continue;
-    qualityCount++;
-  }
-  return qualityCount / Math.max(basalFields.length, 1);
+    if (!val) return false;
+    if (typeof val === 'string') {
+      const trimmed = val.trim().toLowerCase();
+      if (placeholders.some(p => trimmed.includes(p))) return true;
+      if (trimmed.length < MIN_MEANINGFUL_VALUE_LENGTH) return false;
+      return true;
+    }
+    if (Array.isArray(val)) return val.length > 0;
+    return true;
+  });
 }
 
 export async function POST(req: Request) {
@@ -538,6 +550,9 @@ export async function POST(req: Request) {
                 insights: ["Briefing finalizado automaticamente pelo limite de perguntas."]
               };
             }
+            const collected = getCollectedBasalFields(currentState || {}, basalFields);
+            parsed.basalFieldsCollected = collected;
+            parsed.basalFieldsMissing = basalFields.filter((f: string) => !collected.includes(f));
             parsed.session_quality_score = parsed.session_quality_score || Math.round(currentBasalCoverage * 100);
           }
 
@@ -565,7 +580,8 @@ export async function POST(req: Request) {
             console.warn("[Briefing] AI returned null nextQuestion without isFinished=true. Generating smart fallback.");
             
             // Build a smart fallback question targeting the most critical missing field
-            const missingFields = parsed.basalFieldsMissing || UNIVERSAL_BASAL_FIELDS.filter(f => !currentState?.[f]);
+            const collected = getCollectedBasalFields(currentState || {}, basalFields);
+            const missingFields = basalFields.filter((f: string) => !collected.includes(f));
             const fallbackLangMap: Record<string, Record<string, string>> = {
               pt: {
                 publico_alvo: "Para quem sua empresa vende? Descreva seu público ideal.",
@@ -644,8 +660,8 @@ export async function POST(req: Request) {
       inferences: { extracted: [] },
       basalCoverage: calculateQualityBasalCoverage(currentState || {}, basalFields),
       currentSection: "company",
-      basalFieldsCollected: Object.keys(currentState || {}).filter((k: string) => basalFields.includes(k)),
-      basalFieldsMissing: basalFields.filter((f: string) => !currentState?.[f]),
+      basalFieldsCollected: getCollectedBasalFields(currentState || {}, basalFields),
+      basalFieldsMissing: basalFields.filter((f: string) => !getCollectedBasalFields(currentState || {}, basalFields).includes(f)),
       nextQuestion: {
         text: fallbackLang.fallbackQ,
         questionType: "text",

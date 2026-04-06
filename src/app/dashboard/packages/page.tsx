@@ -28,7 +28,6 @@ const DEPT_OPTIONS = [
 ];
 
 interface CategoryPackage {
-  id: string;
   slug: string;
   name: string;
   description: string;
@@ -117,7 +116,7 @@ export default function PackagesPage() {
   };
 
   const startEdit = (pkg: CategoryPackage) => {
-    setEditing(pkg.id);
+    setEditing(pkg.slug);
     setCreating(false);
     setForm({ ...pkg });
   };
@@ -172,7 +171,7 @@ export default function PackagesPage() {
   const handleDelete = async (pkg: CategoryPackage) => {
     if (!confirm(`Tem certeza que deseja excluir a skill "${pkg.name}"?`)) return;
     try {
-      await fetch(`/api/briefing/packages?id=${pkg.id}`, { method: 'DELETE' });
+      await fetch(`/api/briefing/packages?id=${pkg.slug}`, { method: 'DELETE' });
       fetchPackages();
     } catch (err) {
       console.error(err);
@@ -376,9 +375,9 @@ export default function PackagesPage() {
           
           return (
             <div
-              key={pkg.id || pkg.slug || `pkg-${index}`}
+              key={pkg.slug || `pkg-${index}`}
               className={`flex flex-col gap-3 p-5 rounded-2xl border transition-all ${
-                editing === pkg.id 
+                editing === pkg.slug 
                   ? 'border-[var(--orange)] shadow-md bg-[var(--bg)]' 
                   : 'border-[var(--bd)] bg-[var(--bg2)] hover:border-gray-300 shadow-sm'
               }`}
@@ -493,7 +492,7 @@ export default function PackagesPage() {
                 <TabsContent value="official" className="animate-in fade-in slide-in-from-bottom-4 duration-500 focus-visible:outline-none">
                   <div className="mb-6 flex justify-between items-end">
                     <div>
-                      <h2 className="text-xl font-bold font-outfit text-gray-900">Skills Globais da Trieffy</h2>
+                      <h2 className="text-xl font-bold font-outfit text-gray-900">Skills Globais da Brieffy</h2>
                       <p className="text-sm text-gray-500 mt-1">Especializações criadas e curadas pelo time oficial.</p>
                     </div>
                   </div>
@@ -513,9 +512,9 @@ export default function PackagesPage() {
                 <TabsContent value="community" className="animate-in fade-in slide-in-from-bottom-4 duration-500 focus-visible:outline-none">
                   <div className="py-20 text-center bg-gradient-to-b from-white to-[var(--bg2)] border border-[var(--bd)] rounded-3xl opacity-80">
                     <Globe className="w-16 h-16 text-[var(--orange)]/40 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold font-outfit text-gray-900 mb-2">Comunidade Global Trieeffy</h3>
+                    <h3 className="text-2xl font-bold font-outfit text-gray-900 mb-2">Comunidade Global Brieffy</h3>
                     <p className="text-gray-500 max-w-md mx-auto mb-6">
-                      Em breve você poderá descobrir, usar e rentabilizar Skills de IA criadas pelas mentes mais brilhantes do mercado.
+                      Em breve você poderá descobrir e usar Skills de IA criadas pelas mentes mais brilhantes do mercado.
                     </p>
                     <Button variant="outline" className="border-gray-200 pointer-events-none rounded-xl" disabled>
                       Coming Soon

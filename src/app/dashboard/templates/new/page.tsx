@@ -23,18 +23,18 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 const DEPT_COLORS: Record<string, { bg: string; border: string; text: string; glow: string }> = {
-  branding:   { bg: 'bg-violet-500/8',  border: 'border-violet-500/20', text: 'text-violet-400', glow: 'shadow-violet-500/10' },
-  technology: { bg: 'bg-cyan-500/8',    border: 'border-cyan-500/20',   text: 'text-cyan-400',   glow: 'shadow-cyan-500/10' },
-  marketing:  { bg: 'bg-orange-500/8',  border: 'border-orange-500/20', text: 'text-orange-400', glow: 'shadow-orange-500/10' },
-  operations: { bg: 'bg-emerald-500/8', border: 'border-emerald-500/20',text: 'text-emerald-400',glow: 'shadow-emerald-500/10' },
-  finance:    { bg: 'bg-yellow-500/8',  border: 'border-yellow-500/20', text: 'text-yellow-400', glow: 'shadow-yellow-500/10' },
-  people:     { bg: 'bg-pink-500/8',    border: 'border-pink-500/20',   text: 'text-pink-400',   glow: 'shadow-pink-500/10' },
-  commercial: { bg: 'bg-blue-500/8',    border: 'border-blue-500/20',   text: 'text-blue-400',   glow: 'shadow-blue-500/10' },
-  product:    { bg: 'bg-teal-500/8',    border: 'border-teal-500/20',   text: 'text-teal-400',   glow: 'shadow-teal-500/10' },
-  legal:      { bg: 'bg-slate-500/8',   border: 'border-slate-500/20',  text: 'text-slate-400',  glow: 'shadow-slate-500/10' },
-  digital:    { bg: 'bg-fuchsia-500/8', border: 'border-fuchsia-500/20',text: 'text-fuchsia-400',glow: 'shadow-fuchsia-500/10' },
-  content:    { bg: 'bg-lime-500/8',    border: 'border-lime-500/20',   text: 'text-lime-400',   glow: 'shadow-lime-500/10' },
-  general:    { bg: 'bg-zinc-500/8',    border: 'border-zinc-500/20',   text: 'text-zinc-400',   glow: 'shadow-zinc-500/10' },
+  branding:   { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  technology: { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  marketing:  { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  operations: { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  finance:    { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  people:     { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  commercial: { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  product:    { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  legal:      { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  digital:    { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  content:    { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
+  general:    { bg: 'bg-brieffy-orange/10', border: 'border-brieffy-orange/20', text: 'text-brieffy-orange', glow: 'shadow-[0_0_20px_rgba(255,96,41,0.15)]' },
 };
 
 const DEPT_LABELS: Record<string, string> = {
@@ -80,20 +80,20 @@ function StepProgress({ current }: { current: 1 | 2 | 3 }) {
       {steps.map((s, i) => (
         <div key={s.n} className="flex items-center flex-1">
           <div className={`
-            flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all duration-500 shrink-0
+            flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all duration-500 shrink-0
             ${current >= s.n
-              ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-[0_0_12px_rgba(6,182,212,0.3)]'
-              : 'bg-zinc-800/60 text-zinc-500 border border-zinc-700/50'
+              ? 'bg-brieffy-orange text-black font-extrabold shadow-[0_0_12px_rgba(255,96,41,0.3)]'
+              : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 border border-zinc-200 dark:border-zinc-800'
             }
           `}>
-            {current > s.n ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.n}
+            {current > i + 1 ? <CheckCircle2 className="w-4 h-4" /> : s.n}
           </div>
-          <span className={`text-[10px] ml-1.5 font-medium hidden sm:block ${
-            current >= s.n ? 'text-zinc-300' : 'text-zinc-600'
+          <span className={`label-caps ml-1.5 hidden sm:block ${
+            current >= s.n ? 'text-foreground' : 'text-zinc-500'
           }`}>{s.label}</span>
           {i < steps.length - 1 && (
-            <div className={`flex-1 h-px mx-2 transition-colors duration-500 ${
-              current > s.n ? 'bg-cyan-500/40' : 'bg-zinc-800'
+            <div className={`flex-1 h-[1.5px] mx-2 transition-colors duration-500 ${
+              current > s.n ? 'bg-brieffy-orange/40' : 'bg-zinc-200 dark:bg-zinc-800'
             }`} />
           )}
         </div>
@@ -116,7 +116,8 @@ export default function NewBriefingWizard() {
   const [purpose, setPurpose] = useState('');
   const [newSignal, setNewSignal] = useState('');
   const [depthSignals, setDepthSignals] = useState<string[]>([]);
-  const [showContext, setShowContext] = useState(false);
+  const [showContext, setShowContext] = useState(true);
+  const [showSignals, setShowSignals] = useState(false);
   const [initialContext, setInitialContext] = useState('');
   
   // ── Step 2: Packages ────────────
@@ -125,7 +126,6 @@ export default function NewBriefingWizard() {
   const [aiSuggestedSlugs, setAiSuggestedSlugs] = useState<string[]>([]);
   const [aiReasoning, setAiReasoning] = useState('');
   const [editPassphrase, setEditPassphrase] = useState(() => generatePassphrase());
-  const [accessPassword, setAccessPassword] = useState('');
   
   // ── Step 3: Done ────────────────
   const [generatedLink, setGeneratedLink] = useState('');
@@ -136,6 +136,7 @@ export default function NewBriefingWizard() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createdTemplateId, setCreatedTemplateId] = useState<string | null>(null);
   
   // ── Fetch packages on mount ─────
   useEffect(() => {
@@ -151,14 +152,23 @@ export default function NewBriefingWizard() {
   }, []);
   
   // ── Signal Management ───────────
-  const addSignal = () => {
-    const trimmed = newSignal.trim();
-    if (trimmed && !depthSignals.includes(trimmed)) {
-      setDepthSignals(prev => [...prev, trimmed]);
+  const addSignal = (value: string = newSignal) => {
+    const signals = value.split(',').map(s => s.trim()).filter(s => s !== '' && !depthSignals.includes(s));
+    if (signals.length > 0) {
+      setDepthSignals(prev => [...prev, ...signals]);
       setNewSignal('');
     }
   };
-  
+
+  const handleSignalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.includes(',')) {
+      addSignal(value);
+    } else {
+      setNewSignal(value);
+    }
+  };
+
   const removeSignal = (signal: string) => {
     setDepthSignals(prev => prev.filter(s => s !== signal));
   };
@@ -228,7 +238,7 @@ export default function NewBriefingWizard() {
       setAiReasoning(suggestData.reasoning || '');
       setSelectedSlugs(merged);
       
-      // Advance to step 2
+  // Advance to step 2
       setStep(2);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado');
@@ -236,9 +246,6 @@ export default function NewBriefingWizard() {
       setIsTransitioning(false);
     }
   };
-  
-  // Store created template ID between steps
-  const [createdTemplateId, setCreatedTemplateId] = useState<string | null>(null);
   
   // ── Toggle Package ──────────────
   const togglePackage = (slug: string) => {
@@ -265,7 +272,6 @@ export default function NewBriefingWizard() {
           initial_context: initialContext.trim() || null,
           selected_packages: selectedSlugs,
           edit_passphrase: editPassphrase.trim() || undefined,
-          access_password: accessPassword.trim() || null,
           status: 'pending',
           user_id: user?.id || null,
         }])
@@ -297,13 +303,12 @@ export default function NewBriefingWizard() {
   const [shared, setShared] = useState(false);
   const shareAll = useCallback(() => {
     const parts = [`🔗 Link do Briefing:\n${generatedLink}`];
-    if (accessPassword) parts.push(`🔒 Senha de Acesso: ${accessPassword}`);
-    if (editPassphrase) parts.push(`🔑 Palavra-chave do Documento: ${editPassphrase}`);
+    if (editPassphrase) parts.push(`🔑 Senha: ${editPassphrase}`);
     const text = parts.join('\n\n');
     navigator.clipboard.writeText(text);
     setShared(true);
     setTimeout(() => setShared(false), 2500);
-  }, [generatedLink, editPassphrase, accessPassword]);
+  }, [generatedLink, editPassphrase]);
   
   // ── Computed ────────────────────
   const groupedPackages = packages.reduce((acc, pkg) => {
@@ -336,18 +341,18 @@ export default function NewBriefingWizard() {
       <div className="flex flex-col gap-4">
         <Link
           href="/dashboard/templates"
-          className="inline-flex items-center text-sm font-medium text-cyan-500 hover:text-cyan-400 transition-colors w-fit"
+          className="inline-flex items-center text-sm font-bold label-caps text-zinc-500 hover:text-brieffy-orange transition-colors w-fit"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          <ArrowLeft className="w-4 h-4 mr-1" />
           Voltar
         </Link>
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
-              Criar Briefing
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+              Criar <span className="text-brieffy-orange">Briefing</span>
             </h1>
-            <p className="text-zinc-500 mt-1 text-sm">
+            <p className="text-zinc-500 mt-1 text-sm font-medium">
               Configure o que a IA deve explorar e gere o link para seu cliente.
             </p>
           </div>
@@ -362,7 +367,7 @@ export default function NewBriefingWizard() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm font-medium"
+            className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider"
           >
             {error}
           </motion.div>
@@ -383,32 +388,32 @@ export default function NewBriefingWizard() {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-6"
           >
-            <div className="bg-zinc-900/40 border border-white/5 backdrop-blur-md rounded-2xl p-5 sm:p-8 space-y-7">
+            <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-2xl p-5 sm:p-8 space-y-7">
               
               {/* ── Name ──────────────────────── */}
               <div className="space-y-2.5">
-                <label className="text-sm font-semibold text-zinc-200">
-                  Nome do Briefing <span className="text-red-400">*</span>
+                <label className="label-caps-accent">
+                  Nome do Briefing <span className="text-red-500">*</span>
                 </label>
                 <Input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Ex: Rebrand Acme Corp 2026"
-                  className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/40 h-12 text-base rounded-xl placeholder:text-zinc-600"
+                  className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/40 h-12 text-sm rounded-xl placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all font-medium"
                 />
               </div>
               
               {/* ── Purpose ───────────────────── */}
               <div className="space-y-2.5">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center shrink-0 mt-0.5">
-                    <Target className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="w-8 h-8 rounded-lg bg-brieffy-orange/10 border border-brieffy-orange/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <Target className="w-4 h-4 text-brieffy-orange" />
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-zinc-200">
-                      O que você precisa descobrir? <span className="text-red-400">*</span>
+                    <label className="label-caps">
+                      O que você precisa descobrir? <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-zinc-500 mt-0.5 font-medium">
                       A IA vai usar isso como bússola para guiar toda a conversa.
                     </p>
                   </div>
@@ -417,98 +422,95 @@ export default function NewBriefingWizard() {
                   value={purpose}
                   onChange={e => setPurpose(e.target.value)}
                   placeholder="Ex: Entender a identidade atual da marca, o público-alvo e os planos de crescimento para redesenhar o posicionamento visual."
-                  className="bg-black/40 border-white/10 focus-visible:ring-indigo-500/30 rounded-xl resize-y min-h-[100px] placeholder:text-zinc-600 text-sm leading-relaxed"
+                  className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/30 rounded-xl resize-y min-h-[100px] placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-sm leading-relaxed transition-all font-medium"
                 />
               </div>
-              
-              {/* ── Sensitive Points (Depth Signals) ── */}
-              <div className="space-y-3">
+
+              {/* ── Context (Fixed) ───────────── */}
+              <div className="space-y-2.5">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-center shrink-0 mt-0.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Brain className="w-4 h-4 text-zinc-400" />
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-zinc-200">
-                      Pontos Sensíveis <span className="text-zinc-600 font-normal">(opcional)</span>
+                    <label className="label-caps">
+                      Contexto Prévio <span className="text-zinc-400 font-normal">(recomendado)</span>
                     </label>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      Temas que a IA deve explorar com cuidado e atenção extra.
+                    <p className="text-xs text-zinc-500 mt-0.5 font-medium">
+                      O que você já sabe sobre esse cliente? A IA adaptará as perguntas.
                     </p>
                   </div>
                 </div>
-                
-                {/* Tags */}
-                {depthSignals.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {depthSignals.map(signal => (
-                      <span
-                        key={signal}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/8 border border-amber-500/20 text-amber-300 text-xs font-medium"
-                      >
-                        {signal}
-                        <button
-                          type="button"
-                          onClick={() => removeSignal(signal)}
-                          className="text-amber-500/60 hover:text-red-400 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Add input */}
-                <div className="flex gap-2">
-                  <Input
-                    value={newSignal}
-                    onChange={e => setNewSignal(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
-                    placeholder="Ex: resistência a preço, insatisfação com marca atual"
-                    className="bg-black/40 border-white/10 focus-visible:ring-amber-500/30 h-10 rounded-xl text-sm placeholder:text-zinc-600"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addSignal}
-                    disabled={!newSignal.trim()}
-                    className="h-10 px-3 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 rounded-xl shrink-0"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
+                <Textarea
+                  value={initialContext}
+                  onChange={e => setInitialContext(e.target.value)}
+                  placeholder="Ex: Já fizemos o logotipo dele em 2023, agora ele quer expandir para o digital..."
+                  className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/30 rounded-xl resize-y min-h-[100px] placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-sm font-medium transition-all"
+                />
               </div>
-              
-              {/* ── Context (Collapsible) ────── */}
+
+              {/* ── Sensitive Points (Depth Signals) ── */}
               <div className="space-y-2">
                 <button
                   type="button"
-                  onClick={() => setShowContext(!showContext)}
-                  className="flex items-center gap-2 text-sm font-semibold text-zinc-300 hover:text-white transition-colors w-full"
+                  onClick={() => setShowSignals(!showSignals)}
+                  className="flex items-center gap-2 label-caps text-zinc-400 hover:text-foreground transition-colors w-full group"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center shrink-0">
-                    <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
+                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 group-hover:border-zinc-300 dark:group-hover:border-zinc-600">
+                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ${showSignals ? 'rotate-180' : ''}`} />
                   </div>
-                  Contexto Prévio
-                  <span className="text-zinc-600 text-xs font-normal">(opcional)</span>
+                  Pontos Sensíveis
+                  <span className="text-zinc-400 dark:text-zinc-600 font-normal">(opcional)</span>
                 </button>
-                
+
                 <AnimatePresence>
-                  {showContext && (
+                  {showSignals && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden"
+                      className="overflow-hidden space-y-4 pt-2"
                     >
-                      <Textarea
-                        value={initialContext}
-                        onChange={e => setInitialContext(e.target.value)}
-                        placeholder="O que você já sabe sobre esse cliente? A IA vai usar isso para adaptar as perguntas..."
-                        className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/30 rounded-xl resize-y min-h-[80px] placeholder:text-zinc-600 text-sm"
-                      />
+                      <div className="pl-9 space-y-1">
+                        <p className="text-xs text-zinc-500 font-medium">
+                          IA explorará com atenção. Digite e separe por vírgula para adicionar.
+                        </p>
+                        <p className="text-xs text-zinc-400 font-normal">
+                          Ex: resistência a preço, insatisfação com marca atual, prazos curtos
+                        </p>
+                      </div>
+                      
+                      {/* Tags */}
+                      {depthSignals.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pl-9">
+                          {depthSignals.map(signal => (
+                            <span
+                              key={signal}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brieffy-orange/5 border border-brieffy-orange/20 text-brieffy-orange text-xs font-bold"
+                            >
+                              {signal}
+                              <button
+                                type="button"
+                                onClick={() => removeSignal(signal)}
+                                className="text-brieffy-orange/40 hover:text-red-500 transition-colors"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="pl-9">
+                        <Input
+                          value={newSignal}
+                          onChange={handleSignalChange}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
+                          placeholder="Adicionar ponto sensível..."
+                          className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/30 h-11 rounded-xl text-sm font-medium transition-all"
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -519,16 +521,16 @@ export default function NewBriefingWizard() {
             <Button
               onClick={handleContinueToPackages}
               disabled={isTransitioning || !name.trim() || !purpose.trim()}
-              className="w-full h-13 text-base font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-[0_4px_20px_rgba(6,182,212,0.2)] hover:shadow-[0_4px_30px_rgba(6,182,212,0.35)] transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2"
+              className="w-full h-14 text-base font-bold rounded-full bg-brieffy-orange hover:bg-brieffy-orange/90 text-black shadow-[0_4px_20px_rgba(255,96,41,0.2)] transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2 active:scale-[0.98]"
             >
               {isTransitioning ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  A IA está analisando...
+                  ANALISANDO BRIEFING...
                 </>
               ) : (
                 <>
-                  Continuar
+                  AVANÇAR PARA SKILLS
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -545,18 +547,18 @@ export default function NewBriefingWizard() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-5"
+            className="space-y-6"
           >
-            <div className="bg-zinc-900/40 border border-white/5 backdrop-blur-md rounded-2xl p-5 sm:p-8 space-y-6">
+            <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-2xl p-5 sm:p-8 space-y-7">
               
               {/* Header */}
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-400" />
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-brieffy-orange" />
                   Skills da IA
                 </h2>
-                <p className="text-sm text-zinc-500 mt-1">
-                  A IA selecionou as skills mais relevantes para o seu briefing. Toque para ajustar.
+                <p className="text-sm font-medium text-zinc-500">
+                  A IA selecionou as ferramentas ideais. Toque para personalizar.
                 </p>
               </div>
               
@@ -567,29 +569,34 @@ export default function NewBriefingWizard() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/8 to-purple-500/8 border border-indigo-500/15"
+                    className="flex items-start gap-3 px-4 py-4 rounded-xl bg-brieffy-orange/[0.03] border border-brieffy-orange/10"
                   >
-                    <Wand2 className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-indigo-200/80 italic leading-relaxed">{aiReasoning}</p>
+                    <Wand2 className="w-4 h-4 text-brieffy-orange flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed italic">
+                      "{aiReasoning}"
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
               
-              {/* Stats bar */}
-              {selectedSlugs.length > 0 && (
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                  <span><span className="text-cyan-400 font-semibold">{selectedSlugs.length}</span> skills ativas</span>
+              {/* Stats & Filter Bar */}
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-white/5">
+                <div className="flex items-center gap-2">
+                  <span className="label-caps !text-xs text-zinc-400">Seleção:</span>
+                  <span className="text-xs font-bold text-brieffy-orange bg-brieffy-orange/10 px-2 py-0.5 rounded-full border border-brieffy-orange/20">
+                    {selectedSlugs.length} Ativas
+                  </span>
                 </div>
-              )}
+              </div>
               
-              {/* Skills Grid — Clean Toggle Cards */}
-              <div className="space-y-5">
+              {/* Skills Grid */}
+              <div className="space-y-6">
                 {Object.entries(groupedPackages).map(([dept, pkgs]) => (
-                  <div key={dept}>
-                    <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-zinc-600 mb-2.5 px-0.5">
+                  <div key={dept} className="space-y-3">
+                    <p className="label-caps text-zinc-400 px-1">
                       {DEPT_LABELS[dept] || dept}
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {pkgs.map(pkg => {
                         const isSelected = selectedSlugs.includes(pkg.slug);
                         const isAiSuggested = aiSuggestedSlugs.includes(pkg.slug);
@@ -601,47 +608,51 @@ export default function NewBriefingWizard() {
                             key={pkg.slug}
                             onClick={() => togglePackage(pkg.slug)}
                             type="button"
-                            whileTap={{ scale: 0.97 }}
+                            whileTap={{ scale: 0.98 }}
                             className={`
-                              relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200
-                              border cursor-pointer outline-none
+                              relative flex items-center gap-3.5 px-4 py-4 rounded-xl text-left transition-all duration-300
+                              border outline-none group
                               ${isSelected
-                                ? `bg-white/[0.04] border-white/15 shadow-lg`
-                                : 'border-zinc-800/30 bg-zinc-950/40 opacity-50 hover:opacity-75 hover:border-zinc-700/40'
+                                ? `bg-white dark:bg-black/20 border-zinc-200 dark:border-white/10 shadow-sm`
+                                : 'bg-zinc-100/50 dark:bg-transparent border-zinc-100 dark:border-white/5 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 hover:border-zinc-200 dark:hover:border-white/10'
                               }
                             `}
                           >
-                            {/* Icon */}
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
-                              isSelected ? `${colors.bg} ${colors.border} border` : 'bg-zinc-800/40'
+                            {/* Icon container */}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
+                              isSelected ? `${colors.bg} ${colors.border} border` : 'bg-zinc-200 dark:bg-zinc-800'
                             }`}>
-                              <IconComp className={`w-4 h-4 ${isSelected ? colors.text : 'text-zinc-600'}`} />
+                              <IconComp className={`w-4.5 h-4.5 ${isSelected ? colors.text : 'text-zinc-500'}`} />
                             </div>
                             
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className={`text-sm font-semibold truncate ${isSelected ? 'text-white' : 'text-zinc-500'}`}>
+                                <span className={`text-sm font-bold tracking-tight transition-colors ${isSelected ? 'text-foreground' : 'text-zinc-500'}`}>
                                   {pkg.name}
                                 </span>
                                 {isAiSuggested && isSelected && (
-                                  <span className="shrink-0 text-[8px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">IA</span>
+                                  <span className="shrink-0 text-[10px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-full bg-brieffy-orange text-black">IA</span>
                                 )}
                               </div>
+                              <p className={`text-xs font-medium mt-0.5 truncate ${isSelected ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                                Explorar {pkg.name.toLowerCase()}
+                              </p>
                             </div>
                             
-                            {/* Toggle indicator */}
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${
+                            {/* Custom Checkbox */}
+                            <div className={`w-6 h-6 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all duration-300 ${
                               isSelected
-                                ? 'border-cyan-400 bg-cyan-500/20'
-                                : 'border-zinc-700'
+                                ? 'border-brieffy-orange bg-brieffy-orange'
+                                : 'border-zinc-300 dark:border-zinc-700'
                             }`}>
                               {isSelected && (
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  className="w-2.5 h-2.5 rounded-full bg-cyan-400"
-                                />
+                                >
+                                  <CheckCircle2 className="w-4 h-4 text-black" />
+                                </motion.div>
                               )}
                             </div>
                           </motion.button>
@@ -652,81 +663,81 @@ export default function NewBriefingWizard() {
                 ))}
               </div>
               
-              {/* ── Access Password (optional, recommended) ───── */}
-              <div className="pt-4 border-t border-white/5 space-y-2.5">
-                <label className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                  Senha de Acesso ao Briefing
-                  <span className="text-amber-400/80 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                    Recomendado
-                  </span>
-                </label>
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  O cliente precisará digitar esta senha antes de começar. Protege o link contra acessos indesejados.
-                </p>
-                <div className="relative">
-                  <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" />
-                  <Input
-                    value={accessPassword}
-                    onChange={e => setAccessPassword(e.target.value)}
-                    className="bg-black/40 border-white/10 focus-visible:ring-amber-500/40 h-11 text-sm rounded-xl pl-10 placeholder:text-zinc-600"
-                    placeholder="Ex: acme2026"
-                  />
+              {/* ── Password Security Section ────── */}
+              <div className="pt-8 border-t border-zinc-100 dark:border-white/5 space-y-6">
+                <div>
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-brieffy-orange" />
+                    Segurança e Acesso
+                  </h3>
+                  <p className="text-sm font-medium text-zinc-500 mt-1">
+                    Defina uma senha se desejar proteger o briefing. Deixe em branco para acesso direto.
+                  </p>
                 </div>
-              </div>
 
-              {/* ── Passphrase ──────────────── */}
-              <div className="pt-4 border-t border-white/5 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5 text-zinc-500" />
-                    Senha do Documento
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setEditPassphrase(generatePassphrase())}
-                    className="text-cyan-400 hover:text-cyan-300 text-xs flex items-center gap-1 transition-colors"
-                  >
-                    <Wand2 className="w-3 h-3" />
-                    Gerar outra
-                  </button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" />
-                  <Input
-                    value={editPassphrase}
-                    onChange={e => setEditPassphrase(e.target.value)}
-                    className="bg-black/40 border-white/10 focus-visible:ring-cyan-500/40 h-11 font-mono text-sm rounded-xl pl-10 placeholder:text-zinc-600"
-                    placeholder="ex: aurora"
-                  />
+                <div className="space-y-4">
+                  {/* Passphrase (The primary password field) */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="label-caps-accent">
+                        Senha do Documento
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setEditPassphrase(generatePassphrase())}
+                        className="text-brieffy-orange hover:text-brieffy-orange/80 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        Sortear Nova
+                      </button>
+                    </div>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-brieffy-orange transition-colors pointer-events-none" />
+                      <Input
+                        value={editPassphrase}
+                        onChange={e => setEditPassphrase(e.target.value)}
+                        className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/40 h-13 font-mono text-base rounded-xl pl-12 placeholder:text-zinc-400 dark:placeholder:text-zinc-700 transition-all font-bold tracking-widest"
+                        placeholder="Vazio = Sem Senha"
+                      />
+                      {editPassphrase && (
+                        <button
+                          type="button"
+                          onClick={() => setEditPassphrase('')}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             
             {/* ── Step 2 CTAs ─────────────────── */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 variant="outline"
                 onClick={() => setStep(1)}
-                className="border-white/10 text-zinc-400 hover:bg-white/5 rounded-xl h-12 sm:w-auto"
+                className="order-2 sm:order-1 h-14 border-zinc-200 dark:border-white/10 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-full font-bold label-caps px-8"
               >
-                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
               </Button>
               <Button
                 onClick={handleGenerateLink}
                 disabled={isGenerating || selectedSlugs.length === 0}
-                className="flex-1 h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-[0_4px_20px_rgba(6,182,212,0.2)] hover:shadow-[0_4px_30px_rgba(6,182,212,0.35)] transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2"
+                className="order-1 sm:order-2 flex-1 h-14 text-base font-bold rounded-full bg-brieffy-orange hover:bg-brieffy-orange/90 text-black shadow-[0_4px_20px_rgba(255,96,41,0.2)] transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2 active:scale-[0.98]"
               >
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Gerando...
+                    CONSTRUINDO LINK...
                   </>
                 ) : (
                   <>
                     <Link2 className="w-5 h-5" />
-                    Gerar Link ({selectedSlugs.length} skills)
+                    CONCLUIR E GERAR ({selectedSlugs.length} SKILLS)
                   </>
                 )}
               </Button>
@@ -744,79 +755,88 @@ export default function NewBriefingWizard() {
             exit="exit"
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="bg-zinc-900/40 border border-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-10">
-              <div className="flex flex-col items-center justify-center space-y-6">
+            <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-2xl p-6 sm:p-12">
+              <div className="flex flex-col items-center justify-center space-y-8">
                 
                 {/* Success Icon */}
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
-                    <CheckCircle2 className="w-10 h-10 text-cyan-400" />
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full bg-brieffy-orange/10 border border-brieffy-orange/30 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+                    <CheckCircle2 className="w-12 h-12 text-brieffy-orange" />
                   </div>
-                  <div className="absolute inset-0 w-20 h-20 rounded-full bg-cyan-400/15 blur-2xl animate-pulse" />
+                  <div className="absolute inset-0 w-24 h-24 rounded-full bg-brieffy-orange/20 blur-3xl animate-pulse" />
                 </div>
                 
-                <div className="text-center space-y-1.5">
-                  <h3 className="text-xl font-bold text-white">Briefing Criado! ✨</h3>
-                  <p className="text-sm text-zinc-400 max-w-sm">
-                    Envie o link e a palavra-chave para seu cliente iniciar o preenchimento com a IA.
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl font-black text-foreground tracking-tight">Briefing Criado! ✨</h3>
+                  <p className="text-sm font-medium text-zinc-500 max-w-sm leading-relaxed mx-auto">
+                    Agora é só compartilhar o link {editPassphrase ? 'e a senha' : ''} com seu cliente para começarem.
                   </p>
                 </div>
                 
-                {/* Link + Copy */}
-                <div className="w-full max-w-md flex items-center gap-2 p-2 bg-black/40 border border-white/10 rounded-xl">
-                  <Input
-                    value={generatedLink}
-                    readOnly
-                    className="bg-transparent border-none focus-visible:ring-0 text-zinc-300 text-xs h-8 font-mono"
-                  />
-                  <Button
-                    onClick={copyLink}
-                    variant="secondary"
-                    size="sm"
-                    className={`rounded-lg shrink-0 gap-1.5 text-xs transition-all ${
-                      copied
-                        ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                        : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30'
-                    }`}
-                  >
-                    {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? 'Copiado!' : 'Copiar Link'}
-                  </Button>
-                </div>
-                
-                {/* Passphrase */}
-                <div className="w-full max-w-md flex flex-col items-center p-5 bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-white/5 rounded-xl">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Lock className="w-3 h-3 text-zinc-500" />
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-bold">Senha</span>
+                {/* Visual Group for Link & Password */}
+                <div className="w-full max-w-lg space-y-3">
+                  
+                  {/* Link Card */}
+                  <div className="group relative flex items-center justify-between gap-3 p-3 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl transition-all hover:border-brieffy-orange/30">
+                    <div className="flex items-center gap-3 pl-2 flex-1 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                        <Link2 className="w-4 h-4 text-zinc-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="label-caps !text-xs text-zinc-400 mb-0.5">Link do Briefing</p>
+                        <p className="text-sm font-bold text-foreground truncate select-all">{generatedLink}</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={copyLink}
+                      className={`h-11 px-4 rounded-xl shrink-0 font-bold text-xs label-caps transition-all ${
+                        copied
+                          ? 'bg-green-500 text-white hover:bg-green-600'
+                          : 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'
+                      }`}
+                    >
+                      {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copied ? 'Copiado!' : 'Copiar'}
+                    </Button>
                   </div>
-                  <span className={`text-2xl font-mono font-bold tracking-wider ${editPassphrase ? 'text-cyan-400' : 'text-zinc-500 italic text-lg'}`}>
-                    {editPassphrase || 'Não definida (Acesso direto)'}
-                  </span>
+                  
+                  {/* Password Card (Only if defined) */}
+                  {editPassphrase && (
+                    <div className="flex items-center justify-between gap-3 p-3 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl">
+                      <div className="flex items-center gap-3 pl-2 flex-1">
+                        <div className="w-8 h-8 rounded-lg bg-brieffy-orange/10 flex items-center justify-center shrink-0">
+                          <Lock className="w-4 h-4 text-brieffy-orange" />
+                        </div>
+                        <div>
+                          <p className="label-caps !text-xs text-zinc-400 mb-0.5">Senha de Acesso</p>
+                          <p className="text-sm font-black text-foreground tracking-widest uppercase">{editPassphrase}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
-                {/* Share button */}
+                {/* Share Full Message */}
                 <Button
                   onClick={shareAll}
-                  variant="outline"
-                  className={`w-full max-w-md h-11 rounded-xl gap-2 transition-all ${
+                  className={`w-full max-w-lg h-15 rounded-full gap-3 font-bold text-base transition-all duration-300 ${
                     shared
-                      ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5'
-                      : 'border-white/10 text-zinc-300 hover:bg-white/5'
+                      ? 'bg-green-500 text-white shadow-[0_0_30px_rgba(34,197,94,0.3)]'
+                      : 'bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-white/10 text-foreground hover:border-brieffy-orange shadow-lg'
                   }`}
                 >
-                  {shared ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-                  {shared ? 'Copiado!' : 'Compartilhar Link + Senha'}
+                  {shared ? <CheckCircle2 className="w-5 h-5" /> : <Share2 className="w-5 h-5 text-brieffy-orange" />}
+                  {shared ? 'MENSAGEM COPIADA!' : 'COPIAR MENSAGEM PARA CLIENTE'}
                 </Button>
                 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                {/* Footer Actions */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg pt-4">
                   <Button
                     variant="outline"
                     onClick={() => router.push(`/dashboard/${sessionId}`)}
-                    className="flex-1 border-white/10 text-cyan-400 hover:text-cyan-300 hover:bg-white/5 rounded-xl h-11"
+                    className="h-14 border-zinc-200 dark:border-white/10 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-full font-bold label-caps"
                   >
-                    Ver Dados Deste Briefing
+                    Gerenciar Briefing
                   </Button>
                   <Button
                     onClick={() => {
@@ -834,10 +854,10 @@ export default function NewBriefingWizard() {
                       setCreatedTemplateId(null);
                       setError(null);
                     }}
-                    className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl h-11 gap-1.5"
+                    className="h-14 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 rounded-full font-bold label-caps flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
-                    Criar Outro
+                    Novo Briefing
                   </Button>
                 </div>
               </div>

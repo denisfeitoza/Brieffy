@@ -297,11 +297,11 @@ export async function getBrandingByUserId(userId: string) {
 
   if (error || !data) {
     return {
-      display_name: 'Smart Briefing',
-      company_name: 'Smart Briefing',
+      display_name: 'Brieffy',
+      company_name: 'Brieffy',
       logo_url: '',
-      brand_color: '#06b6d4',
-      brand_accent: '#8b5cf6',
+      brand_color: '#FF6029',
+      brand_accent: '#171717',
       tagline: '',
       website: '',
     };

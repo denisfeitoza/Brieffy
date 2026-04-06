@@ -126,7 +126,7 @@ export function InsightsPanel({ signals, isOwner = true }: InsightsPanelProps) {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-black">Radar de Escuta Ativa</h3>
-                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Sinais capturados nas entrelinhas</p>
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Sinais capturados nas entrelinhas</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -155,13 +155,13 @@ export function InsightsPanel({ signals, isOwner = true }: InsightsPanelProps) {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Escutando as entrelinhas...</p>
-                      <p className="text-xs text-gray-400 mt-1">Sinais serão exibidos conforme o cliente responde.</p>
+                      <p className="text-sm text-gray-400 mt-1">Sinais serão exibidos conforme o cliente responde.</p>
                     </div>
                   </div>
                 ) : (
                   <>
                     {highRelevance.length > 0 && (
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
+                      <div className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">
                         Alta Relevância — {highRelevance.length} sinal{highRelevance.length !== 1 ? 'is' : ''}
                       </div>
                     )}
@@ -184,16 +184,16 @@ export function InsightsPanel({ signals, isOwner = true }: InsightsPanelProps) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2 mb-1">
-                                <span className={`text-[10px] font-bold uppercase tracking-wider ${cfg.color}`}>
+                                <span className={`text-xs font-bold uppercase tracking-wider ${cfg.color}`}>
                                   {cfg.label}
                                 </span>
-                                <span className="text-[10px] font-mono text-gray-400 shrink-0">
+                                <span className="text-xs font-mono text-gray-400 shrink-0">
                                   {Math.round(signal.relevance_score * 100)}% relevante
                                 </span>
                               </div>
                               <p className="text-xs text-gray-600 leading-relaxed">{signal.summary}</p>
                               {signal.source_answer && signal.source_answer.length < 120 && (
-                                <p className="text-[10px] text-gray-400 mt-1.5 italic line-clamp-2">
+                                <p className="text-xs text-gray-400 mt-1.5 italic line-clamp-2">
                                   &quot;{signal.source_answer}&quot;
                                 </p>
                               )}
@@ -208,7 +208,7 @@ export function InsightsPanel({ signals, isOwner = true }: InsightsPanelProps) {
               {/* Footer note */}
               {signals.length > 0 && (
                 <div className="shrink-0 p-3 border-t border-gray-100 text-center">
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-xs text-gray-400">
                     Estes insights serão incluídos no relatório final do briefing
                   </p>
                 </div>

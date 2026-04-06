@@ -49,7 +49,8 @@ export function CardSelectorInput({
   const [showTextInput, setShowTextInput] = useState(false);
   const scrollTargetRef = useRef<HTMLDivElement>(null);
 
-  const isTextInputVisible = showTextInput || customTexts.length > 0 || inputText.trim().length > 0;
+  const hasOtherSelected = selectedMultiples.some(isOtherOption);
+  const isTextInputVisible = showTextInput || hasOtherSelected || customTexts.length > 0 || inputText.trim().length > 0;
 
   const specifyLabel = voiceLanguage === "pt"
     ? "Especifique abaixo o que deseja:"
@@ -61,6 +62,9 @@ export function CardSelectorInput({
     const isSelected = selectedMultiples.includes(title);
     if (isSelected) {
       setSelectedMultiples(selectedMultiples.filter((t) => t !== title));
+      if (isOtherOption(title)) {
+        setShowTextInput(false);
+      }
     } else {
       setSelectedMultiples([...selectedMultiples, title]);
       // If it's an "Other" option, redirect to text input

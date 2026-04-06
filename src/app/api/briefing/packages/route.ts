@@ -152,7 +152,7 @@ export async function PUT(req: Request) {
   if (authError || !user) return authError;
   try {
     const body = await req.json();
-    const { id, skill_type, author_id, ...updates } = body; // Filter immutable/sensitive fields
+    const { id, skill_type: _st, author_id: _ai, ...updates } = body; // Filter immutable/sensitive fields
 
     if (!id) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
@@ -162,7 +162,7 @@ export async function PUT(req: Request) {
     const { data: existing } = await adminSupabase!
       .from("briefing_category_packages")
       .select("author_id, skill_type")
-      .eq("id", id)
+      .eq("slug", id)
       .single();
 
     if (!existing) {
@@ -185,7 +185,7 @@ export async function PUT(req: Request) {
     const { data, error } = await adminSupabase!
       .from("briefing_category_packages")
       .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq("id", id)
+      .eq("slug", id)
       .select()
       .single();
 
@@ -229,7 +229,7 @@ export async function DELETE(req: Request) {
     const { error } = await adminSupabase!
       .from("briefing_category_packages")
       .delete()
-      .eq("id", id);
+      .eq("slug", id);
 
     if (error) throw error;
 

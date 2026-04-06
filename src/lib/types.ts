@@ -137,6 +137,7 @@ export type BriefingContextType = {
   isUploadStep: boolean;
   setIsFinished: (finished: boolean) => void;
   finishBriefing: () => void;
+  resetBriefing: () => Promise<void>;
   assets: FinalAssets | null;
   setAssets: (assets: FinalAssets) => void;
   submitAnswer: (answer: string | string[] | number) => Promise<void>;

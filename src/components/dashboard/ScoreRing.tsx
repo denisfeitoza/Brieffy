@@ -42,7 +42,7 @@ export function ScoreRing({ score, size = 48 }: Props) {
           style={{ transition: 'stroke-dasharray 0.5s ease' }}
         />
       </svg>
-      <span className="absolute text-[10px] font-bold" style={{ color }}>{score}</span>
+      <span className="absolute text-xs font-bold" style={{ color }}>{score}</span>
     </div>
   );
 }

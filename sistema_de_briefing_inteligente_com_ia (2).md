@@ -201,6 +201,7 @@ O sistema deve permitir:
 - Retomar depois
 - Histórico de respostas
 - **Resetar Briefing**: Permite apagar o histórico de interações e recomeçar a conversa mantendo os dados basais da empresa (Acesso via menu "Mais Opções").
+- **Acesso Simplificado**: Links de briefing possuem segurança opcional via senha de documento (passphrase), eliminando a necessidade de senhas redundantes de acesso inicial e reduzindo o atrito para o cliente. Se o campo for deixado em branco, o link será público.
 
 ---
 
@@ -1109,3 +1110,35 @@ Conta-se o número de respostas do usuário no histórico (excluindo step 0 de i
 - `count <= 8` → CONFIRMATION
 - `count > 8` → DEEP DIVE
 
+---
+
+# 📎 ANEXO U — LÓGICA DE PROGRESSO ONISCIENTE (OMNISCIENT PROGRESS) ✅ IMPLEMENTADO
+
+## 🧠 Conceito
+A barra de progresso não deve ser apenas um reflexo linear de perguntas, mas um indicador psicológico de avanço que garante que o usuário nunca se sinta "parado" e que a finalização seja sempre celebrada.
+
+## ⚙️ Regras de Cálculo (`displayProgress`)
+
+### 1. Diluição por Complexidade (Skill Dilution)
+O progresso é escalado com base no número de **Pacotes de IA (Skills)** selecionados.
+- Mais skills = mais profundidade esperada.
+- A lógica aplica um fator de diluição para evitar que a barra chegue a 100% antes de cobrir os objetivos de todos os pacotes.
+
+### 2. Piso de Percepção (Progress Floor)
+Garante que cada interação do usuário resulte em um avanço visual, mesmo que a IA ainda esteja em fase de exploração profunda.
+- **Avanço Mínimo**: ~4% por step (pergunta respondida).
+- **Impacto**: Elimina a sensação de "barra travada" em briefings longos.
+
+### 3. Teto de Briefing (Briefing Cap)
+Durante a fase de perguntas, o progresso é limitado a **95%**.
+- Os últimos 5% são reservados exclusivamente para a transição de **Geração de Documento**.
+- Isso evita a desilusão de ver "100%" e ainda receber mais perguntas.
+
+### 4. Conclusão Forçada
+- **Estado 'Finish'**: Ao detectar que o documento foi gerado ou o briefing foi finalizado (`isFinished`), a barra salta instantaneamente para **100%**.
+- **Estado 'Upload'**: Se o usuário atingir a tela de gatilho manual de geração, a barra também é forçada a **100%**.
+
+## 🎨 Especificações Visuais (Design System)
+- **Cor Primária**: Laranja Brieffy (`#ff6029`).
+- **Indicador**: "Accent Pill" (Pílula de destaque) no header com fundo `#FFF2ED` e texto bold.
+- **Animação**: Transição de largura suave (0.8s) com easing `easeOut` para uma sensação premium.

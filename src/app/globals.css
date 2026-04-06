@@ -215,18 +215,18 @@
 
 /* Label style — uppercase, tracked, small */
 .label-caps {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text3);
 }
 
 /* Label with accent color */
 .label-caps-accent {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--orange);
 }

@@ -14,6 +14,7 @@ import { Suspense } from 'react';
 import CollectedBriefingData from '@/components/dashboard/CollectedBriefingData';
 import { humanizeFieldKey } from '@/lib/briefing/fieldLabels';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { GenerateDocumentAction } from '@/components/dashboard/GenerateDocumentAction';
 import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
 
 export const dynamic = 'force-dynamic';
@@ -481,11 +482,26 @@ async function SessionContent({ id }: { id: string }) {
             />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-[var(--text3)] p-6 text-center">
-            <FileText className="w-12 h-12 mb-3 opacity-20" />
-            <p>O documento final ainda não está disponível.</p>
+          <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text3)] p-6 text-center">
+            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mb-6">
+              <FileText className="w-10 h-10 text-[var(--orange)] opacity-40" />
+            </div>
+            <h3 className="text-xl font-bold text-[var(--text)] mb-2">Diagnóstico em Processamento</h3>
+            <p className="max-w-md mx-auto mb-8 text-sm">
+              {session.status === 'finished' 
+                ? "Sua estratégia está sendo gerada pela nossa IA. Se o processo demorar muito, você pode forçar a geração abaixo."
+                : "Este briefing ainda não foi finalizado. O diagnóstico ficará disponível assim que a sessão for concluída."}
+            </p>
+            
+            {session.status === 'finished' && (
+              <GenerateDocumentAction sessionId={session.id} />
+            )}
+            
             {session.status !== 'finished' && (
-              <p className="text-sm mt-2">Aguarde a finalização da IA ou encerre o briefing no painel.</p>
+              <div className="flex items-center gap-2 text-xs font-medium text-[var(--orange)] bg-orange-50 px-4 py-2 rounded-full border border-orange-100">
+                <Clock className="w-3.5 h-3.5 animate-pulse" />
+                Aguardando finalização do briefing
+              </div>
             )}
           </div>
         )}

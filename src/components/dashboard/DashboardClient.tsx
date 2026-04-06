@@ -177,7 +177,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
             title="Export all briefings as ZIP"
           >
             <Package className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-xs">{t('dashboard.exportAll')}</span>
+            <span className="hidden sm:inline text-sm">{t('dashboard.exportAll')}</span>
           </Button>
         </div>
       </div>
@@ -193,7 +193,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
               size="sm"
               variant="ghost"
               onClick={() => setSelectedForExport(new Set())}
-              className="text-[var(--text3)] hover:text-[var(--text)] text-xs rounded-lg"
+              className="text-[var(--text3)] hover:text-[var(--text)] text-sm rounded-lg"
             >
               {t('dashboard.clear')}
             </Button>
@@ -227,7 +227,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
             >
               {t(tab.labelKey)}
               {tab.key !== 'all' && (
-                <span className="ml-1.5 text-xs opacity-70">
+                <span className="ml-1.5 text-sm opacity-70">
                   {sessions.filter(s => s.status === tab.key).length}
                 </span>
               )}
@@ -256,7 +256,7 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
       </div>
 
       {filtered.length !== sessions.length && (
-        <p className="text-xs text-[var(--text3)]">
+        <p className="text-sm text-[var(--text3)]">
           {t('dashboard.showing')} <span className="text-[var(--text)] font-medium">{filtered.length}</span> {t('dashboard.of')} {sessions.length} {t('dashboard.briefings')}
         </p>
       )}
@@ -296,15 +296,15 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h4 className="font-semibold text-[var(--text)] truncate text-sm md:text-base">
+                        <h4 className="font-semibold text-[var(--text)] truncate text-base">
                           {session.session_name || 'Untitled Briefing'}
                         </h4>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusInfo.color}`}>
-                          <StatusIcon className="w-3 h-3" />
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${statusInfo.color}`}>
+                          <StatusIcon className="w-3.5 h-3.5" />
                           {statusInfo.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-[var(--text3)]">
+                      <div className="flex items-center gap-3 text-sm text-[var(--text3)]">
                         <span className="font-mono">{session.id.slice(0, 8)}...</span>
                         <span>•</span>
                         <span>{format(new Date(session.created_at), 'MMM dd, yyyy')}</span>
@@ -312,13 +312,13 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                           <>
                             <span>•</span>
                             <div className="flex items-center gap-1.5">
-                              <div className="w-12 h-1 bg-[var(--bg3)] rounded-full overflow-hidden">
+                              <div className="w-14 h-1.5 bg-[var(--bg3)] rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-[var(--orange)] rounded-full transition-all"
                                   style={{ width: `${Math.min(100, Math.round(Number(session.basal_coverage) * 100))}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] text-[var(--orange)] font-mono">
+                              <span className="text-xs text-[var(--orange)] font-mono">
                                 {Math.round(Number(session.basal_coverage) * 100)}%
                               </span>
                             </div>
@@ -334,19 +334,19 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                           variant="ghost"
                           size="sm"
                           onClick={() => setPreviewSession(session)}
-                          className="text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-lg text-xs"
+                          className="text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-lg text-sm"
                           title="Quick preview"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-4 h-4" />
                         </Button>
                       )}
                       <Link href={`/dashboard/${session.id}`}>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-[var(--actext)] hover:bg-[var(--acbg)] rounded-lg text-xs"
+                          className="text-[var(--actext)] hover:bg-[var(--acbg)] rounded-lg text-sm"
                         >
-                          <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                          <ExternalLink className="w-4 h-4 mr-1.5" />
                           <span className="hidden sm:inline">View</span>
                         </Button>
                       </Link>
@@ -354,13 +354,13 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleCopyLink(session.id)}
-                        className={`rounded-lg text-xs hidden sm:flex ${
+                        className={`rounded-lg text-sm hidden sm:flex ${
                           copiedId === session.id
                             ? 'text-emerald-500 bg-emerald-50'
                             : 'text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)]'
                         }`}
                       >
-                        <Copy className="w-3.5 h-3.5 mr-1" />
+                        <Copy className="w-4 h-4 mr-1.5" />
                         {copiedId === session.id ? t('dashboard.copied') : t('dashboard.link')}
                       </Button>
                       <Button
@@ -392,10 +392,10 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
               <SheetHeader className="p-6 pb-4 border-b border-[var(--bd)] sticky top-0 bg-[var(--bg)] z-10">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <SheetTitle className="text-[var(--text)] font-semibold text-base truncate">
+                    <SheetTitle className="text-[var(--text)] font-semibold text-lg truncate">
                       {previewSession.session_name || t('dashboard.untitled')}
                     </SheetTitle>
-                    <p className="text-xs text-[var(--text3)] mt-0.5">
+                    <p className="text-sm text-[var(--text3)] mt-0.5">
                       {format(new Date(previewSession.created_at), 'MMM dd, yyyy • HH:mm')}
                     </p>
                   </div>
@@ -412,17 +412,17 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         }
                       }}
                       disabled={isExporting}
-                      className="border-[var(--bd)] text-[var(--text2)] hover:text-[var(--text)] rounded-xl text-xs gap-1"
+                      className="border-[var(--bd)] text-[var(--text2)] hover:text-[var(--text)] rounded-xl text-sm gap-1.5"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-4 h-4" />
                       {t('dashboard.export')}
                     </Button>
                     <Link href={`/dashboard/${previewSession.id}`}>
                       <Button
                         size="sm"
-                        className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl text-xs"
+                        className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl text-sm"
                       >
-                        <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                        <ExternalLink className="w-4 h-4 mr-2" />
                         {t('dashboard.openFull')}
                       </Button>
                     </Link>

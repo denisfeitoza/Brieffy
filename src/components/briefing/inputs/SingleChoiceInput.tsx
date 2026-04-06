@@ -44,7 +44,8 @@ export function SingleChoiceInput({
   const [showTextInput, setShowTextInput] = useState(false);
   const textInputRef = useRef<TextAudioInputHandle>(null);
 
-  const isTextInputVisible = showTextInput || inputText.trim().length > 0;
+  const hasOtherAnswered = activeMessage.userAnswer && typeof activeMessage.userAnswer === "string" && isOtherOption(activeMessage.userAnswer);
+  const isTextInputVisible = showTextInput || hasOtherAnswered || inputText.trim().length > 0;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);

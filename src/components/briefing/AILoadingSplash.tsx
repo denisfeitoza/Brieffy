@@ -17,6 +17,7 @@ interface AILoadingSplashProps {
   requirePassword?: boolean;
   sessionId?: string;
   onAccessUnlocked?: () => void;
+  onComplete?: () => void;
 }
 
 // Translations only for the password gate. 
@@ -55,6 +56,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
   requirePassword = false,
   sessionId,
   onAccessUnlocked,
+  onComplete,
 }: AILoadingSplashProps) {
   const t = SPLASH_I18N[language] || SPLASH_I18N.pt;
   
@@ -226,7 +228,10 @@ export const AILoadingSplash = memo(function AILoadingSplash({
                    style={{ background: brandColor }}
                    initial={{ width: "0%" }}
                    animate={{ width: "100%" }}
-                   transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                   onAnimationComplete={() => {
+                     // small delay for UX before dismissing
+                     setTimeout(() => onComplete?.(), 400);
+                   }}
                  />
               </motion.div>
             )}

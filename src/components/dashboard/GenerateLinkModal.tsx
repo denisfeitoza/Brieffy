@@ -60,8 +60,6 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
   const [sessionName, setSessionName] = useState('');
   const [initialContext, setInitialContext] = useState('');
   const [editPassphrase, setEditPassphrase] = useState('');
-  const [accessPassword, setAccessPassword] = useState('');
-  const [showAccessPassword, setShowAccessPassword] = useState(false);
   const [showContext, setShowContext] = useState(false);
 
   // Package state
@@ -133,8 +131,6 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
           setSessionName('');
           setInitialContext('');
           setEditPassphrase('');
-          setAccessPassword('');
-          setShowAccessPassword(false);
           setGeneratedLink('');
           setCopied(false);
           setShared(false);
@@ -230,7 +226,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
           initial_context: initialContext.trim() || null,
           selected_packages: selectedSlugs,
           edit_passphrase: editPassphrase.trim() || null,
-          access_password: accessPassword.trim() || null,
+          access_password: null,
           status: 'pending',
           user_id: user?.id || null,
         }])
@@ -266,15 +262,12 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
     let msg = '';
     if (msgLang === 'pt') {
       msg = `Acesse aqui:\n${generatedLink}`;
-      if (accessPassword) msg += `\n\nSenha de acesso: ${accessPassword}`;
       if (editPassphrase) msg += `\n\nSenha do documento: ${editPassphrase}`;
     } else if (msgLang === 'es') {
       msg = `Accede aquí:\n${generatedLink}`;
-      if (accessPassword) msg += `\n\nContraseña de acesso: ${accessPassword}`;
       if (editPassphrase) msg += `\n\nContraseña del documento: ${editPassphrase}`;
     } else {
       msg = `Access here:\n${generatedLink}`;
-      if (accessPassword) msg += `\n\nAccess password: ${accessPassword}`;
       if (editPassphrase) msg += `\n\nDocument password: ${editPassphrase}`;
     }
 
@@ -318,9 +311,12 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
         }
       />
 
-      <DialogContent className={`bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] transition-all duration-500 overflow-hidden ${
-        step === 'create' ? 'sm:max-w-[780px]' : 'sm:max-w-[460px]'
-      }`}>
+      <DialogContent 
+        className={`bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] transition-all duration-500 overflow-hidden ${
+          step === 'create' ? 'sm:max-w-[780px]' : 'sm:max-w-[460px]'
+        }`}
+        style={{ fontFamily: '"DM Sans", sans-serif' }}
+      >
 
         {/* ========== STEP 1: CREATE (Unified) ========== */}
         {step === 'create' && (
@@ -341,15 +337,15 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
 
               {/* ── Session Name ─────────────────────────────────── */}
               <div className="space-y-2">
-                <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">1</span>
+                <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">1</span>
                   {t('modal.briefingName')} <span className="text-[var(--actext)] lowercase font-medium">({t('modal.required')})</span>
                 </label>
                 <Input
                   placeholder={t('modal.briefingNamePlaceholder')}
                   value={sessionName}
                   onChange={(e) => setSessionName(e.target.value)}
-                  className="bg-[var(--bg)] border-[var(--bd)] focus-visible:ring-[var(--orange)] h-12 text-base rounded-xl placeholder:text-[var(--text3)]"
+                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-12 text-base rounded-full px-6 placeholder:text-[var(--text3)]"
                 />
               </div>
 
@@ -358,9 +354,9 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 <button
                   type="button"
                   onClick={() => setShowContext(!showContext)}
-                  className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
+                  className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
                 >
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">2</span>
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">2</span>
                   {t('modal.priorContext')}
                   <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
                   <ChevronDown className={`w-4 h-4 text-[var(--text3)] ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
@@ -380,7 +376,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                           placeholder={t('modal.contextPlaceholder')}
                           value={initialContext}
                           onChange={(e) => setInitialContext(e.target.value)}
-                          className="bg-[var(--bg)] border-[var(--bd)] min-h-[90px] focus-visible:ring-[var(--orange)] rounded-xl resize-y placeholder:text-[var(--text3)] text-sm"
+                          className="bg-[var(--bg)] border-[var(--bd-strong)] min-h-[90px] focus-visible:ring-[var(--orange)] rounded-[32px] px-6 py-4 resize-y placeholder:text-[var(--text3)] text-sm"
                         />
                         {initialContext.trim() && (
                           <motion.div
@@ -429,12 +425,12 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
               {/* ── Package Selection ─────────────────────────────── */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">3</span>
+                  <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">3</span>
                     {t('modal.aiPackages')}
                   </label>
                   {selectedSlugs.length > 0 && (
-                    <span className="text-[10px] text-[var(--text3)] font-bold tracking-tight flex items-center gap-2">
+                    <span className="text-xs text-[var(--text3)] font-bold tracking-tight flex items-center gap-2">
                       <span className="text-[var(--actext)]">{selectedSlugs.length}</span> {t('modal.selected').toUpperCase()}
                       <span className="text-[var(--text3)] opacity-30">·</span>
                       ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} {t('modal.questions').toUpperCase()}
@@ -450,7 +446,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                   <div className="space-y-4">
                     {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                       <div key={dept}>
-                        <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-2 px-0.5">
+                        <p className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-2 px-0.5">
                           {t(`dept.${dept}`)}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -495,21 +491,21 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                                       {pkg.name}
                                     </span>
                                     {isAiSuggested && (
-                                      <span className="shrink-0 text-[8px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-[var(--orange)]/10 text-[var(--orange)] border border-[var(--orange)]/20">
+                                      <span className="shrink-0 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-[var(--orange)]/10 text-[var(--orange)] border border-[var(--orange)]/20">
                                         IA
                                       </span>
                                     )}
                                     {pkg.is_default_enabled && !isAiSuggested && (
-                                      <span className="shrink-0 text-[8px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-[var(--text2)] text-[var(--bg)] border border-[var(--text3)]">
+                                      <span className="shrink-0 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-[var(--text2)] text-[var(--bg)] border border-[var(--text3)]">
                                         ON
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-[10px] text-[var(--text3)] truncate mt-0.5 leading-snug">
+                                  <p className="text-xs text-[var(--text3)] truncate mt-0.5 leading-snug">
                                     {pkg.description}
                                   </p>
                                 </div>
-                                <span className="text-[9px] font-mono text-[var(--text3)] shrink-0">
+                                <span className="text-[10px] font-mono text-[var(--text3)] shrink-0">
                                   {pkg.max_questions === null ? '∞' : `≤${pkg.max_questions}`}
                                 </span>
                               </motion.button>
@@ -522,71 +518,42 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 )}
               </div>
 
-              {/* ── Access Password (optional, recommended) ─────── */}
-              <div className="space-y-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowAccessPassword(!showAccessPassword)}
-                  className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
-                >
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">4</span>
-                  {t('modal.accessPassword')}
-                  <span className="text-[var(--actext)] lowercase font-medium px-2 py-0.5 rounded-full bg-[var(--acbg)] border border-[var(--acbd)] ml-1">
-                    {t('modal.recommended')}
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-[var(--text3)] ml-auto transition-transform duration-300 ${showAccessPassword ? 'rotate-180' : ''}`} />
-                </button>
-
-                <AnimatePresence>
-                  {showAccessPassword && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="space-y-2">
-                        <p className="text-[11px] text-[var(--text3)] leading-relaxed">
-                          {t('modal.accessPasswordDesc')}
-                        </p>
-                        <div className="relative">
-                          <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text3)] pointer-events-none" />
-                          <Input
-                            value={accessPassword}
-                            onChange={(e) => setAccessPassword(e.target.value)}
-                            className="bg-[var(--bg)] border-[var(--bd)] focus-visible:ring-amber-400 h-11 text-sm rounded-xl pl-10 placeholder:text-[var(--text3)]"
-                            placeholder={t('modal.accessPasswordPlaceholder')}
-                          />
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* ── Passphrase ────────────────────────────────────── */}
+              {/* ── Passphrase (Optional) ────────────────────────── */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">5</span>
+                  <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">4</span>
                     {t('modal.documentPassword')}
+                    <span className="text-[var(--text3)] lowercase font-medium ml-1">
+                      {t('modal.optional')}
+                    </span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={generateCoolPassphrase}
-                    className="text-[var(--actext)] hover:underline text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
-                  >
-                    <Wand2 className="w-3 h-3" />
-                    {t('modal.generateAnother')}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {editPassphrase && (
+                      <button
+                        type="button"
+                        onClick={() => setEditPassphrase('')}
+                        className="text-red-400 hover:text-red-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
+                      >
+                        {language === 'pt' ? 'Remover' : language === 'es' ? 'Eliminar' : 'Remove'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={generateCoolPassphrase}
+                      className="text-[var(--actext)] hover:underline text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
+                    >
+                      <Wand2 className="w-3 h-3" />
+                      {t('modal.generateAnother')}
+                    </button>
+                  </div>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text3)] pointer-events-none" />
                   <Input
                     value={editPassphrase}
                     onChange={(e) => setEditPassphrase(e.target.value)}
-                    className="bg-[var(--bg)] border-[var(--bd)] focus-visible:ring-[var(--orange)] h-11 font-mono text-sm rounded-xl pl-10 placeholder:text-[var(--text3)]"
+                    className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 font-mono text-sm rounded-full pl-10 placeholder:text-[var(--text3)]"
                     placeholder={t('modal.passphrasePlaceholder')}
                   />
                 </div>
@@ -640,7 +607,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
               <div className="w-full space-y-6">
                 {/* ── Direct Link ───────────────────────────────────── */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2 px-1">
+                  <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2 px-1">
                     {t('modal.accessLink')}
                   </label>
                   <div className="flex items-center gap-2 p-1.5 bg-[var(--bg2)] border border-[var(--bd)] rounded-full group transition-colors hover:border-[var(--bd-strong)]">
@@ -658,19 +625,21 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 </div>
 
                 {/* ── Document Password ─────────────────────────────── */}
-                <div className="p-4 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between">
-                  <div>
-                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] block mb-1">
-                      {t('modal.documentPassword')}
-                    </label>
-                    <code className="text-lg font-bold text-[var(--text)] tracking-wider">
-                      {editPassphrase}
-                    </code>
+                {editPassphrase && (
+                  <div className="p-4 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between">
+                    <div>
+                      <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] block mb-1">
+                        {t('modal.documentPassword')}
+                      </label>
+                      <code className="text-lg font-bold text-[var(--text)] tracking-wider">
+                        {editPassphrase}
+                      </code>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)]">
+                      <Lock className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)]">
-                    <Lock className="w-5 h-5" />
-                  </div>
-                </div>
+                )}
 
                 {/* ── Share CTA ─────────────────────────────────────── */}
                 <div className="pt-2">
@@ -681,7 +650,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                     <Share2 className="w-4 h-4" />
                     {t('modal.copyInviteMessage').toUpperCase()}
                   </Button>
-                  <p className="text-center text-[10px] text-[var(--text3)] mt-3 font-medium">
+                  <p className="text-center text-xs text-[var(--text3)] mt-3 font-medium">
                     {t('modal.copyInviteMessageSub')}
                   </p>
                 </div>

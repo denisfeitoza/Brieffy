@@ -79,7 +79,7 @@ export function ColorPickerInput({
           <span className="text-sm font-semibold tracking-widest text-[var(--orange)] uppercase mb-2 text-center">
             Paleta Final
           </span>
-          <p className="text-[11px] text-gray-500 mb-6 text-center">Sua paleta de marca selecionada</p>
+          <p className="text-xs text-gray-500 mb-6 text-center">Sua paleta de marca selecionada</p>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
             {ansArray.map((hex: string, idx: number) => (
               <div key={idx} className="group flex flex-col items-center gap-3 relative">
@@ -88,7 +88,7 @@ export function ColorPickerInput({
                   style={{ backgroundColor: hex }}
                 />
                 <div className="flex flex-col items-center mt-1">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider whitespace-nowrap">
+                  <span className="text-xs uppercase font-bold text-gray-400 tracking-wider whitespace-nowrap">
                     {idx < mainCount ? "Principal" : "Detalhe"}
                   </span>
                   <span className="text-xs font-mono text-gray-500 mt-1 px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200">
@@ -165,7 +165,7 @@ export function ColorPickerInput({
 
   const HintInput = ({ onConfirm }: { onConfirm: () => void }) => (
     <div className="w-full max-w-sm mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <label className="text-[11px] text-gray-400 uppercase tracking-wider mb-2 block text-center">
+      <label className="text-xs text-gray-400 uppercase tracking-wider mb-2 block text-center">
         Descreva o estilo que você quer
       </label>
       <div className="flex gap-2">
@@ -204,7 +204,7 @@ export function ColorPickerInput({
           <span className="text-sm font-semibold tracking-widest text-[var(--orange)] uppercase mb-2 text-center">
             {t.step1Title}
           </span>
-          <p className="text-[12px] text-gray-500 mb-6 text-center max-w-md">
+          <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
             A IA sugeriu cores com base nas suas respostas.{" "}
             {isOnboarding
               ? "Selecione 1 cor principal para sua marca."
@@ -285,7 +285,7 @@ export function ColorPickerInput({
     <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-right-8 duration-500">
       <div className="flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl bg-white border border-gray-200 shadow-xl">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-[10px] text-gray-400 uppercase tracking-wider mr-2">Principais:</span>
+          <span className="text-xs text-gray-400 uppercase tracking-wider mr-2">Principais:</span>
           {mainColors.map((hex, i) => (
             <div key={i} className="w-8 h-8 rounded-full border border-white/10" style={{ backgroundColor: hex }} title={hex} />
           ))}
@@ -293,7 +293,7 @@ export function ColorPickerInput({
         <span className="text-sm font-semibold tracking-widest text-[var(--orange)] uppercase mb-2 text-center">
           Cores de Detalhe
         </span>
-        <p className="text-[12px] text-gray-500 mb-6 text-center max-w-md">
+        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
           {isOnboarding
             ? "Escolha 1 cor de detalhe que complementa sua cor principal."
             : "Escolha 1 ou 2 cores de detalhe que complementam suas cores principais."}
