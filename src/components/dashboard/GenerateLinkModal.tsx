@@ -600,10 +600,11 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                     </div>
                     <Button
                       onClick={copyLinkOnly}
-                      className="h-9 px-4 text-xs font-bold rounded-full bg-black text-white hover:opacity-90 shrink-0 gap-2"
+                      className="h-9 px-3 sm:px-4 text-xs font-bold rounded-full bg-black text-white hover:opacity-90 shrink-0 gap-1.5 sm:gap-2"
                     >
                       <Copy className="w-3.5 h-3.5" />
-                      {t('modal.copyLink').toUpperCase()}
+                      <span className="hidden sm:inline">{t('modal.copyLink').toUpperCase()}</span>
+                      <span className="inline sm:hidden">{t('modal.copy').toUpperCase()}</span>
                     </Button>
                   </div>
                 </div>

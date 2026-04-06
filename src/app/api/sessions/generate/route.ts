@@ -53,6 +53,18 @@ export async function POST(req: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+    
+    // Check for duplicate name
+    const { data: existingSession, error: existingError } = await supabaseAdmin
+      .from('briefing_sessions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('session_name', sessionName.trim())
+      .maybeSingle();
+
+    if (existingSession) {
+      return NextResponse.json({ error: "Você já possui uma sessão com este nome. Escolha um nome diferente." }, { status: 400 });
+    }
 
     const { data, error } = await supabaseAdmin
       .from('briefing_sessions')

@@ -322,6 +322,7 @@ export async function POST(req: Request) {
     if (formatConfig.multi_slider) allowedFormats.push(`  - multi_slider: Multiple dimensions. Options as [{"label","min":1,"max":5,"minLabel","maxLabel"}]. MUST be 1-5 scale. 3-5 dimensions.`);
     if (formatConfig.color_picker) allowedFormats.push(`  - color_picker: Brand color palette wizard. Use ONLY for color gathering.`);
     if (formatConfig.file_upload) allowedFormats.push(`  - file_upload: Assets/references. Use ONLY at the end.`);
+    if (!formatConfig.font) allowedFormats.push(`  - [PROIBIDO]: NUNCA faça perguntas técnicas de design (fontes exatas/hex/tipografia).`);
 
     // ================================================================
     // PHASE-SPECIFIC MODULES — Only include what's needed for current phase

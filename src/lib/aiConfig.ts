@@ -45,6 +45,7 @@ export interface SettingsOverride {
   briefing_format_multi_slider?: string;
   briefing_format_color_picker?: string;
   briefing_format_file_upload?: string;
+  briefing_format_font?: string;
 }
 
 // ================================================================
@@ -59,6 +60,7 @@ export interface FormatConfig {
   multi_slider: boolean;
   color_picker: boolean;
   file_upload: boolean;
+  font: boolean;
 }
 
 export function getFormatConfig(overrides?: SettingsOverride): FormatConfig {
@@ -72,6 +74,7 @@ export function getFormatConfig(overrides?: SettingsOverride): FormatConfig {
     multi_slider: getBool(overrides?.briefing_format_multi_slider, false),
     color_picker: getBool(overrides?.briefing_format_color_picker, true),
     file_upload: getBool(overrides?.briefing_format_file_upload, true),
+    font: getBool(overrides?.briefing_format_font, false),
   };
 }
 

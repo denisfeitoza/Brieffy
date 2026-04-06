@@ -600,8 +600,11 @@ export default function AdminSettingsPage() {
                   { id: "briefing_format_boolean_toggle", label: "Boolean Toggle", desc: "Yes/No or binary choice." },
                   { id: "briefing_format_color_picker", label: "Color Picker", desc: "Visual color palette selector." },
                   { id: "briefing_format_file_upload", label: "File Upload", desc: "File collection requests." },
+                  { id: "briefing_format_font", label: "Tipografia / Fonts", desc: "Permit AI to ask about typography and specific fonts." },
                 ].map((fmt) => {
-                  const currentValue = settings[fmt.id] !== "false"; // Default true
+                  const defaultFalseFormats = ["briefing_format_slider", "briefing_format_multi_slider", "briefing_format_font"];
+                  const isDefaultFalse = defaultFalseFormats.includes(fmt.id);
+                  const currentValue = settings[fmt.id] !== undefined ? settings[fmt.id] === "true" : !isDefaultFalse;
                   return (
                     <div key={fmt.id} className="flex flex-row items-center justify-between rounded-xl border border-[var(--bd)] p-4 bg-[var(--bg2)]">
                       <div className="space-y-0.5 pr-4">

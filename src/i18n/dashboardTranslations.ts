@@ -52,6 +52,12 @@ const pt: TranslationDict = {
   'modal.notDefined': 'Não definida',
   'modal.close': 'Fechar',
   'modal.generateLinkBtn': 'Gerar Link',
+  'modal.readyToShare': 'Pronto para Compartilhar',
+  'modal.readyToShareSub': 'O link foi gerado e as configurações de IA salvas. Agora é só enviar.',
+  'modal.accessLink': 'Link de Acesso',
+  'modal.copyLink': 'Copiar Link',
+  'modal.copyInviteMessage': 'Copiar Mensagem de Convite',
+  'modal.copyInviteMessageSub': 'Inclui o link e a senha (se definida)',
 
   // ─── Clipboard ─────────────────────────────────────────
   'clipboard.briefingLink': '🔗 Link do Briefing:',
@@ -205,6 +211,12 @@ const en: TranslationDict = {
   'modal.notDefined': 'Not set',
   'modal.close': 'Close',
   'modal.generateLinkBtn': 'Generate Link',
+  'modal.readyToShare': 'Ready to Share',
+  'modal.readyToShareSub': 'The link is generated and AI settings are saved. Ready to send.',
+  'modal.accessLink': 'Access Link',
+  'modal.copyLink': 'Copy Link',
+  'modal.copyInviteMessage': 'Copy Invite Message',
+  'modal.copyInviteMessageSub': 'Includes link and password (if set)',
 
   // ─── Clipboard ─────────────────────────────────────────
   'clipboard.briefingLink': '🔗 Briefing Link:',
@@ -358,6 +370,12 @@ const es: TranslationDict = {
   'modal.notDefined': 'No definida',
   'modal.close': 'Cerrar',
   'modal.generateLinkBtn': 'Generar Enlace',
+  'modal.readyToShare': 'Listo para Compartir',
+  'modal.readyToShareSub': 'El enlace ha sido generado y la configuración de IA guardada. Listo para enviar.',
+  'modal.accessLink': 'Enlace de Acceso',
+  'modal.copyLink': 'Copiar Enlace',
+  'modal.copyInviteMessage': 'Copiar Mensaje de Invitación',
+  'modal.copyInviteMessageSub': 'Incluye enlace y contraseña (si está definida)',
 
   // ─── Clipboard ─────────────────────────────────────────
   'clipboard.briefingLink': '🔗 Enlace del Briefing:',

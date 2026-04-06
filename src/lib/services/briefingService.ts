@@ -218,7 +218,7 @@ export async function getTemplates() {
     .from('briefing_templates')
     .select(`
       *,
-      briefing_sessions(id, edit_passphrase, status)
+      briefing_sessions(id, edit_passphrase, status, session_name)
     `)
     .order('created_at', { ascending: false });
 

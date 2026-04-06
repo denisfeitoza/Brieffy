@@ -105,7 +105,6 @@ export function buildBehaviorRules(params: BehaviorRulesParams): string {
 - AGRUPAMENTO OPORTUNISTA: Se houver campos pendentes logicamente correlacionados, junte-os em UMA ÚNICA pergunta para poupar o tempo do usuário.
 - ENGAGEMENT ATUAL (calculado pelo sistema): "${backendEngagement}". ${backendEngagement === 'low' ? 'Cliente com baixo engajamento — use APENAS tipos táteis (boolean_toggle, single_choice, etc). Seja breve.' : backendEngagement === 'medium' ? 'Engajamento moderado — equilibre perguntas abertas e táteis.' : 'Bom engajamento — explore com profundidade.'}
 - Pule campos já conhecidos. Infira quando possível. Cada pergunta deve ter razão estratégica.
-- NUNCA faça perguntas técnicas de design (fontes exatas/hex). Use perguntas de VETO ou PERCEPÇÃO.
 ${selectedPackages && selectedPackages.length > 0 ? '- ORQUESTRAÇÃO DE PACOTES: conversa unificada. Sequência: basal→branding→estratégia→execução→consultoria. Deduplicação cruzada entre pacotes. Transições naturais.' : ''}
 </RegrasDeComportamento>`;
 }

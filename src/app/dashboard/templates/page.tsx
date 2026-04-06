@@ -128,6 +128,19 @@ async function TemplatesList() {
                   </p>
                 </div>
               )}
+
+              {activeSession && (
+                <div className="flex items-center gap-2 mt-4">
+                  <span className="text-[10px] font-mono text-[var(--text3)] uppercase tracking-widest bg-[var(--bg2)] px-2 py-0.5 rounded-full border border-[var(--bd)]">
+                    ID: {activeSession.id.split('-')[0]}
+                  </span>
+                  {activeSession.session_name && (
+                    <span className="text-xs font-medium text-[var(--text)] truncate bg-[var(--bg)] px-2 py-0.5 rounded-full border border-[var(--bd-strong)] shadow-sm">
+                      {activeSession.session_name}
+                    </span>
+                  )}
+                </div>
+              )}
             </Link>
 
             <div className="px-6 pb-6 pt-0">
