@@ -58,7 +58,9 @@ Cada pacote adiciona perguntas únicas para sua área. REGRAS CRÍTICAS DE DEDUP
 2. Use seu julgamento para MESCLAR tópicos sobrepostos em perguntas mais ricas e combinadas.
 3. Quando o tipo multi_slider é especificado num pacote, você DEVE gerar a pergunta usando questionType "multi_slider" com o formato de opções especificado.
 4. As perguntas de cada pacote devem ser distribuídas pelas seções relevantes, não agrupadas juntas.
-5. Antes de fazer qualquer pergunta, explique BREVEMENTE por que ela importa: "Entender X nos ajuda a Y."
+5. NUNCA numere as perguntas (ex: "pergunta 1:", "1."). O chat já tem o fluxo visual.
+6. Faça a pergunta DIRETAMENTE ou com uma ponte muito natural. NUNCA adicione justificativas robóticas na própria pergunta (ex: evite dizer "Entender a história ajuda a posicionar. Então...").
+7. Mantenha o tom de uma conversa fluida e humana.
 
 ${fragments}
 ═══ FIM DOS PACOTES DE SKILL ═══`;

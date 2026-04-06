@@ -420,6 +420,23 @@ export function BriefingProvider({
     if (typeof answer === 'string' && !answer.trim()) return;
     if (Array.isArray(answer) && answer.length === 0) return;
 
+    const currentMsg = messages[currentStepIndex];
+    if (currentMsg && currentMsg.userAnswer !== undefined) {
+      const isSameAnswer = Array.isArray(answer) && Array.isArray(currentMsg.userAnswer)
+        ? JSON.stringify(answer) === JSON.stringify(currentMsg.userAnswer)
+        : answer === currentMsg.userAnswer;
+
+      if (isSameAnswer) {
+        if (currentStepIndex < messages.length - 1) {
+          setCurrentStepIndex(prev => prev + 1);
+          return;
+        } else if (isFinished) {
+          setIsUploadStep(true);
+          return;
+        }
+      }
+    }
+
     const sid = existingSessionId || sessionId;
     if (sid) lsRemove(`draft_${sid}_${currentStepIndex}`);
 

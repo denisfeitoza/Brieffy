@@ -110,14 +110,14 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         }}
         disabled={isLoading || isSubmittingLocal || isTranscribing}
         placeholder={placeholder}
-        className={`w-full transition-all font-inter pr-32 pl-6 rounded-2xl ${
+        className={`w-full transition-all font-inter pr-32 pl-6 md:pl-8 rounded-[2rem] ${
           isRecording 
             ? 'bg-red-50/50 border-red-500/50 ring-2 ring-red-500/30 text-red-900 placeholder:text-red-500/80 animate-pulse' 
             : 'bg-white border-gray-200 text-black placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--orange)]/20 focus-visible:border-[var(--orange)] shadow-sm'
         } ${
           isDiscoveryPhase
-            ? `h-20 md:h-24 text-lg md:text-xl ${!isRecording ? 'border-[var(--orange)]/30 shadow-md' : ''}`
-            : 'h-14 md:h-16 text-base md:text-lg'
+            ? `h-[88px] md:h-28 text-xl md:text-2xl ${!isRecording ? 'border-[var(--orange)]/30 shadow-md' : ''}`
+            : 'h-16 md:h-20 text-[17px] md:text-xl'
         }`}
         spellCheck="false"
         autoComplete="off"
@@ -134,8 +134,8 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         ) : (
           <Button
             size="icon"
-            className={`rounded-xl transition-all shadow-lg ${
-              isDiscoveryPhase ? 'h-14 w-14' : 'h-12 w-12'
+            className={`rounded-[1.25rem] transition-all shadow-lg ${
+              isDiscoveryPhase ? 'h-[72px] w-[72px]' : 'h-14 w-14'
             } ${
               isRecording
                 ? "bg-red-500 text-white hover:bg-red-600 animate-pulse shadow-red-500/30"
@@ -152,7 +152,9 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
 
         <Button
           size="icon"
-          className={`h-12 w-12 rounded-xl transition-colors shadow-sm ${
+          className={`rounded-[1.25rem] transition-colors shadow-sm ${
+            isDiscoveryPhase ? 'h-[72px] w-[72px]' : 'h-14 w-14'
+          } ${
             isAddAction && inputText.trim()
               ? "bg-black text-white hover:bg-neutral-800"
               : "bg-black text-white hover:bg-neutral-800 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"

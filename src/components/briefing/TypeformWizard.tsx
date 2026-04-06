@@ -327,7 +327,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
         className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto"
       >
         <div className="max-w-3xl mx-auto w-full flex flex-col flex-1 h-full min-h-full py-2 sm:py-6 md:py-12">
-          <div className="flex-1 flex flex-col space-y-6 md:space-y-8 shrink-0">
+          <div className="flex-1 flex flex-col justify-center space-y-6 md:space-y-8 shrink-0 pb-6">
             {/* Discovery Badge */}
             {isDiscoveryPhase && (
                <motion.div
@@ -354,7 +354,11 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
              {/* Question Text */}
              <h1 
-               className="text-3xl md:text-5xl font-medium tracking-tight text-[var(--text)] leading-tight"
+               className={`font-medium text-[var(--text)] transition-all duration-500 ${
+                 activeMessage?.inputType === 'text' || (activeMessage?.inputType === 'single_choice' && (activeMessage?.options?.length || 0) > 5)
+                   ? 'text-[42px] sm:text-[56px] md:text-[68px] tracking-[-0.03em] leading-[1.05]'
+                   : 'text-[30px] sm:text-[36px] md:text-[44px] tracking-[-0.02em] leading-[1.12] md:leading-[1.1]'
+               }`}
                style={{ fontFamily: `"${activeFont}", sans-serif` }}
              >
                {activeMessage?.content}

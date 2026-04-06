@@ -290,7 +290,7 @@ export function SingleChoiceInput({
               size="lg"
               onClick={() => handleOptionClick(optText)}
               disabled={isLoading || isSubmittingLocal}
-              className="rounded-2xl sm:rounded-full bg-white border-gray-200 hover:border-[var(--orange)]/40 hover:bg-[var(--orange)]/5 text-black shadow-sm min-h-[56px] h-auto py-3 px-5 md:px-6 font-medium tracking-wide transition-all active:scale-[0.97] justify-start sm:justify-center text-left sm:text-center whitespace-normal break-words"
+              className="rounded-2xl sm:rounded-full bg-white border-gray-200 hover:border-[var(--orange)]/40 hover:bg-[var(--orange)]/5 text-black shadow-sm min-h-[64px] sm:min-h-[72px] h-auto py-4 px-6 md:px-8 text-[16px] md:text-[17px] font-medium tracking-wide transition-all active:scale-[0.97] justify-start sm:justify-center text-left sm:text-center whitespace-normal break-words"
             >
               {optText}
             </Button>
@@ -302,7 +302,7 @@ export function SingleChoiceInput({
             size="lg"
             onClick={generateMoreOptions}
             disabled={isGeneratingMore || isLoading || isSubmittingLocal}
-            className="rounded-full justify-center text-[var(--orange)] hover:text-[#e05221] hover:bg-[var(--orange)]/10 min-h-[56px] h-auto py-3 md:h-14 font-medium"
+            className="rounded-full justify-center text-[var(--orange)] hover:text-[#e05221] hover:bg-[var(--orange)]/10 min-h-[64px] sm:min-h-[72px] h-auto py-4 px-6 md:px-8 text-[16px] md:text-[17px] font-medium"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isGeneratingMore ? "animate-spin" : ""}`} />
             {t.otherOptions}

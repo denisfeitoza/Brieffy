@@ -85,10 +85,10 @@ export function MultipleChoiceInput({
           return (
             <label
               key={optKey}
-              className={`flex items-center gap-3 p-4 sm:p-5 min-h-[56px] rounded-xl border cursor-pointer transition-all active:scale-[0.98] ${
+              className={`flex items-center gap-4 p-5 sm:p-6 min-h-[64px] sm:min-h-[72px] rounded-2xl border cursor-pointer transition-all active:scale-[0.98] ${
                 isSelected
-                  ? "border-[var(--orange)] bg-[var(--orange)]/5 ring-1 ring-[var(--orange)]/30"
-                  : "border-gray-200 bg-white hover:border-[var(--orange)]/30 shadow-sm"
+                  ? "border-[var(--orange)] bg-[var(--orange)]/5 ring-2 ring-[var(--orange)]/30 shadow-md"
+                  : "border-gray-200 bg-white hover:border-[var(--orange)]/30 hover:bg-[var(--orange)]/5 shadow-sm"
               }`}
             >
               <Checkbox
