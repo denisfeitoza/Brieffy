@@ -38,6 +38,35 @@ export function PrintPdfButton({ className, pdfSelector = '.a4-document-containe
         return;
       }
 
+      // WORKAROUND: html2canvas (used by html2pdf) crashes on 'lab()' or 'oklch()' colors.
+      // We intercept getComputedStyle and replace unsupported colors with a fallback.
+      const originalGetComputedStyle = window.getComputedStyle;
+      window.getComputedStyle = function(elt, pseudoElt) {
+        const style = originalGetComputedStyle(elt, pseudoElt);
+        return new Proxy(style, {
+          get(target, prop) {
+            if (prop === 'getPropertyValue') {
+              return function(p: string) {
+                const val = target.getPropertyValue(p);
+                if (val && typeof val === 'string' && (val.includes('oklch(') || val.includes('lab('))) {
+                  return 'rgb(150, 150, 150)'; // Fallback safe color
+                }
+                return val;
+              };
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const val = (target as any)[prop];
+            if (typeof val === 'function') {
+              return val.bind(target);
+            }
+            if (typeof val === 'string' && (val.includes('oklch(') || val.includes('lab('))) {
+              return 'rgb(150, 150, 150)';
+            }
+            return val;
+          }
+        });
+      };
+
       const opt = {
         margin:       [15, 15, 20, 15],
         filename:     `diagnostico-${new Date().toISOString().split('T')[0]}.pdf`,
@@ -59,29 +88,34 @@ export function PrintPdfButton({ className, pdfSelector = '.a4-document-containe
         text: (text: string, x: number, y: number, options?: { align: string }) => void;
       }
 
-      await html2pdf()
-        .from(element)
-        .set(opt)
-        .toPdf()
-        .get('pdf')
-        .then((pdf: JsPDFType) => {
-          const totalPages = pdf.internal.getNumberOfPages();
-          for (let i = 1; i <= totalPages; i++) {
-            pdf.setPage(i);
-            pdf.setFontSize(10);
-            pdf.setTextColor(150, 150, 150);
-            pdf.text(
-              'Brieffy.ai - Smart Briefing',
-              pdf.internal.pageSize.getWidth() - 15,
-              pdf.internal.pageSize.getHeight() - 10,
-              { align: 'right' }
-            );
-          }
-        })
-        .save();
+      try {
+        await html2pdf()
+          .from(element)
+          .set(opt)
+          .toPdf()
+          .get('pdf')
+          .then((pdf: JsPDFType) => {
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+              pdf.setPage(i);
+              pdf.setFontSize(10);
+              pdf.setTextColor(150, 150, 150);
+              pdf.text(
+                'Brieffy.ai - Smart Briefing',
+                pdf.internal.pageSize.getWidth() - 15,
+                pdf.internal.pageSize.getHeight() - 10,
+                { align: 'right' }
+              );
+            }
+          })
+          .save();
 
-      element.classList.remove("pdf-mode-active");
-      toast.success('PDF Premium gerado com sucesso!');
+        toast.success('PDF Premium gerado com sucesso!');
+      } finally {
+        window.getComputedStyle = originalGetComputedStyle;
+        element.classList.remove("pdf-mode-active");
+      }
+
     } catch (e) {
       const element = document.querySelector(pdfSelector);
       if (element) element.classList.remove("pdf-mode-active");
