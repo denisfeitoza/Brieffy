@@ -153,7 +153,8 @@ async function TemplatesList() {
                     templateName={template.name} 
                     existingSession={activeSession ? {
                       id: activeSession.id,
-                      edit_passphrase: activeSession.edit_passphrase
+                      edit_passphrase: activeSession.edit_passphrase,
+                      access_password: activeSession.access_password
                     } : undefined}
                   />
                 )}

@@ -47,7 +47,7 @@ interface CategoryPackage {
 interface GenerateLinkModalProps {
   templateId: string;
   templateName: string;
-  existingSession?: { id: string; edit_passphrase?: string | null };
+  existingSession?: { id: string; edit_passphrase?: string | null; access_password?: string | null };
   children?: React.ReactElement;
 }
 
@@ -94,6 +94,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
         const host = window.location.origin;
         setGeneratedLink(`${host}/b/${existingSession.id}`);
         setEditPassphrase(existingSession.edit_passphrase || '');
+        setAccessPassword(existingSession.access_password || '');
       } else {
         if (packages.length === 0) fetchPackages();
         // Do not auto-generate the passphrase so it remains genuinely optional

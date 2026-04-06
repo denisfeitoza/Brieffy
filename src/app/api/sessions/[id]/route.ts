@@ -49,3 +49,43 @@ export async function DELETE(
 
   return NextResponse.json({ success: true });
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createServerSupabaseClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { sessionName, initialContext, selectedPackages, editPassphrase, accessPassword } = await request.json();
+
+  if (!sessionName) {
+    return NextResponse.json({ error: 'Session name is required' }, { status: 400 });
+  }
+
+  // Update session
+  const { error } = await supabase
+    .from('briefing_sessions')
+    .update({
+      session_name: sessionName.trim(),
+      initial_context: initialContext?.trim() || null,
+      selected_packages: selectedPackages || [],
+      edit_passphrase: editPassphrase?.trim() || null,
+      access_password: accessPassword?.trim() || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error updating session:', error);
+    return NextResponse.json({ error: 'Failed to update session' }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
