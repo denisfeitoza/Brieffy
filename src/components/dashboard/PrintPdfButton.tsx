@@ -71,7 +71,15 @@ export function PrintPdfButton({ className, pdfSelector = '.a4-document-containe
         margin:       [15, 15, 20, 15],
         filename:     `diagnostico-${new Date().toISOString().split('T')[0]}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0a0a0a' },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true, 
+          backgroundColor: '#ffffff', // Force white background for printing
+          ignoreElements: (node: Element) => {
+            // Ignore elements meant to be hidden on print (e.g. buttons)
+            return node.classList && node.classList.contains('print:hidden');
+          }
+        },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 

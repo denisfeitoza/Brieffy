@@ -307,3 +307,25 @@
   0%, 100% { box-shadow: none; color: var(--text3); }
   50% { box-shadow: 0 0 12px rgba(255, 96, 41, 0.35); color: var(--orange); }
 }
+
+/* ============================================
+   PDF EXPORT OVERRIDES
+   ============================================ */
+
+/* Hide elements with Tailwind's print:hidden class when generating a PDF */
+.pdf-mode-active .print\:hidden {
+  display: none !important;
+}
+
+/* Strip borders, shadows, and rounding from the main container to look like a clean document */
+.pdf-mode-active {
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background-color: #ffffff !important; /* Force a white background for reading */
+}
+
+/* Force standard paddings for PDF if using Tailwind's print modifiers */
+.pdf-mode-active .print\:p-0 { padding: 0 !important; }
+.pdf-mode-active .print\:pt-4 { padding-top: 1rem !important; }
