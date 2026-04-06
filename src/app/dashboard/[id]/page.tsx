@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Clock, FileText, MessageSquare,
   Activity, Brain, CheckCircle2, BarChart3, Eye,
-  Zap, Shield, Code, ChevronDown, MoreVertical, Printer
+  Zap, Shield, Code, ChevronDown, Printer
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -190,20 +190,20 @@ async function SessionContent({ id }: { id: string }) {
 
           {/* ── SHEET: MAIS OPÇÕES E METADADOS ──────────────────────── */}
           <Sheet>
-            <SheetTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border shadow-sm h-9 w-9 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)]" title="Mais Opções">
-              <MoreVertical className="w-4 h-4 text-[var(--text)]" />
+            <SheetTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)]" title="Relatório Detalhado">
+              Relatório Detalhado
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto !max-w-full bg-[var(--bg)] border-l border-[var(--bd)] p-0">
-              <SheetHeader className="p-6 border-b border-[var(--bd)] sticky top-0 bg-[var(--bg)]/95 backdrop-blur-md z-10">
-                <SheetTitle className="text-xl">Opções Avançadas</SheetTitle>
+              <SheetHeader className="p-6 border-b border-[var(--bd)] sticky top-0 bg-[var(--bg)] z-50">
+                <SheetTitle className="text-xl">Relatório Detalhado</SheetTitle>
                 <SheetDescription>
                   Dados técnicos da coleta, métricas e transcrição do briefing.
                 </SheetDescription>
               </SheetHeader>
 
-              <div className="p-6 space-y-8">
+              <div className="relative z-0 isolate p-6 space-y-8">
                 {/* ── INSIGHTS (engagement, data quality, signals) ────────── */}
-                {(engagementSummary?.by_area || dataCompleteness || (detectedSignals && detectedSignals.length > 0)) && (
+                {(engagementSummary?.by_area || (detectedSignals && detectedSignals.length > 0)) && (
                   <section className="space-y-4">
                     <h3 className="text-sm font-semibold text-[var(--text3)] uppercase tracking-wider flex items-center gap-2 px-1">
                       <Brain className="w-4 h-4 text-[var(--text2)]" />
@@ -234,38 +234,7 @@ async function SessionContent({ id }: { id: string }) {
                       </div>
                     )}
 
-                    {dataCompleteness && (
-                      <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-none">
-                        <CardContent className="p-4 space-y-3">
-                          {dataCompleteness.strong_fields && dataCompleteness.strong_fields.length > 0 && (
-                            <div>
-                              <div className="flex items-center gap-1.5 mb-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Campos Sólidos</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {dataCompleteness.strong_fields.map((f, i) => (
-                                  <span key={i} className="text-[10px] font-medium bg-[var(--bg)] text-[var(--text)] px-2 py-0.5 rounded-md border border-[var(--bd)]">{humanizeFieldKey(f)}</span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {dataCompleteness.weak_fields && dataCompleteness.weak_fields.length > 0 && (
-                            <div className="pt-2">
-                              <div className="flex items-center gap-1.5 mb-2">
-                                <Eye className="w-3.5 h-3.5 text-amber-600" />
-                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Atenção Necessária</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {dataCompleteness.weak_fields.map((f, i) => (
-                                  <span key={i} className="text-[10px] font-medium bg-[var(--bg)] text-[var(--text)] px-2 py-0.5 rounded-md border border-[var(--bd)]">{humanizeFieldKey(f)}</span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
+
 
                     {detectedSignals && detectedSignals.length > 0 && (
                       <div className="space-y-2 pt-2">
@@ -280,18 +249,28 @@ async function SessionContent({ id }: { id: string }) {
                             const displayText = summary || sourceAnswer || '';
                             const stepIndex = typeof signal.step_index === 'number' ? signal.step_index : null;
 
+                            let questionLabel = stepIndex !== null ? `Passo ${stepIndex}` : null;
+                            if (stepIndex !== null) {
+                              const match = interactions.find((int, idx) => Number(int.step_order) === stepIndex || idx === stepIndex || idx + 1 === stepIndex);
+                              if (match?.question_text) {
+                                questionLabel = String(match.question_text);
+                              }
+                            }
+
                             if (!displayText) return null;
 
                             return (
                               <div key={i} className="p-3 rounded-xl border border-[var(--bd)] bg-[var(--bg)]">
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-start justify-between gap-3 mb-2">
                                   {cat && (
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text2)]">
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text2)] shrink-0 mt-0.5">
                                       {cat.replace(/_/g, ' ')}
                                     </span>
                                   )}
-                                  {stepIndex !== null && (
-                                    <span className="text-[9px] font-mono text-[var(--text3)]">Passo {stepIndex}</span>
+                                  {questionLabel && (
+                                    <span className="text-[10px] font-medium text-[var(--text3)] text-right line-clamp-2" title={questionLabel}>
+                                      {questionLabel}
+                                    </span>
                                   )}
                                 </div>
                                 <p className="text-[11px] text-[var(--text)] leading-relaxed">{displayText}</p>
@@ -321,22 +300,25 @@ async function SessionContent({ id }: { id: string }) {
 
                 {/* ── TRANSCRIÇÃO ─────────────────────────────────────────── */}
                 {interactions.length > 0 && (
-                  <section className="space-y-4">
-                    <h3 className="text-sm font-semibold text-[var(--text3)] uppercase tracking-wider flex items-center justify-between px-1 border-t border-[var(--bd)] pt-6">
+                  <details className="group bg-[var(--bg)] border border-[var(--bd)] rounded-xl overflow-hidden mt-6">
+                    <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[var(--bg2)] transition-colors select-none">
                       <div className="flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-[var(--text2)]" />
-                        Histórico do Chat
+                        <MessageSquare className="w-4 h-4 text-[var(--text3)]" />
+                        <span className="text-sm font-medium text-[var(--text)]">Histórico do Chat</span>
                       </div>
-                      <span className="text-[10px] bg-[var(--bg2)] px-2 py-0.5 rounded-full border border-[var(--bd)]">{interactions.length} msgs</span>
-                    </h3>
-                    <div className="p-4 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl space-y-5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-medium bg-[var(--bg2)] text-[var(--text3)] px-2 py-0.5 rounded-full border border-[var(--bd)]">{interactions.length} msgs</span>
+                        <ChevronDown className="w-4 h-4 text-[var(--text3)] group-open:rotate-180 transition-transform" />
+                      </div>
+                    </summary>
+                    <div className="relative isolate z-0 p-4 bg-[var(--bg2)] border-t border-[var(--bd)] space-y-5 max-h-[60vh] overflow-y-auto">
                       {interactions.map((interaction, idx) => {
                         const inputType = interaction.question_type || 'text';
                         const isDepthQ = interaction.is_depth_question;
                         return (
-                          <div key={interaction.id} className="relative">
+                          <div key={interaction.id} className="relative isolate z-0">
                             {idx !== interactions.length - 1 && (
-                              <div className="absolute left-4 top-12 bottom-[-20px] w-px bg-gradient-to-b from-[var(--bd-strong)] to-transparent" />
+                              <div className="absolute left-4 top-12 bottom-[-20px] z-0 w-px bg-gradient-to-b from-[var(--bd-strong)] to-transparent pointer-events-none" />
                             )}
                             <div className="flex items-center gap-1.5 mb-1.5">
                               <span className="text-[9px] font-mono text-[var(--text3)]">{String(idx + 1).padStart(2, '0')}</span>
@@ -344,8 +326,8 @@ async function SessionContent({ id }: { id: string }) {
                             </div>
 
                             {/* AI */}
-                            <div className="flex gap-2.5 mb-2">
-                              <div className={`mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full border z-10 ${isDepthQ ? 'bg-orange-50 border-orange-200' : 'bg-[var(--bg)] border-[var(--bd-strong)]'}`}>
+                            <div className="relative z-[1] flex gap-2.5 mb-2">
+                              <div className={`relative mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full border ${isDepthQ ? 'bg-orange-50 border-orange-200' : 'bg-[var(--bg)] border-[var(--bd-strong)]'}`}>
                                 {isDepthQ ? <Brain className={`w-3.5 h-3.5 ${isDepthQ ? 'text-[var(--orange)]' : 'text-[var(--text)]'}`} /> : <MessageSquare className="w-3.5 h-3.5 text-[var(--text2)]" />}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -356,8 +338,8 @@ async function SessionContent({ id }: { id: string }) {
                             </div>
 
                             {/* User */}
-                            <div className="flex gap-2.5 flex-row-reverse">
-                              <div className="mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-[var(--text)] z-10 border border-[var(--bd-strong)]">
+                            <div className="relative z-[1] flex gap-2.5 flex-row-reverse">
+                              <div className="relative mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-[var(--text)] border border-[var(--bd-strong)]">
                                 <span className="text-[var(--bg)] text-[9px] font-bold font-mono">
                                   {companyName ? companyName.slice(0, 3).toUpperCase() : 'USR'}
                                 </span>
@@ -372,7 +354,7 @@ async function SessionContent({ id }: { id: string }) {
                         );
                       })}
                     </div>
-                  </section>
+                  </details>
                 )}
 
 
@@ -403,7 +385,7 @@ async function SessionContent({ id }: { id: string }) {
       </div>
 
       {/* ── PEQUENO RESUMO DA SESSÃO ───────────────────── */}
-      {(qualityScore !== null || dataCompleteness || (detectedSignals && detectedSignals.length > 0)) && (
+      {(qualityScore !== null || (detectedSignals && detectedSignals.length > 0)) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[var(--bg2)] border border-[var(--bd)] p-4 rounded-2xl mb-6 print:hidden">
           {qualityScore !== null && (
             <div className="flex items-center gap-3">
@@ -417,19 +399,7 @@ async function SessionContent({ id }: { id: string }) {
             </div>
           )}
           
-          {dataCompleteness && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-50 border border-emerald-100 shadow-sm shrink-0">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-[10px] text-[var(--text3)] uppercase tracking-wider font-bold">Campos Sólidos</p>
-                <p className="text-sm font-semibold text-[var(--text)] mt-0.5">
-                  {dataCompleteness.strong_fields?.length || 0} confirmados
-                </p>
-              </div>
-            </div>
-          )}
+
 
           {detectedSignals && detectedSignals.length > 0 && (
              <div className="flex items-center gap-3">
@@ -448,7 +418,7 @@ async function SessionContent({ id }: { id: string }) {
       )}
 
       {/* ── ÁREA DO DOCUMENTO PRINCIPAL (Folha A4) ──────────────── */}
-      <div className="print:shadow-none print:border-0 print:m-0 print:p-0 bg-[var(--bg)] text-[var(--text)] border border-[var(--bd-strong)] shadow-sm rounded-2xl md:rounded-[2rem] overflow-hidden min-h-[60vh]">
+      <div className="a4-document-container print:shadow-none print:border-0 print:m-0 print:p-0 bg-[var(--bg)] text-[var(--text)] border border-[var(--bd-strong)] shadow-sm rounded-2xl md:rounded-[2rem] overflow-hidden min-h-[60vh]">
         {session.final_assets?.document ? (
           <div className="p-6 md:p-12 lg:p-16 print:p-0 print:pt-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--bd)]">
