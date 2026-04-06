@@ -905,6 +905,7 @@ export function BriefingProvider({
   };
 
   const contextValue = useMemo(() => ({
+    sessionId,
     briefingState,
     updateBriefingState,
     messages,
@@ -939,7 +940,7 @@ export function BriefingProvider({
     detectedSignals,
     engagementLevel,
   }), [
-    briefingState, messages, currentStepIndex, isLoading, isGeneratingMore,
+    sessionId, briefingState, messages, currentStepIndex, isLoading, isGeneratingMore,
     isFinished, isUploadStep, assets, basalInfo, chosenLanguage,
     generatedDocument, isGeneratingDocument, documentError, editToken,
     editPassphrase, detectedSignals, engagementLevel,

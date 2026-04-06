@@ -32,21 +32,6 @@ const ICON_MAP: Record<string, React.ElementType> = {
   TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Package,
 };
 
-// Department color map
-const DEPT_COLORS: Record<string, { bg: string; border: string; text: string; glow: string }> = {
-  branding:   { bg: 'bg-violet-50',  border: 'border-violet-200', text: 'text-violet-600', glow: 'shadow-sm' },
-  technology: { bg: 'bg-cyan-50',    border: 'border-cyan-200',   text: 'text-cyan-600',   glow: 'shadow-sm' },
-  marketing:  { bg: 'bg-orange-50',  border: 'border-orange-200', text: 'text-orange-600', glow: 'shadow-sm' },
-  operations: { bg: 'bg-emerald-50', border: 'border-emerald-200',text: 'text-emerald-600',glow: 'shadow-sm' },
-  finance:    { bg: 'bg-yellow-50',  border: 'border-yellow-200', text: 'text-yellow-600', glow: 'shadow-sm' },
-  people:     { bg: 'bg-pink-50',    border: 'border-pink-200',   text: 'text-pink-600',   glow: 'shadow-sm' },
-  commercial: { bg: 'bg-blue-50',    border: 'border-blue-200',   text: 'text-blue-600',   glow: 'shadow-sm' },
-  product:    { bg: 'bg-teal-50',    border: 'border-teal-200',   text: 'text-teal-600',   glow: 'shadow-sm' },
-  legal:      { bg: 'bg-slate-50',   border: 'border-slate-200',  text: 'text-slate-600',  glow: 'shadow-sm' },
-  digital:    { bg: 'bg-fuchsia-50', border: 'border-fuchsia-200',text: 'text-fuchsia-600',glow: 'shadow-sm' },
-  content:    { bg: 'bg-lime-50',    border: 'border-lime-200',   text: 'text-lime-600',   glow: 'shadow-sm' },
-  general:    { bg: 'bg-[var(--bg2)]', border: 'border-[var(--bd)]', text: 'text-[var(--text)]', glow: 'shadow-sm' },
-};
 
 interface CategoryPackage {
   slug: string;
@@ -272,7 +257,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleShare = async () => {
+  const copyInviteMessage = async () => {
     const navLang = (typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en').toLowerCase();
     let msgLang = 'en';
     if (navLang.startsWith('pt')) msgLang = 'pt';
@@ -285,7 +270,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
       if (editPassphrase) msg += `\n\nSenha do documento: ${editPassphrase}`;
     } else if (msgLang === 'es') {
       msg = `Accede aquí:\n${generatedLink}`;
-      if (accessPassword) msg += `\n\nContraseña de acceso: ${accessPassword}`;
+      if (accessPassword) msg += `\n\nContraseña de acesso: ${accessPassword}`;
       if (editPassphrase) msg += `\n\nContraseña del documento: ${editPassphrase}`;
     } else {
       msg = `Access here:\n${generatedLink}`;
@@ -295,9 +280,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
 
     if (navigator.share) {
       try {
-        await navigator.share({
-          text: msg,
-        });
+        await navigator.share({ text: msg });
         setShared(true);
         setTimeout(() => setShared(false), 2500);
       } catch (err) {
@@ -328,7 +311,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
-          <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3">
+          <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill">
             <Share2 className="w-4 h-4 mr-2" />
             {t('modal.generateLinkBtn')}
           </Button>
@@ -343,14 +326,14 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
         {step === 'create' && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2 text-[var(--text)]">
-                <div className="w-8 h-8 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-[var(--actext)]" />
+              <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-[var(--text)] tracking-tight">
+                <div className="w-10 h-10 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-[var(--actext)]" />
                 </div>
                 {t('modal.newBriefing')}
               </DialogTitle>
-              <DialogDescription className="text-[var(--text3)]">
-                {t('modal.intelligentEngine')}: <strong className="text-[var(--actext)]">{templateName}</strong>
+              <DialogDescription className="text-[var(--text3)] text-sm">
+                {t('modal.intelligentEngine')}: <strong className="text-[var(--actext)] font-semibold">{templateName}</strong>
               </DialogDescription>
             </DialogHeader>
 
@@ -358,9 +341,9 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
 
               {/* ── Session Name ─────────────────────────────────── */}
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-[var(--text2)] flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">1</span>
-                  {t('modal.briefingName')} <span className="text-red-500 text-xs">{t('modal.required')}</span>
+                <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">1</span>
+                  {t('modal.briefingName')} <span className="text-[var(--actext)] lowercase font-medium">({t('modal.required')})</span>
                 </label>
                 <Input
                   placeholder={t('modal.briefingNamePlaceholder')}
@@ -375,11 +358,11 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 <button
                   type="button"
                   onClick={() => setShowContext(!showContext)}
-                  className="flex items-center gap-2 text-sm font-semibold text-[var(--text2)] hover:text-[var(--text)] transition-colors w-full"
+                  className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
                 >
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">2</span>
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">2</span>
                   {t('modal.priorContext')}
-                  <span className="text-[var(--text3)] text-xs font-normal">{t('modal.optional')}</span>
+                  <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
                   <ChevronDown className={`w-4 h-4 text-[var(--text3)] ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -446,15 +429,15 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
               {/* ── Package Selection ─────────────────────────────── */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-[var(--text2)] flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">3</span>
+                  <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">3</span>
                     {t('modal.aiPackages')}
                   </label>
                   {selectedSlugs.length > 0 && (
-                    <span className="text-[11px] text-[var(--text3)] font-mono flex items-center gap-2">
-                      <span className="text-[var(--actext)] font-semibold">{selectedSlugs.length}</span> {t('modal.selected')}
-                      <span className="text-[var(--text3)]">·</span>
-                      ~<span className="text-[var(--text)] font-semibold">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} {t('modal.questions')}
+                    <span className="text-[10px] text-[var(--text3)] font-bold tracking-tight flex items-center gap-2">
+                      <span className="text-[var(--actext)]">{selectedSlugs.length}</span> {t('modal.selected').toUpperCase()}
+                      <span className="text-[var(--text3)] opacity-30">·</span>
+                      ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} {t('modal.questions').toUpperCase()}
                     </span>
                   )}
                 </div>
@@ -475,7 +458,6 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                             const isSelected = selectedSlugs.includes(pkg.slug);
                             const isAiSuggested = aiSuggestedSlugs.includes(pkg.slug);
                             const IconComp = ICON_MAP[pkg.icon] || Package;
-                            const colors = DEPT_COLORS[dept] || DEPT_COLORS.general;
 
                             return (
                               <motion.button
@@ -487,7 +469,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                                   relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-200
                                   border group cursor-pointer outline-none
                                   ${isSelected
-                                    ? `bg-[var(--orange-light)] border-[var(--orange-mid)] shadow-sm text-[var(--orange)]`
+                                    ? `bg-[var(--acbg)] border-[var(--acbd)] shadow-sm text-[var(--actext)]`
                                     : 'border-[var(--bd)] bg-[var(--bg)] hover:bg-[var(--bg2)] hover:border-[var(--bd-strong)]'
                                   }
                                 `}
@@ -495,17 +477,17 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                                 <div className={`
                                   w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200
                                   ${isSelected
-                                    ? 'border-[var(--orange)] bg-white'
+                                    ? 'border-[var(--actext)] bg-white'
                                     : 'border-[var(--bd-strong)] bg-[var(--bg2)]'
                                   }
                                 `}>
-                                  {isSelected && <CheckCircle2 className={`w-3 h-3 text-[var(--orange)]`} />}
+                                  {isSelected && <CheckCircle2 className={`w-3 h-3 text-[var(--actext)]`} />}
                                 </div>
                                 <div className={`
                                   w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors
                                   ${isSelected ? 'bg-white' : 'bg-[var(--bg3)]'}
                                 `}>
-                                  <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-[var(--orange)]' : 'text-[var(--text3)]'}`} />
+                                  <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-[var(--actext)]' : 'text-[var(--text3)]'}`} />
                                 </div>
                                 <div className="flex-1 min-w-0 overflow-hidden">
                                   <div className="flex items-center gap-1.5">
@@ -545,11 +527,11 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
                 <button
                   type="button"
                   onClick={() => setShowAccessPassword(!showAccessPassword)}
-                  className="flex items-center gap-2 text-sm font-semibold text-[var(--text2)] hover:text-[var(--text)] transition-colors w-full"
+                  className="flex items-center gap-2 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
                 >
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">4</span>
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">4</span>
                   {t('modal.accessPassword')}
-                  <span className="text-amber-600 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-200">
+                  <span className="text-[var(--actext)] lowercase font-medium px-2 py-0.5 rounded-full bg-[var(--acbg)] border border-[var(--acbd)] ml-1">
                     {t('modal.recommended')}
                   </span>
                   <ChevronDown className={`w-4 h-4 text-[var(--text3)] ml-auto transition-transform duration-300 ${showAccessPassword ? 'rotate-180' : ''}`} />
@@ -586,14 +568,14 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
               {/* ── Passphrase ────────────────────────────────────── */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-[var(--text2)] flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">5</span>
+                  <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] font-bold text-[var(--text)]">5</span>
                     {t('modal.documentPassword')}
                   </label>
                   <button
                     type="button"
                     onClick={generateCoolPassphrase}
-                    className="text-[var(--actext)] hover:underline text-xs flex items-center gap-1 transition-colors"
+                    className="text-[var(--actext)] hover:underline text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors"
                   >
                     <Wand2 className="w-3 h-3" />
                     {t('modal.generateAnother')}
@@ -612,21 +594,21 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
             </div>
 
             {/* ── CTA ─────────────────────────────────────────────── */}
-            <div className="pt-3 border-t border-[var(--bd)]">
+            <div className="pt-4 border-t border-[var(--bd)]">
               <Button
                 onClick={generateSession}
                 disabled={loading || !sessionName.trim() || selectedSlugs.length === 0}
-                className="w-full h-12 text-base font-bold rounded-xl bg-[var(--orange)] hover:bg-[#e8552a] text-black transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2 btn-pill"
+                className="w-full h-12 text-sm font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    {t('modal.preparingAI')}
+                    {t('modal.preparingAI').toUpperCase()}
                   </>
                 ) : (
                   <>
-                    <Link2 className="w-5 h-5" />
-                    {t('modal.generateLink')} ({selectedSlugs.length} {t('modal.packages')})
+                    <Sparkles className="w-4 h-4" />
+                    {t('modal.generateLink').toUpperCase()} ({selectedSlugs.length} {t('modal.packages').toUpperCase()})
                   </>
                 )}
               </Button>
@@ -641,92 +623,79 @@ export function GenerateLinkModal({ templateId, templateName, existingSession }:
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex flex-col items-center justify-center py-4 space-y-5">
+            <div className="flex flex-col items-center justify-center py-6 space-y-6">
               {/* Success Icon */}
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center mb-2 animate-in zoom-in duration-500">
                   <CheckCircle2 className="w-8 h-8 text-[var(--actext)]" />
                 </div>
-                <div className="absolute inset-0 w-16 h-16 rounded-full bg-[var(--acbg)] animate-pulse" />
-              </div>
-
-              <div className="text-center space-y-1">
-                <h3 className="font-bold text-lg text-[var(--text)]">{t('modal.briefingCreated')}</h3>
-                <p className="text-sm text-[var(--text3)] max-w-[280px]">
-                  {t('modal.sendLinkAndPassword')}
+                <h3 className="text-2xl font-bold tracking-tight text-[var(--text)]">
+                  {t('modal.readyToShare')}
+                </h3>
+                <p className="text-[var(--text3)] text-sm max-w-[280px] leading-relaxed">
+                  {t('modal.readyToShareSub')}
                 </p>
               </div>
 
-              {/* Link Field */}
-              <div className="w-full p-2 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl">
-                <Input
-                  value={generatedLink}
-                  readOnly
-                  className="bg-transparent border-none focus-visible:ring-0 text-[var(--text)] text-xs h-8 font-mono w-full"
-                />
-              </div>
-
-              <div className="w-full flex items-center gap-3">
-                <Button
-                  onClick={copyLinkOnly}
-                  variant="outline"
-                  className="flex-1 rounded-xl gap-2 font-semibold h-11 border-[var(--bd)] text-[var(--text)] hover:bg-[var(--bg2)]"
-                >
-                  {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                  {copied ? t('modal.copied') : t('modal.copy')}
-                </Button>
-                <Button
-                  onClick={handleShare}
-                  variant="default"
-                  className="flex-1 rounded-xl gap-2 font-semibold h-11 bg-[var(--orange)] hover:bg-[#e8552a] text-black"
-                >
-                  {shared ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <Share2 className="w-4 h-4 shrink-0" />}
-                  <span className="truncate">{shared ? t('modal.copied') : (language === 'pt' ? 'Compartilhar' : language === 'es' ? 'Compartir' : 'Share')}</span>
-                </Button>
-              </div>
-
-              {/* Access Password Display */}
-              {accessPassword && (
-                <div className="w-full flex flex-col items-center p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <ShieldCheck className="w-3 h-3 text-amber-600" />
-                    <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.15em] font-bold">
-                      {t('modal.accessPasswordLabel')}
-                    </span>
+              <div className="w-full space-y-6">
+                {/* ── Direct Link ───────────────────────────────────── */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2 px-1">
+                    {t('modal.accessLink')}
+                  </label>
+                  <div className="flex items-center gap-2 p-1.5 bg-[var(--bg2)] border border-[var(--bd)] rounded-full group transition-colors hover:border-[var(--bd-strong)]">
+                    <div className="pl-4 pr-2 text-sm font-medium text-[var(--text2)] truncate flex-1">
+                      {generatedLink}
+                    </div>
+                    <Button
+                      onClick={copyLinkOnly}
+                      className="h-9 px-4 text-xs font-bold rounded-full bg-black text-white hover:opacity-90 shrink-0 gap-2"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      {t('modal.copyLink').toUpperCase()}
+                    </Button>
                   </div>
-                  <span className="text-xl font-mono font-bold tracking-wider text-amber-600">
-                    {accessPassword}
-                  </span>
-                  <p className="text-[10px] text-amber-700/70 text-center mt-2 max-w-[250px] leading-relaxed">
-                    {t('modal.accessPasswordClientDesc')}
+                </div>
+
+                {/* ── Document Password ─────────────────────────────── */}
+                <div className="p-4 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between">
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] block mb-1">
+                      {t('modal.documentPassword')}
+                    </label>
+                    <code className="text-lg font-bold text-[var(--text)] tracking-wider">
+                      {editPassphrase}
+                    </code>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)]">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* ── Share CTA ─────────────────────────────────────── */}
+                <div className="pt-2">
+                  <Button
+                    onClick={copyInviteMessage}
+                    className="w-full h-12 text-sm font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all gap-2"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    {t('modal.copyInviteMessage').toUpperCase()}
+                  </Button>
+                  <p className="text-center text-[10px] text-[var(--text3)] mt-3 font-medium">
+                    {t('modal.copyInviteMessageSub')}
                   </p>
                 </div>
-              )}
-
-              {/* Passphrase Display */}
-              <div className="w-full flex flex-col items-center p-4 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Lock className="w-3 h-3 text-[var(--text3)]" />
-                  <span className="text-[10px] text-[var(--text3)] uppercase tracking-[0.15em] font-bold">
-                    {t('modal.documentPasswordLabel')}
-                  </span>
-                </div>
-                <span className={`text-xl font-mono font-bold tracking-wider ${editPassphrase ? 'text-[var(--text)]' : 'text-[var(--text3)] italic text-sm'}`}>
-                  {editPassphrase || t('modal.notDefined')}
-                </span>
-                <p className="text-[10px] text-[var(--text3)] text-center mt-2 max-w-[250px] leading-relaxed">
-                  {t('modal.documentPasswordDesc')}
-                </p>
               </div>
 
-              {/* Close */}
-              <Button
-                variant="outline"
-                className="w-full border-[var(--bd)] text-[var(--text)] hover:bg-[var(--bg2)] rounded-xl h-10"
-                onClick={() => setOpen(false)}
-              >
-                {t('modal.close')}
-              </Button>
+              <div className="w-full pt-4 border-t border-[var(--bd)]">
+                <Button
+                  variant="ghost"
+                  onClick={() => setOpen(false)}
+                  className="w-full h-11 text-xs font-bold text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-full uppercase tracking-wider"
+                >
+                  {t('modal.close')}
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
