@@ -375,22 +375,6 @@ async function SessionContent({ id }: { id: string }) {
                   </section>
                 )}
 
-                {/* ── AÇÕES DO DOCUMENTO ──────────────────────────────────── */}
-                {session.final_assets?.document && (
-                  <section className="space-y-4">
-                    <h3 className="text-sm font-semibold text-[var(--text3)] uppercase tracking-wider flex items-center gap-2 px-1">
-                      <FileText className="w-4 h-4 text-[var(--text2)]" />
-                      Exportar Documento
-                    </h3>
-                    <div className="flex flex-col sm:flex-row items-center gap-2 lg:gap-3 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl p-4 w-full">
-                      <CopyButtons
-                        markdown={session.final_assets.document}
-                        html={simpleMarkdownToHtml(session.final_assets.document)}
-                      />
-                      <PrintPdfButton className="flex-1 w-full" />
-                    </div>
-                  </section>
-                )}
 
                 {/* ── JSON RAW (collapsible) ──────────────────────────────── */}
                 {companyInfo && Object.keys(companyInfo).length > 0 && (
@@ -467,7 +451,16 @@ async function SessionContent({ id }: { id: string }) {
       <div className="print:shadow-none print:border-0 print:m-0 print:p-0 bg-[var(--bg)] text-[var(--text)] border border-[var(--bd-strong)] shadow-sm rounded-2xl md:rounded-[2rem] overflow-hidden min-h-[60vh]">
         {session.final_assets?.document ? (
           <div className="p-6 md:p-12 lg:p-16 print:p-0 print:pt-4">
-            <h2 className="text-2xl font-bold text-[var(--text)] mb-6 pb-4 border-b border-[var(--bd)]">Resposta</h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--bd)]">
+              <h2 className="text-2xl font-bold text-[var(--text)]">Resposta</h2>
+              <div className="flex flex-wrap items-center gap-2 print:hidden">
+                <CopyButtons
+                  markdown={session.final_assets.document}
+                  html={simpleMarkdownToHtml(session.final_assets.document)}
+                />
+                <PrintPdfButton className="flex-1 md:flex-none" />
+              </div>
+            </div>
             <div
               className="prose max-w-3xl mx-auto
                 prose-headings:font-bold prose-headings:tracking-tight
