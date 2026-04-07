@@ -270,6 +270,8 @@ export default function NewBriefingWizard() {
           initialContext: initialContext.trim() || undefined,
           selectedPackages: selectedSlugs,
           editPassphrase: editPassphrase.trim() || undefined,
+          briefingPurpose: purpose.trim(),
+          depthSignals: depthSignals,
         }),
       });
 

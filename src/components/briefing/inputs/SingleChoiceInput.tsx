@@ -116,11 +116,7 @@ export function SingleChoiceInput({
     doSubmit(optText);
   };
 
-  const specifyLabel = voiceLanguage === "pt"
-    ? "Especifique abaixo o que deseja:"
-    : voiceLanguage === "es"
-    ? "Especifique a continuación lo que desea:"
-    : "Specify below what you want:";
+  const specifyLabel = t.specifyLabel || "Especifique abaixo o que deseja:";
 
   if (isFontSelection) {
     return (
@@ -161,7 +157,7 @@ export function SingleChoiceInput({
                         Aa
                       </span>
                       <span className="text-sm text-gray-400 group-hover:text-gray-600 font-inter">
-                        {fontDesc || "Padrão do Sistema"}
+                        {fontDesc || t.systemDefault || "Padrão do Sistema"}
                       </span>
                     </>
                   ) : (
@@ -218,7 +214,7 @@ export function SingleChoiceInput({
               onClick={() => setShowTextInput(true)}
               className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
             >
-              + {t.moreDetails || "Adicionar detalhes"}
+              + {t.addDetailsShort || "Adicionar detalhes"}
             </Button>
           </div>
         )}
@@ -239,6 +235,7 @@ export function SingleChoiceInput({
           onSelect={handleBottomSheetSelect}
           isDisabled={isLoading || isSubmittingLocal}
           label={t.viewOptions}
+          title={t.selectAnOption}
         />
         {isTextInputVisible ? (
           <div className="w-full flex flex-col items-center mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -265,7 +262,7 @@ export function SingleChoiceInput({
               onClick={() => setShowTextInput(true)}
               className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
             >
-              + {t.moreDetails || "Adicionar detalhes"}
+              + {t.addDetailsShort || "Adicionar detalhes"}
             </Button>
           </div>
         )}
@@ -334,7 +331,7 @@ export function SingleChoiceInput({
             onClick={() => setShowTextInput(true)}
             className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
           >
-            + {t.moreDetails || "Adicionar detalhes"}
+            + {t.addDetailsShort || "Adicionar detalhes"}
           </Button>
         </div>
       )}

@@ -605,11 +605,6 @@ export function BriefingProvider({
         if (isOnboarding) {
           try { localStorage.setItem('brieffy_just_onboarded', Date.now().toString()); } catch {}
           window.location.href = '/dashboard';
-        } else {
-          // Auto-generate doc
-          if (!generatedDocument && !isGeneratingDocument) {
-            generateDocument();
-          }
         }
       } else {
         if (data.engagement_level) setEngagementLevel(data.engagement_level);
@@ -739,6 +734,7 @@ export function BriefingProvider({
 
   const generateDocument = useCallback(async () => {
     setIsGeneratingDocument(true);
+    setDocumentError(null);
     try {
       const fullHistory = messages.map(m => ({
         role: m.role,
@@ -765,7 +761,7 @@ export function BriefingProvider({
       setEditToken(newToken);
 
       if (sessionId) {
-        finalizeDocumentInDb(sessionId, {
+        await finalizeDocumentInDb(sessionId, {
           final_assets: { ...assets, document: data.document },
           document_content: data.document,
           edit_token: newToken,
@@ -781,6 +777,12 @@ export function BriefingProvider({
       setIsGeneratingDocument(false);
     }
   }, [messages, briefingState, assets, activeTemplate, chosenLanguage, detectedSignals, editPassphrase, sessionId]);
+
+  useEffect(() => {
+    if (isFinished && !generatedDocument && !isGeneratingDocument && !documentError) {
+      generateDocument();
+    }
+  }, [isFinished, generatedDocument, isGeneratingDocument, documentError, generateDocument]);
 
   const contextValue = useMemo(() => ({
     sessionId,

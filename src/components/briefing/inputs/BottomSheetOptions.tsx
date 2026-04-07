@@ -10,9 +10,10 @@ interface BottomSheetOptionsProps {
   onSelect: (value: string) => void;
   isDisabled: boolean;
   label: string; // button label e.g. "Ver opções"
+  title: string; // sheet title e.g. "Selecione uma opção"
 }
 
-export function BottomSheetOptions({ options, onSelect, isDisabled, label }: BottomSheetOptionsProps) {
+export function BottomSheetOptions({ options, onSelect, isDisabled, label, title }: BottomSheetOptionsProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Prevent body scroll when open
@@ -68,7 +69,7 @@ export function BottomSheetOptions({ options, onSelect, isDisabled, label }: Bot
               {/* Header */}
               <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100">
                 <p className="text-sm font-medium text-gray-500 tracking-wide">
-                  Selecione uma opção
+                  {title}
                 </p>
                 <button
                   onClick={() => setIsOpen(false)}

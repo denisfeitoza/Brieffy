@@ -125,12 +125,12 @@ export function FileUploadInput({
         <p className="text-black font-medium text-base md:text-lg">
           {isUploading ? (t.sendingFile || "Enviando...") : (t.dragFiles || "Toque para adicionar arquivos")}
         </p>
-        <p className="text-gray-500 text-sm mt-1">PDF, PNG, JPG (Múltiplos permitidos, Max 5MB cada)</p>
+        <p className="text-gray-500 text-sm mt-1">{t.fileConstraints}</p>
       </div>
       
       {uploadedFiles.length > 0 && (
         <div className="flex flex-col gap-2 w-full mt-2">
-          <p className="text-sm font-medium text-gray-700">Arquivos anexados:</p>
+          <p className="text-sm font-medium text-gray-700">{t.attachedFiles}</p>
           {uploadedFiles.map((file, i) => (
             <div key={i} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
               <div className="flex items-center gap-3 overflow-hidden">
@@ -168,7 +168,7 @@ export function FileUploadInput({
              disabled={isLoading || isSubmittingLocal || isUploading}
              className="mt-6 w-full py-3.5 px-4 rounded-xl bg-[var(--orange)] text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
            >
-             Enviar {uploadedFiles.length} {uploadedFiles.length === 1 ? 'arquivo' : 'arquivos'} {inputText.trim() ? '+ texto' : ''}
+             {t.sendFileBtnPrefix} {uploadedFiles.length} {uploadedFiles.length === 1 ? t.fileWord : t.filesWord} {inputText.trim() ? t.withTextWord : ''}
            </button>
         ) : (
           <button 

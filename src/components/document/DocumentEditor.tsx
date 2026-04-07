@@ -2,8 +2,9 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit2, Save, Download } from "lucide-react";
+import { Copy, Edit2, Save, Download, Loader2, Languages } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let html2pdf: any;
@@ -51,7 +52,37 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
   const [content, setContent] = useState(initialContent);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+
+  const handleTranslate = async (targetLang: string) => {
+    if (!content.trim()) return;
+    setIsTranslating(true);
+    try {
+      const res = await fetch("/api/document/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentContent: content, targetLanguage: targetLang })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao traduzir");
+      setContent(data.document);
+      toast.success("Documento traduzido com sucesso!");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message || "Erro na tradução.");
+      } else {
+        toast.error("Erro na tradução.");
+      }
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+    toast.success("Conteúdo copiado para a área de transferência!");
+  };
 
   const handleSave = async () => {
     if (!onSave) return;
@@ -115,6 +146,33 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
                </Button>
             )
           )}
+          <Button onClick={handleCopy} variant="outline" size="sm" className="bg-transparent border-white/20 text-white hover:bg-white/10 mx-1">
+            <Copy className="w-4 h-4 mr-2" />
+            Copiar Texto
+          </Button>
+
+          {/* Tradutor */}
+          <div className="flex items-center border border-white/10 rounded-lg p-0.5 bg-black/20 relative ml-2">
+            {isTranslating && (
+              <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
+                  <Loader2 className="w-4 h-4 text-[var(--orange)] animate-spin" />
+              </div>
+            )}
+            <Languages className="w-4 h-4 text-zinc-400 ml-2" />
+            <Select 
+                disabled={isTranslating} 
+                onValueChange={(val) => handleTranslate(String(val))}
+            >
+              <SelectTrigger className="w-fit border-0 bg-transparent text-xs text-zinc-300 focus:ring-0 gap-2 font-medium">
+                <SelectValue placeholder="Traduzir..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pt">Português</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="es">Español</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={generatePDF} size="sm" className="bg-[var(--orange)] hover:opacity-90 text-white font-semibold">

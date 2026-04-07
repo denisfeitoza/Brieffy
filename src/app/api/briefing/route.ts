@@ -105,7 +105,7 @@ const BASE_MIN_QUESTIONS = 25;
 const ABSOLUTE_MAX_QUESTIONS = 50; // Just as a global fail-safe cap
 const MIN_MEANINGFUL_VALUE_LENGTH = 3;
 
-function calculateEngagement(history: { role: string; content: string }[]): 'high' | 'medium' | 'low' {
+function calculateEngagement(history: { role: string; content: string }[]): 'high' | 'medium' | 'low' | 'fatigue' {
   const recentUserMsgs = history
     .filter(m => m.role === 'user')
     .slice(-3);
@@ -120,6 +120,10 @@ function calculateEngagement(history: { role: string; content: string }[]): 'hig
     m.content === '(skipped)' || m.content.trim().length < 3
   ).length;
 
+  // New logic: 2 or more consecutive skips/short answers indicate fatigue
+  const isFatigue = recentUserMsgs.length >= 2 && recentUserMsgs.slice(-2).every(m => m.content === '(skipped)' || m.content.trim().length < 3);
+
+  if (isFatigue) return 'fatigue';
   if (skippedCount >= 2 || avgWords < 5) return 'low';
   if (avgWords < 15 || skippedCount >= 1) return 'medium';
   return 'high';
@@ -280,8 +284,9 @@ export async function POST(req: Request) {
     // ================================================================
     // CIRCUIT BREAKER — Hard limit enforced in code, not just prompt
     // ================================================================
-    const maxQForEngagement = backendEngagement === 'low' ? minQuestions + 5 : backendEngagement === 'medium' ? minQuestions + 10 : minQuestions + 15;
-    const effectiveMax = Math.min(maxQForEngagement, ABSOLUTE_MAX_QUESTIONS);
+    const maxQForEngagement = backendEngagement === 'fatigue' ? minQuestions + 3 : backendEngagement === 'low' ? minQuestions + 5 : backendEngagement === 'medium' ? minQuestions + 10 : minQuestions + 15;
+    const dynamicAbsoluteMax = Math.max(ABSOLUTE_MAX_QUESTIONS, minQuestions + 20);
+    const effectiveMax = Math.min(maxQForEngagement, dynamicAbsoluteMax);
     const forceFinish = questionCount >= effectiveMax;
     if (forceFinish) {
       console.warn(`[Briefing] Circuit breaker: ${questionCount} questions reached (limit: ${effectiveMax}, engagement: ${backendEngagement}). Forcing finalization.`);

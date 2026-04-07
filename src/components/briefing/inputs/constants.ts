@@ -44,6 +44,10 @@ export const I18N: Record<string, Record<string, string>> = {
     viewOptions: "Ver opções",
     audioHint: "Responda por áudio — captura mais detalhes e é mais rápido",
     audioHintShort: "Toque no microfone para responder por voz",
+    selectAnOption: "Selecione uma opção",
+    specifyLabel: "Especifique abaixo o que deseja:",
+    addDetailsShort: "Adicionar detalhes",
+    systemDefault: "Padrão do Sistema",
   },
   en: {
     transcribing: "Transcribing audio...",
@@ -87,6 +91,10 @@ export const I18N: Record<string, Record<string, string>> = {
     viewOptions: "View options",
     audioHint: "Reply with audio — captures more details and it's faster",
     audioHintShort: "Tap the mic to answer by voice",
+    selectAnOption: "Select an option",
+    specifyLabel: "Specify below what you want:",
+    addDetailsShort: "Add details",
+    systemDefault: "System Default",
   },
   es: {
     transcribing: "Transcribiendo audio...",
@@ -130,6 +138,10 @@ export const I18N: Record<string, Record<string, string>> = {
     viewOptions: "Ver opciones",
     audioHint: "Responde con audio — captura más detalles y es más rápido",
     audioHintShort: "Toca el micrófono para responder por voz",
+    selectAnOption: "Seleccione una opción",
+    specifyLabel: "Especifique a continuación lo que desea:",
+    addDetailsShort: "Añadir detalles",
+    systemDefault: "Predeterminado del Sistema",
   },
 };
 

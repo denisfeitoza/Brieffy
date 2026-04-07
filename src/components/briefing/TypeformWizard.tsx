@@ -43,6 +43,19 @@ interface TranslationMap {
   thankYouCta: string;
   reviewAnswers: string;
   reviewDesc: string;
+  speakFreely: string;
+  skipFiles: string;
+  questionTitle: string;
+  skipOptional: string;
+  skipOptionalSkip: string;
+  skipOptionalDesc: string;
+  skipText: string;
+  fileConstraints: string;
+  attachedFiles: string;
+  sendFileBtnPrefix: string;
+  fileWord: string;
+  filesWord: string;
+  withTextWord: string;
 }
 
 const I18N: Record<string, TranslationMap> = {
@@ -73,6 +86,19 @@ const I18N: Record<string, TranslationMap> = {
     thankYouCta: "Voltar ao Hub",
     reviewAnswers: "Revisar Respostas",
     reviewDesc: "Você pode conferir as informações enviadas abaixo.",
+    speakFreely: "Fale livremente — quanto mais detalhes, melhor",
+    skipFiles: "Pular (Não tenho arquivos no momento)",
+    questionTitle: "Pergunta",
+    skipOptional: "Opcional",
+    skipOptionalSkip: "Pule se quiser!",
+    skipOptionalDesc: "Se a pergunta não fizer sentido para o momento atual da empresa, fique à vontade para pular.",
+    skipText: "Pular",
+    fileConstraints: "PDF, PNG, JPG (Múltiplos permitidos, Max 5MB cada)",
+    attachedFiles: "Arquivos anexados:",
+    sendFileBtnPrefix: "Enviar",
+    fileWord: "arquivo",
+    filesWord: "arquivos",
+    withTextWord: "+ texto",
   },
   en: {
     docGenerated: "Diagnosis Generated ✓",
@@ -101,6 +127,19 @@ const I18N: Record<string, TranslationMap> = {
     thankYouCta: "Back to Hub",
     reviewAnswers: "Review Answers",
     reviewDesc: "You can check the submitted information below.",
+    speakFreely: "Speak freely — the more details, the better",
+    skipFiles: "Skip (I don't have files right now)",
+    questionTitle: "Question",
+    skipOptional: "Optional",
+    skipOptionalSkip: "Skip if needed!",
+    skipOptionalDesc: "If this question doesn't make sense for your current context, feel free to skip it.",
+    skipText: "Skip",
+    fileConstraints: "PDF, PNG, JPG (Multiple allowed, Max 5MB each)",
+    attachedFiles: "Attached files:",
+    sendFileBtnPrefix: "Send",
+    fileWord: "file",
+    filesWord: "files",
+    withTextWord: "+ text",
   },
   es: {
     docGenerated: "Diagnóstico Gerado ✓",
@@ -129,6 +168,19 @@ const I18N: Record<string, TranslationMap> = {
     thankYouCta: "Volver al Hub",
     reviewAnswers: "Revisar Respuestas",
     reviewDesc: "Puede consultar la información enviada a continuación.",
+    speakFreely: "Hable libremente — cuantos más detalles, mejor",
+    skipFiles: "Omitir (No tengo archivos en este momento)",
+    questionTitle: "Pregunta",
+    skipOptional: "Opcional",
+    skipOptionalSkip: "¡Omita si lo desea!",
+    skipOptionalDesc: "Si la pregunta no tiene sentido para el contexto actual, siéntete libre de omitirla.",
+    skipText: "Omitir",
+    fileConstraints: "PDF, PNG, JPG (Múltiples permitidos, Máx 5MB c/u)",
+    attachedFiles: "Archivos adjuntos:",
+    sendFileBtnPrefix: "Enviar",
+    fileWord: "archivo",
+    filesWord: "archivos",
+    withTextWord: "+ texto",
   }
 };
 
@@ -273,7 +325,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                  className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[var(--orange)]/5 border border-[var(--orange)]/20 text-[var(--orange)] text-sm font-medium w-fit"
                >
                  <span className="w-2 h-2 rounded-full bg-[var(--orange)] animate-pulse" />
-                 {chosenLanguage === 'en' ? 'Speak freely — the more details, the better' : 'Fale livremente — quanto mais detalhes, melhor'}
+                 {t.speakFreely}
                </motion.div>
              )}
 
@@ -304,7 +356,21 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
             {/* Input Area */}
             <div className="w-full mt-6 sm:mt-auto shrink-0 flex flex-col justify-end">
-              {isLoading ? (
+              {documentError ? (
+                <div className="flex flex-col items-center justify-center p-6 bg-red-50/50 border border-red-100 rounded-3xl w-full mx-auto max-w-xl text-center">
+                  <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+                    <X className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-red-900 font-semibold text-lg mb-2">Ops, tivemos um problema!</h3>
+                  <p className="text-red-600/80 font-medium mb-6 text-sm">{documentError}</p>
+                  <Button 
+                    onClick={() => generateDocument()} 
+                    className="bg-[var(--orange)] hover:bg-[var(--orange-dark)] text-white rounded-full px-8 h-12 shadow-sm font-medium transition-all hover:scale-105 active:scale-95"
+                  >
+                    Tentar Novamente
+                  </Button>
+                </div>
+              ) : isLoading || isGeneratingDocument ? (
                 <AIThinkingAnimation 
                   language={chosenLanguage} 
                   brandColor={activeColor}
@@ -325,7 +391,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   voiceLanguage={chosenLanguage}
                   messages={messages}
                   isDiscoveryPhase={isDiscoveryPhase}
-                  showVoiceTutorial={currentStepIndex === 1}
+                  showVoiceTutorial={currentStepIndex === 1 || activeMessage?.id === 'final-system-question'}
                 />
               )}
             </div>
@@ -362,17 +428,13 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                         </div>
                         <div className="flex flex-col pt-0.5 text-left pr-4">
                           <span className="font-bold text-[11px] text-gray-400 uppercase tracking-wider mb-1">
-                            {chosenLanguage === 'pt' ? 'Opcional' : chosenLanguage === 'es' ? 'Opcional' : 'Optional'}
+                            {t.skipOptional}
                           </span>
                           <span className="font-semibold text-[15px] mb-1 leading-tight">
-                            {chosenLanguage === 'pt' ? 'Pule se quiser!' : chosenLanguage === 'es' ? '¡Omita si lo desea!' : 'Skip if needed!'}
+                            {t.skipOptionalSkip}
                           </span>
                           <span className="text-[13px] text-gray-300 leading-relaxed">
-                            {chosenLanguage === 'pt' 
-                              ? 'Se a pergunta não fizer sentido para o momento atual da empresa, fique à vontade para pular.' 
-                              : chosenLanguage === 'es' 
-                              ? 'Si la pregunta no tiene sentido para el contexto actual, siéntete libre de omitirla.' 
-                              : 'If this question doesn\'t make sense for your current context, feel free to skip it.'}
+                            {t.skipOptionalDesc}
                           </span>
                         </div>
                         {/* Pointer triangle */}
@@ -385,7 +447,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                     onClick={() => submitAnswer('(skipped)')}
                     className="text-gray-400 hover:text-gray-600 rounded-full px-6 h-12 text-sm transition-colors"
                   >
-                    {chosenLanguage === 'en' ? 'Skip' : 'Pular'}
+                    {t.skipText}
                   </Button>
                 </div>
               </div>

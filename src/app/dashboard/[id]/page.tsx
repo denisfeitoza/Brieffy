@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Clock, FileText, MessageSquare,
   Activity, Brain, CheckCircle2, BarChart3, Eye,
-  Zap, Shield, Code, ChevronDown, Printer, Edit2
+  Zap, Shield, Code, ChevronDown, Printer, Edit2, Loader2, Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -538,24 +538,58 @@ async function SessionContent({ id }: { id: string }) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text3)] p-6 text-center">
-            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mb-6">
-              <FileText className="w-10 h-10 text-[var(--orange)] opacity-40" />
-            </div>
-            <h3 className="text-xl font-bold text-[var(--text)] mb-2">Diagnóstico em Processamento</h3>
-            <p className="max-w-md mx-auto mb-8 text-sm">
+          <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text3)] p-6 text-center animate-in fade-in zoom-in duration-500">
+            {session.status === 'finished' ? (
+              <div className="relative mb-8 mt-4">
+                <div className="absolute inset-0 bg-[var(--orange)] blur-3xl opacity-20 rounded-full animate-pulse z-0 scale-150"></div>
+                <div className="relative z-10 w-24 h-24 bg-gradient-to-tr from-orange-100 to-orange-50 rounded-full flex items-center justify-center border-[3px] border-white shadow-xl overflow-hidden">
+                  <div className="absolute inset-0 border-2 border-[var(--orange)] border-dashed rounded-full animate-[spin_8s_linear_infinite] opacity-30"></div>
+                  <div className="absolute inset-2 border-2 border-[var(--orange)] border-dotted rounded-full animate-[spin_12s_linear_infinite_reverse] opacity-40"></div>
+                  <Brain className="w-10 h-10 text-[var(--orange)] animate-pulse" strokeWidth={1.5} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--orange)]/10 to-transparent"></div>
+                  <div className="absolute -top-2 -right-2 animate-bounce flex delay-100">
+                    <Sparkles className="w-5 h-5 text-[var(--orange)] opacity-80" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="w-20 h-20 bg-[var(--bg2)] rounded-full flex items-center justify-center mb-6 shadow-sm border border-[var(--bd)] transition-all duration-300 hover:scale-105">
+                <FileText className="w-10 h-10 text-[var(--text3)] opacity-60" />
+              </div>
+            )}
+            
+            <h3 className="text-2xl font-black text-[var(--text)] mb-3 tracking-tight">
+              {session.status === 'finished' ? 'Gerando sua Estratégia...' : 'Diagnóstico em Processamento'}
+            </h3>
+            
+            <p className="max-w-md mx-auto mb-8 text-[15px] leading-relaxed text-[var(--text2)]">
               {session.status === 'finished' 
-                ? "Sua estratégia está sendo gerada pela nossa IA. Se o processo demorar muito, você pode forçar a geração abaixo."
+                ? "Nossa inteligência artificial está analisando cada detalhe do seu briefing para construir um diagnóstico profundo e um plano de ação estratégico. Isso leva apenas alguns instantes."
                 : "Este briefing ainda não foi finalizado. O diagnóstico ficará disponível assim que a sessão for concluída."}
             </p>
             
             {session.status === 'finished' && (
-              <GenerateDocumentAction sessionId={session.id} />
+              <div className="flex flex-col items-center gap-4 w-full">
+                <div className="flex items-center gap-2 text-sm font-medium text-[var(--orange)] bg-orange-50/50 px-5 py-2.5 rounded-full border border-orange-100/50 mb-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processando dados
+                  <span className="flex gap-1 ml-1">
+                    <span className="w-1 h-1 bg-[var(--orange)] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-1 h-1 bg-[var(--orange)] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-1 h-1 bg-[var(--orange)] rounded-full animate-bounce"></span>
+                  </span>
+                </div>
+                
+                <div className="w-full max-w-[280px] pt-4 border-t border-[var(--bd)] mt-2">
+                  <p className="text-[11px] uppercase tracking-wider font-bold text-[var(--text3)] mb-3">Está demorando muito?</p>
+                  <GenerateDocumentAction sessionId={session.id} />
+                </div>
+              </div>
             )}
             
             {session.status !== 'finished' && (
-              <div className="flex items-center gap-2 text-xs font-medium text-[var(--orange)] bg-orange-50 px-4 py-2 rounded-full border border-orange-100">
-                <Clock className="w-3.5 h-3.5 animate-pulse" />
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--text)] bg-[var(--bg2)] px-5 py-2.5 rounded-full border border-[var(--bd)] shadow-sm">
+                <Clock className="w-4 h-4 animate-pulse text-[var(--orange)]" />
                 Aguardando finalização do briefing
               </div>
             )}

@@ -23,6 +23,7 @@ interface Translations {
   thankYouBody: string;
   reviewAnswers: string;
   reviewDesc: string;
+  questionTitle: string;
 }
 
 interface ClientThankYouScreenProps {
@@ -212,7 +213,7 @@ export function ClientThankYouScreen({
                   {messages.filter(m => m.userAnswer).map((m, i) => (
                     <div key={i} className="pb-4 border-b border-gray-100 last:border-0">
                       <p className="text-gray-500 text-xs uppercase tracking-wider mb-1 font-semibold">
-                        Pergunta {i + 1}
+                        {t.questionTitle} {i + 1}
                       </p>
                       <p className="text-gray-800 font-medium mb-3">
                         {m.content}
