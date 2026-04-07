@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { t } = useDashboardLanguage();
+  const { t, language } = useDashboardLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -109,8 +110,14 @@ export default function ProfilePage() {
         .eq('user_id', user.id)
         .single();
 
+      const { count: sessionCount } = await supabase
+        .from('briefing_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('template_id', 'is', null);
+
       if (quota) {
-        setUsedBriefings(quota.used_briefings || 0);
+        setUsedBriefings(sessionCount || 0);
         setMaxBriefings(quota.max_briefings || 3);
       }
 
@@ -241,6 +248,9 @@ export default function ProfilePage() {
     );
   }
 
+  const isLimitReached = usedBriefings >= maxBriefings && maxBriefings > 0;
+  const availableBriefings = Math.max(0, maxBriefings - usedBriefings);
+
   return (
     <div className="space-y-8 max-w-2xl animate-in fade-in duration-700">
       <div>
@@ -250,32 +260,45 @@ export default function ProfilePage() {
         <p className="text-[var(--text2)] mt-1 font-medium">{t('profile.subtitle')}</p>
       </div>
 
-      {/* Plan & Quota */}
-      <Card className="bg-amber-50 border-amber-200 shadow-sm">
-        <CardContent className="py-5 px-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-amber-600" />
+      {/* Briefings Quota */}
+      {maxBriefings > 0 && (
+        <Card className={`border shadow-sm ${isLimitReached ? 'bg-red-500/10 border-red-500/20' : 'bg-[var(--acbg)] border-[var(--acbd)]'}`}>
+          <CardContent className="py-5 px-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLimitReached ? 'bg-red-500/20' : 'bg-[var(--acbg)] border border-[var(--bd)]'}`}>
+                <BarChart3 className={`w-5 h-5 ${isLimitReached ? 'text-red-600' : 'text-[var(--text)]'}`} />
+              </div>
+              <div>
+                <p className={`font-bold ${isLimitReached ? 'text-red-700' : 'text-[var(--text)]'}`}>
+                  {usedBriefings} / {maxBriefings} {t('profile.briefingsUsed') || 'Briefings (Used/Total)'}
+                </p>
+                <p className="text-xs text-[var(--text2)] font-medium mt-0.5">
+                  {language === 'pt' && availableBriefings > 0 && `Você tem ${availableBriefings} briefings disponíveis`}
+                  {language === 'en' && availableBriefings > 0 && `You have ${availableBriefings} briefings available`}
+                  {language === 'es' && availableBriefings > 0 && `Tienes ${availableBriefings} briefings disponibles`}
+                  
+                  {language === 'pt' && availableBriefings === 0 && 'Você atingiu o limite de briefings do seu plano'}
+                  {language === 'en' && availableBriefings === 0 && 'You have reached your briefing limit'}
+                  {language === 'es' && availableBriefings === 0 && 'Has alcanzado el límite de briefings'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-amber-900 capitalize">{plan} {t('profile.plan')}</p>
-              <p className="text-xs text-amber-700/80 font-medium">{t('profile.yourSubscription')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <BarChart3 className="w-4 h-4 text-amber-600" />
-              <span className="text-amber-800 font-semibold">{usedBriefings}/{maxBriefings} {t('profile.briefingsUsed')}</span>
-            </div>
-            <div className="w-32 h-2 bg-amber-200/50 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-amber-500 rounded-full transition-all"
-                style={{ width: `${Math.min((usedBriefings / maxBriefings) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            
+            <Link href="/dashboard/packages" className="mt-3 sm:mt-0 shrink-0">
+              <Button 
+                size="sm"
+                className={`rounded-xl font-semibold shadow-sm transition-transform hover:scale-105 h-9 px-4 ${
+                  isLimitReached 
+                    ? 'bg-red-500 text-white hover:bg-red-600' 
+                    : 'bg-[var(--orange)] text-black hover:bg-[#e8552a]'
+                }`}
+              >
+                {language === 'pt' ? 'Adquirir Mais' : language === 'en' ? 'Get More' : 'Adquirir Más'}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Profile Info */}
       <Card className="bg-[var(--bg)] border-[var(--bd)] shadow-sm">
@@ -429,58 +452,24 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Colors */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <Label className="text-[var(--text2)] text-sm font-semibold">{t('profile.primaryColor')}</Label>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <input
-                    type="color"
-                    value={brandColor}
-                    onChange={(e) => setBrandColor(e.target.value)}
-                    className="w-12 h-12 rounded-xl border border-[var(--bd-strong)] cursor-pointer bg-transparent [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-none shadow-sm"
-                  />
-                </div>
-                <Input
-                  value={brandColor}
-                  onChange={(e) => setBrandColor(e.target.value)}
-                  className="bg-[var(--bg)] border-[var(--bd)] font-mono text-sm uppercase focus-visible:ring-[var(--orange)]"
-                  maxLength={7}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[var(--text2)] text-sm font-semibold">{t('profile.accentColor')}</Label>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <input
-                    type="color"
-                    value={brandAccent}
-                    onChange={(e) => setBrandAccent(e.target.value)}
-                    className="w-12 h-12 rounded-xl border border-[var(--bd-strong)] cursor-pointer bg-transparent [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-none shadow-sm"
-                  />
-                </div>
-                <Input
-                  value={brandAccent}
-                  onChange={(e) => setBrandAccent(e.target.value)}
-                  className="bg-[var(--bg)] border-[var(--bd)] font-mono text-sm uppercase focus-visible:ring-[var(--orange)]"
-                  maxLength={7}
-                />
-              </div>
-            </div>
-          </div>
+
 
           {/* Tagline & Website */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <Label className="text-[var(--text2)] flex items-center gap-1.5 text-sm font-semibold">
-                <Type className="w-3.5 h-3.5" />
-                {t('profile.tagline')}
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-[var(--text2)] flex items-center gap-1.5 text-sm font-semibold">
+                  <Type className="w-3.5 h-3.5" />
+                  {t('profile.tagline')}
+                </Label>
+                <span className="text-[10px] text-[var(--text3)] font-medium">
+                  {tagline.length}/60
+                </span>
+              </div>
               <Input
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
+                maxLength={60}
                 placeholder={t('profile.taglinePlaceholder')}
                 className="bg-[var(--bg)] border-[var(--bd)] focus-visible:ring-[var(--orange)]"
               />

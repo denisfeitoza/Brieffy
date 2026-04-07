@@ -320,7 +320,13 @@ export async function POST(req: Request) {
     const allowedFormats: string[] = [];
     allowedFormats.push(`  - text: Open-ended names/descriptions.`);
     if (formatConfig.multiple_choice) allowedFormats.push(`  - multiple_choice: Multi-select. EXACTLY 6 options (5 real + 1 "Outro"). Options as string array.`);
-    if (formatConfig.single_choice) allowedFormats.push(`  - single_choice: Exclusive choice. EXACTLY 6 options (5 real + 1 "Outro"). For FONTS: use REAL Google Font names "FontName - TwoWordDescription". 6th = "Nenhuma dessas - Padrao do Sistema".`);
+    if (formatConfig.single_choice) {
+      if (formatConfig.font) {
+        allowedFormats.push(`  - single_choice: Exclusive choice. EXACTLY 6 options (5 real + 1 "Outro"). For FONTS: use REAL Google Font names "FontName - TwoWordDescription". 6th = "Nenhuma dessas - Padrao do Sistema".`);
+      } else {
+        allowedFormats.push(`  - single_choice: Exclusive choice. EXACTLY 6 options (5 real + 1 "Outro").`);
+      }
+    }
     if (formatConfig.boolean_toggle) allowedFormats.push(`  - boolean_toggle: Yes/No binary. No "Other" option.`);
     if (formatConfig.card_selector) allowedFormats.push(`  - card_selector: Strategic routes. Options as [{title,description}]. 6 cards (5 real + 1 "Outro" card).`);
     if (formatConfig.slider) allowedFormats.push(`  - slider: 1-10 scale. Send minOption and maxOption.`);

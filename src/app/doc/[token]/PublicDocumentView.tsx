@@ -150,7 +150,7 @@ export function PublicDocumentView({ token }: { token: string }) {
         <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="text-2xl font-outfit font-bold tracking-tight text-white flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffcfbc] to-[var(--orange)] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--orange)] to-[#ffcfbc] flex items-center justify-center">
                 <span className="text-white text-sm">B</span>
               </div>
               Brieffy
@@ -198,7 +198,7 @@ export function PublicDocumentView({ token }: { token: string }) {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-neutral-900 border border-white/10 p-8 rounded-2xl shadow-xl flex flex-col items-center">
         <div className="mb-8 text-2xl font-outfit font-bold tracking-tight text-white flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffcfbc] to-[var(--orange)] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--orange)] to-[#ffcfbc] flex items-center justify-center">
             <span className="text-white text-sm">B</span>
           </div>
           Brieffy

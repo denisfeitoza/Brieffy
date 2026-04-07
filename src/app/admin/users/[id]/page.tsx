@@ -63,6 +63,12 @@ export default function AdminUserDetailPage() {
         .eq('user_id', userId)
         .single();
 
+      const { count: sessionCount } = await supabase
+        .from('briefing_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .not('template_id', 'is', null);
+
       const { data: sessionsData } = await supabase
         .from('briefing_sessions')
         .select('id, session_name, status, created_at')
@@ -71,7 +77,7 @@ export default function AdminUserDetailPage() {
 
       if (profile) setUser(profile);
       if (quotaData) {
-        setQuota(quotaData);
+        setQuota({ ...quotaData, used_briefings: sessionCount || 0 });
         setMaxBriefings(quotaData.max_briefings);
         setIsBlocked(quotaData.is_blocked);
         setBlockedReason(quotaData.blocked_reason || '');

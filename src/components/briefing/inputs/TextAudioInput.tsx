@@ -93,10 +93,10 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
       ? "Agregue un comentario u opción extra..."
       : "Add an extra comment or option..."
     : voiceLanguage === "pt"
-    ? "Digite ou toque no 🎙 para responder por áudio..."
+    ? "Digite ou toque no microfone para responder por áudio..."
     : voiceLanguage === "es"
-    ? "Escriba o toque el 🎙 para responder con audio..."
-    : "Type or tap 🎙 to answer with audio...";
+    ? "Escriba o toque el micrófono para responder con audio..."
+    : "Type or tap the microphone to answer with audio...";
 
   return (
     <div ref={wrapperRef} className={`relative group w-full ${isDiscoveryPhase ? 'mt-6' : 'mt-8'}`}>

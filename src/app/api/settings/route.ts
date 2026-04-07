@@ -20,7 +20,7 @@ async function requireAdmin() {
     const { data: profile } = await supabase
       .from("briefing_profiles")
       .select("is_admin")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single();
 
     if (!profile?.is_admin) {

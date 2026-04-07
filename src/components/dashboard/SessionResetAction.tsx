@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw, Loader2, AlertTriangle } from 'lucide-react';
+import { RefreshCcw, Loader2, AlertTriangle, KeyRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -18,28 +19,46 @@ import {
 export function SessionResetAction({ sessionId }: { sessionId: string }) {
   const [isResetting, setIsResetting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [password, setPassword] = useState('');
   const router = useRouter();
 
   const handleReset = async () => {
+    if (!password) {
+      toast.error('A senha é obrigatória.');
+      return;
+    }
+
     setIsResetting(true);
     try {
       const res = await fetch(`/api/sessions/${sessionId}/reset`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password })
       });
 
-      if (!res.ok) throw new Error('Falha ao resetar briefing');
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) throw new Error(data?.error || 'Falha ao resetar briefing');
 
       toast.success('Briefing resetado com sucesso!');
       
       // Update the page data instead of redirecting
       router.refresh();
+      setIsOpen(false);
+      setPassword('');
     } catch (error) {
       console.error(error);
-      toast.error('Erro ao resetar briefing. Tente novamente.');
+      toast.error(error instanceof Error ? error.message : 'Erro ao resetar briefing. Tente novamente.');
     } finally {
       setIsResetting(false);
-      setIsOpen(false);
     }
+  };
+
+  const onOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) setPassword('');
   };
 
   return (
@@ -74,23 +93,38 @@ export function SessionResetAction({ sessionId }: { sessionId: string }) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-[var(--bg)] border border-[var(--bd)] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
             <h4 className="text-lg font-bold text-[var(--text)] mb-2">Tem certeza?</h4>
-            <p className="text-sm text-[var(--text3)] mb-6">
+            <p className="text-sm text-[var(--text3)] mb-4 leading-relaxed">
               Esta ação não pode ser desfeita. Todo o progresso atual deste briefing será perdido.
             </p>
+
+            <div className="mb-6 space-y-2">
+              <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5" /> Confirmar Senha
+              </label>
+              <Input
+                type="password"
+                placeholder="Sua senha de login"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isResetting}
+                className="bg-[var(--bg2)] border-[var(--bd)] focus-visible:ring-red-500 rounded-xl h-10"
+              />
+            </div>
+
             <div className="flex gap-3">
               <Button 
                 variant="outline" 
                 className="flex-1 bg-transparent border-[var(--bd)]"
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
                 disabled={isResetting}
               >
                 Cancelar
               </Button>
               <Button 
                 variant="destructive" 
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50"
                 onClick={handleReset}
-                disabled={isResetting}
+                disabled={isResetting || !password}
               >
                 {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sim, Resetar'}
               </Button>

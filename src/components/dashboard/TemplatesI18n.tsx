@@ -177,9 +177,18 @@ export function QuotaBanner({ used, max }: { used: number; max: number }) {
         </p>
       </div>
       <Link href="/dashboard/packages" className="mt-3 sm:mt-0 shrink-0">
-        <button className={`px-4 py-2 text-xs font-bold rounded-full transition-colors ${isLimitReached ? 'bg-red-500 text-white hover:bg-red-600' : isNearLimit ? 'bg-[var(--orange)] text-black hover:opacity-90' : 'bg-black text-[var(--orange)] hover:opacity-90'}`}>
+        <Button 
+          size="sm"
+          className={`rounded-xl font-semibold shadow-sm transition-transform hover:scale-105 h-9 px-4 ${
+            isLimitReached 
+              ? 'bg-red-500 text-white hover:bg-red-600' 
+              : isNearLimit 
+                ? 'bg-[var(--orange)] text-black hover:bg-[#e8552a]' 
+                : 'bg-[var(--text)] text-[var(--bg)] hover:opacity-90'
+          }`}
+        >
           {t('buyMoreShort')}
-        </button>
+        </Button>
       </Link>
     </div>
   );

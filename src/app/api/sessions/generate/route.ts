@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     // 2. Fetch Quota to Verify Access
     const { data: quota, error: quotaError } = await supabaseSession
       .from('briefing_quotas')
-      .select('used_briefings, max_briefings, is_blocked')
+      .select('max_briefings, is_blocked')
       .eq('user_id', user.id)
       .single();
 
@@ -53,7 +53,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Sua conta está bloqueada. Contate o suporte." }, { status: 403 });
     }
 
-    if (quota && quota.used_briefings >= quota.max_briefings) {
+    const { count: sessionCount } = await supabaseSession
+      .from('briefing_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('template_id', 'is', null);
+
+    const usedBriefings = sessionCount || 0;
+
+    if (quota && usedBriefings >= quota.max_briefings) {
       return NextResponse.json({ error: `Você atingiu seu limite de ${quota.max_briefings} briefings. Faça upgrade para continuar.` }, { status: 403 });
     }
 

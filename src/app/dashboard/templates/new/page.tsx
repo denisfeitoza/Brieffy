@@ -38,10 +38,10 @@ const DEPT_COLORS: Record<string, { bg: string; border: string; text: string; gl
 };
 
 const DEPT_LABELS: Record<string, string> = {
-  branding: '🎨 Branding', technology: '⚙️ Tecnologia', marketing: '📊 Marketing',
-  operations: '🔄 Operações', finance: '💰 Finanças', people: '👥 Pessoas',
-  commercial: '📈 Comercial', product: '💡 Produto', legal: '🛡️ Jurídico',
-  digital: '🛒 Digital', content: '🎬 Conteúdo', general: '📦 Geral',
+  branding: 'Branding', technology: 'Tecnologia', marketing: 'Marketing',
+  operations: 'Operações', finance: 'Finanças', people: 'Pessoas',
+  commercial: 'Comercial', product: 'Produto', legal: 'Jurídico',
+  digital: 'Digital', content: 'Conteúdo', general: 'Geral',
 };
 
 interface CategoryPackage {
@@ -303,8 +303,8 @@ export default function NewBriefingWizard() {
   // ── Share (link + passphrase) ───
   const [shared, setShared] = useState(false);
   const shareAll = useCallback(() => {
-    const parts = [`🔗 Link do Briefing:\n${generatedLink}`];
-    if (editPassphrase) parts.push(`🔑 Senha: ${editPassphrase}`);
+    const parts = [`Link do Briefing:\n${generatedLink}`];
+    if (editPassphrase) parts.push(`Senha: ${editPassphrase}`);
     const text = parts.join('\n\n');
     navigator.clipboard.writeText(text);
     setShared(true);
@@ -763,7 +763,7 @@ export default function NewBriefingWizard() {
                 </div>
                 
                 <div className="text-center space-y-2">
-                  <h3 className="text-2xl font-black text-foreground tracking-tight">Briefing Criado! ✨</h3>
+                  <h3 className="text-2xl font-black text-foreground tracking-tight">Briefing Criado!</h3>
                   <p className="text-sm font-medium text-brieffy-text2 max-w-sm leading-relaxed mx-auto">
                     Agora é só compartilhar o link {editPassphrase ? 'e a senha' : ''} com seu cliente para começarem.
                   </p>

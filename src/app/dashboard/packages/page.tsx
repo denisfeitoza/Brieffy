@@ -195,8 +195,8 @@ export default function PackagesPage() {
   const renderForm = () => (
     <div className="space-y-4 p-6 bg-white border border-[var(--bd)] shadow-sm rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300">
       <div className="flex justify-between items-start">
-        <h3 className="text-lg font-bold text-gray-900">
-          {creating ? '✨ Nova Skill de IA' : '✏️ Editar Skill'}
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          {creating ? <><Sparkles className="w-5 h-5 text-[var(--orange)]" /> Nova Skill de IA</> : <><Pencil className="w-5 h-5 text-gray-500" /> Editar Skill</>}
         </h3>
         {form.skill_type === 'personal' && (
           <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5">
@@ -471,14 +471,14 @@ export default function PackagesPage() {
       {!creating && !editing && (
         <Tabs defaultValue="official" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-gray-100/60 border border-gray-200 p-1.5 rounded-2xl h-14 w-full max-w-md mx-auto grid grid-cols-3 mb-8">
-            <TabsTrigger value="official" className="rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
-              ✨ Oficiais
+            <TabsTrigger value="official" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
+              <Sparkles className="w-4 h-4" /> Oficiais
             </TabsTrigger>
-            <TabsTrigger value="personal" className="rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
-              🧠 Minhas
+            <TabsTrigger value="personal" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
+              <Brain className="w-4 h-4" /> Minhas
             </TabsTrigger>
-            <TabsTrigger value="community" className="rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
-              🌍 Comunidade
+            <TabsTrigger value="community" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
+              <Globe className="w-4 h-4" /> Comunidade
             </TabsTrigger>
           </TabsList>
 

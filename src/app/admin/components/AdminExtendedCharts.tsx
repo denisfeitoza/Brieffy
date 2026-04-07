@@ -308,7 +308,7 @@ export function AdminExtendedCharts({
                   <div className="flex flex-col gap-3">
                     {/* Identity Row */}
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#ffcfbc] to-[var(--orange)] flex items-center justify-center text-xs sm:text-sm font-bold shrink-0">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[var(--orange)] to-[#ffcfbc] flex items-center justify-center text-xs sm:text-sm font-bold shrink-0">
                         {(user.display_name || 'U').charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
