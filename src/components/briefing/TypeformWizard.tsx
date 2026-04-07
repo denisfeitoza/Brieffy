@@ -325,7 +325,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   voiceLanguage={chosenLanguage}
                   messages={messages}
                   isDiscoveryPhase={isDiscoveryPhase}
-                  showVoiceTutorial={currentStepIndex === 0}
+                  showVoiceTutorial={currentStepIndex === 1}
                 />
               )}
             </div>
@@ -343,7 +343,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                 </Button>
                 <div className="relative shrink-0 flex justify-end">
                   <AnimatePresence>
-                    {currentStepIndex === 5 && !inputText && !dismissedSkipHint && (
+                    {currentStepIndex === 6 && !inputText && !dismissedSkipHint && (
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
