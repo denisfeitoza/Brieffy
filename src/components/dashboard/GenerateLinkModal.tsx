@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu,
-  Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck,
-  Lightbulb, Shield, Server, ShoppingCart, Video,
-  ChevronDown, Wand2, Sparkles, Lock, Loader2, ShieldCheck, Target, X,
+  Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronDown, Wand2, Sparkles, Lock, Loader2, ShieldCheck, Target, X, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -29,6 +27,21 @@ import { Textarea } from '@/components/ui/textarea';
 const ICON_MAP: Record<string, React.ElementType> = {
   Palette, Brain, Cpu, Megaphone, Headphones, DollarSign, Users,
   TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Package,
+};
+
+const DEPT_ICON_MAP: Record<string, React.ElementType> = {
+  branding: Palette,
+  technology: Cpu,
+  marketing: Megaphone,
+  operations: RefreshCw,
+  finance: DollarSign,
+  people: Users,
+  commercial: TrendingUp,
+  product: Lightbulb,
+  legal: Shield,
+  digital: ShoppingCart,
+  content: Video,
+  general: Package,
 };
 
 // ── i18n helper for keys not yet in the dictionary ──────────────────
@@ -540,9 +553,13 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                   <div className="space-y-3">
                     {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                       <div key={dept}>
-                        <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-1.5 truncate">
+                        <div className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-1.5 truncate flex items-center gap-1.5">
+                          {(() => {
+                            const DeptIcon = DEPT_ICON_MAP[dept] || Package;
+                            return <DeptIcon className="w-3.5 h-3.5" />;
+                          })()}
                           {t(`dept.${dept}`)}
-                        </p>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                           {pkgs.map((pkg) => {
                             const isSelected = selectedSlugs.includes(pkg.slug);

@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X,
-  CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2,
-  Brain, Palette, Cpu, Megaphone, Headphones, DollarSign,
-  Users, TrendingUp, Truck, Lightbulb, Shield, Server,
-  ShoppingCart, Video, ChevronDown, ShieldCheck,
+  Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X, CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronDown, ShieldCheck, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +39,21 @@ const DEPT_LABELS: Record<string, string> = {
   operations: 'Operações', finance: 'Finanças', people: 'Pessoas',
   commercial: 'Comercial', product: 'Produto', legal: 'Jurídico',
   digital: 'Digital', content: 'Conteúdo', general: 'Geral',
+};
+
+const DEPT_ICON_MAP: Record<string, React.ElementType> = {
+  branding: Palette,
+  technology: Cpu,
+  marketing: Megaphone,
+  operations: RefreshCw,
+  finance: DollarSign,
+  people: Users,
+  commercial: TrendingUp,
+  product: Lightbulb,
+  legal: Shield,
+  digital: ShoppingCart,
+  content: Video,
+  general: Package,
 };
 
 interface CategoryPackage {
@@ -594,9 +606,13 @@ export default function NewBriefingWizard() {
               <div className="space-y-6">
                 {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                   <div key={dept} className="space-y-3">
-                    <p className="label-caps text-brieffy-text3 px-1">
+                    <div className="label-caps text-brieffy-text3 px-1 flex items-center gap-1.5">
+                      {(() => {
+                        const DeptIcon = DEPT_ICON_MAP[dept] || Package;
+                        return <DeptIcon className="w-4 h-4" />;
+                      })()}
                       {DEPT_LABELS[dept] || dept}
-                    </p>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {pkgs.map(pkg => {
                         const isSelected = selectedSlugs.includes(pkg.slug);
