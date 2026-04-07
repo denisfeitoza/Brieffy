@@ -6,9 +6,8 @@ import {
   Share2, CheckCircle2, Copy, Package, Brain, Palette, Cpu,
   Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck,
   Lightbulb, Shield, Server, ShoppingCart, Video,
-  ChevronDown, Wand2, Sparkles, Link2, Lock, Loader2, ShieldCheck, Target, X,
+  ChevronDown, Wand2, Sparkles, Lock, Loader2, ShieldCheck, Target, X,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
@@ -32,6 +31,30 @@ const ICON_MAP: Record<string, React.ElementType> = {
   TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Package,
 };
 
+// ── i18n helper for keys not yet in the dictionary ──────────────────
+const LOCAL_T: Record<string, Record<string, string>> = {
+  'modal.purpose': { pt: 'Propósito', en: 'Purpose', es: 'Propósito' },
+  'modal.purposePlaceholder': {
+    pt: 'Ex: Quero descobrir as maiores dores do meu cliente ideal...',
+    en: 'E.g.: I want to discover my ideal client\'s biggest pain points...',
+    es: 'Ej: Quiero descubrir los mayores dolores de mi cliente ideal...',
+  },
+  'modal.sensitivePoints': {
+    pt: 'Pontos Sensíveis ou Limitadores',
+    en: 'Sensitive Points or Limitations',
+    es: 'Puntos Sensibles o Limitadores',
+  },
+  'modal.sensitivePointsPlaceholder': {
+    pt: 'Ex: Evitar perguntas sobre faturamento...',
+    en: 'E.g.: Avoid questions about revenue...',
+    es: 'Ej: Evitar preguntas sobre facturación...',
+  },
+  'modal.securityPasswords': {
+    pt: 'Segurança & Senhas',
+    en: 'Security & Passwords',
+    es: 'Seguridad y Contraseñas',
+  },
+};
 
 interface CategoryPackage {
   slug: string;
@@ -56,6 +79,9 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
   const { t, language } = useDashboardLanguage();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<'create' | 'done'>(existingSession ? 'done' : 'create');
+
+  // Local translate helper
+  const lt = (key: string) => LOCAL_T[key]?.[language] || LOCAL_T[key]?.['en'] || key;
 
   // Form state
   const [sessionName, setSessionName] = useState('');
@@ -100,7 +126,6 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
         setAccessPassword(existingSession.access_password || '');
       } else {
         if (packages.length === 0) fetchPackages();
-        // Do not auto-generate the passphrase so it remains genuinely optional
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,8 +246,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
     return pkg?.max_questions === null;
   });
 
+  const canSubmit = sessionName.trim() && briefingPurpose.trim() && selectedSlugs.length > 0 && !loading;
+
   const generateSession = async () => {
-    if (!sessionName.trim()) return;
+    if (!canSubmit) return;
     setLoading(true);
     try {
       const res = await fetch('/api/sessions/generate', {
@@ -267,10 +294,8 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
   };
 
   const copyInviteMessage = async () => {
-    const navLang = (typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en').toLowerCase();
-    let msgLang = 'en';
-    if (navLang.startsWith('pt')) msgLang = 'pt';
-    else if (navLang.startsWith('es')) msgLang = 'es';
+    // Use dashboard language instead of navigator.language
+    const msgLang = language;
 
     let msg = '';
     if (msgLang === 'pt') {
@@ -331,70 +356,68 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
         />
       )}
 
-      <DialogContent 
-        className={`bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] transition-all duration-500 ${
-          step === 'create' ? 'sm:max-w-[780px]' : 'sm:max-w-[460px]'
-        }`}
+      <DialogContent
+        className="!max-w-none sm:!max-w-none w-[calc(100vw-1.5rem)] sm:w-[min(720px,calc(100vw-3rem))] bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] p-0 gap-0 overflow-hidden"
         style={{ fontFamily: '"DM Sans", sans-serif' }}
       >
-
-        {/* ========== STEP 1: CREATE (Unified) ========== */}
+        {/* ========== STEP 1: CREATE ========== */}
         {step === 'create' && (
-          <>
-            <DialogHeader className="shrink-0">
-              <DialogTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2 text-[var(--text)] tracking-tight">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--actext)]" />
+          <div className="flex flex-col max-h-[calc(100dvh-3rem)]">
+            {/* Fixed header */}
+            <DialogHeader className="shrink-0 px-5 pt-5 pb-3 sm:px-6 sm:pt-6 border-b border-[var(--bd)]">
+              <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2 text-[var(--text)] tracking-tight">
+                <div className="w-8 h-8 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-[var(--actext)]" />
                 </div>
                 <span className="truncate">{t('modal.newBriefing')}</span>
               </DialogTitle>
-              <DialogDescription className="text-[var(--text3)] text-xs sm:text-sm">
-                {t('modal.intelligentEngine')}: <strong className="text-[var(--actext)] font-semibold inline-block max-w-full align-bottom truncate">{templateName}</strong>
+              <DialogDescription className="text-[var(--text3)] text-xs">
+                {t('modal.intelligentEngine')}: <strong className="text-[var(--actext)] font-semibold">{templateName}</strong>
               </DialogDescription>
             </DialogHeader>
 
-            {/* Inner Content - Scrollable */}
-            <div className="space-y-5 py-2 overflow-y-auto max-h-[55vh] sm:max-h-[60vh] pr-1 sm:pr-2">
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-5 space-y-5">
 
-              {/* ── Session Name ─────────────────────────────────── */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">1</span>
-                  {t('modal.briefingName')} <span className="text-[var(--actext)] lowercase font-medium">({t('modal.required')})</span>
+              {/* ── 1. Session Name ────────────────── */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">1</span>
+                  {t('modal.briefingName')} <span className="text-[var(--actext)]">*</span>
                 </label>
                 <Input
                   placeholder={t('modal.briefingNamePlaceholder')}
                   value={sessionName}
                   onChange={(e) => setSessionName(e.target.value)}
-                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-12 text-base rounded-full px-6 placeholder:text-[var(--text3)]"
+                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full px-4 placeholder:text-[var(--text3)]"
                 />
               </div>
 
-              {/* ── Briefing Purpose ───────────────────────────── */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">2</span>
-                  Propósito <span className="text-[var(--actext)] lowercase font-medium">({t('modal.required')})</span>
+              {/* ── 2. Briefing Purpose ────────────── */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">2</span>
+                  {lt('modal.purpose')} <span className="text-[var(--actext)]">*</span>
                 </label>
                 <Input
-                  placeholder="Ex: Quero descobrir as maiores dores do meu cliente ideal..."
+                  placeholder={lt('modal.purposePlaceholder')}
                   value={briefingPurpose}
                   onChange={(e) => setBriefingPurpose(e.target.value)}
-                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-12 text-base rounded-full px-6 placeholder:text-[var(--text3)]"
+                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full px-4 placeholder:text-[var(--text3)]"
                 />
               </div>
 
-              {/* ── Context (Collapsible) ────────────────────────── */}
-              <div className="space-y-2">
+              {/* ── 3. Context (Collapsible) ──────── */}
+              <div className="space-y-1.5">
                 <button
                   type="button"
                   onClick={() => setShowContext(!showContext)}
-                  className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
+                  className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
                 >
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">3</span>
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">3</span>
                   {t('modal.priorContext')}
-                  <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
-                  <ChevronDown className={`w-4 h-4 text-[var(--text3)] ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
+                  <span className="text-[var(--text3)] lowercase font-medium">{t('modal.optional')}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[var(--text3)] ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>
@@ -406,25 +429,22 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-2 pt-1">
                         <Textarea
                           placeholder={t('modal.contextPlaceholder')}
                           value={initialContext}
                           onChange={(e) => setInitialContext(e.target.value)}
-                          className="bg-[var(--bg)] border-[var(--bd-strong)] min-h-[90px] focus-visible:ring-[var(--orange)] rounded-[32px] px-6 py-4 resize-y placeholder:text-[var(--text3)] text-sm"
+                          className="bg-[var(--bg)] border-[var(--bd-strong)] min-h-[80px] focus-visible:ring-[var(--orange)] rounded-2xl px-4 py-3 resize-y placeholder:text-[var(--text3)] text-sm"
                         />
                         {initialContext.trim() && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                          >
+                          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               onClick={suggestPackages}
                               disabled={isSuggesting}
-                              className="text-[var(--orange)] hover:opacity-80 hover:bg-[var(--orange)]/10 text-xs gap-1.5 h-8 rounded-lg"
+                              className="text-[var(--orange)] hover:opacity-80 hover:bg-[var(--orange)]/10 text-xs gap-1.5 h-7 rounded-lg"
                             >
                               {isSuggesting ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -441,51 +461,46 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                 </AnimatePresence>
               </div>
 
-              {/* ── Depth Signals ───────────────────────────── */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">4</span>
-                  Pontos Sensíveis ou Limitadores <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
+              {/* ── 4. Depth Signals ──────────────── */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">4</span>
+                  {lt('modal.sensitivePoints')} <span className="text-[var(--text3)] lowercase font-medium">{t('modal.optional')}</span>
                 </label>
-                
-                <div className="relative">
-                  <div className="absolute left-3 top-3.5 z-10 flex items-center gap-1.5 pointer-events-none">
-                    <Target className="w-4 h-4 text-brieffy-text3" />
-                  </div>
-                  
-                  {depthSignals.length > 0 && (
-                    <div className="px-3 pt-3 flex flex-wrap gap-2 relative z-10 w-full mb-2">
-                      {depthSignals.map(signal => (
-                        <span 
-                          key={signal}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brieffy-surface border border-brieffy-border text-[13px] font-medium text-foreground shadow-sm"
+
+                {depthSignals.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {depthSignals.map(signal => (
+                      <span 
+                        key={signal}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] text-xs font-medium text-[var(--text)]"
+                      >
+                        {signal}
+                        <button
+                          type="button"
+                          onClick={() => removeSignal(signal)}
+                          className="w-3.5 h-3.5 flex items-center justify-center rounded hover:bg-red-500 hover:text-white transition-colors"
                         >
-                          {signal}
-                          <button
-                            type="button"
-                            onClick={() => removeSignal(signal)}
-                            className="w-4 h-4 flex items-center justify-center rounded bg-foreground/5 hover:bg-red-500 hover:text-white transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="pl-10">
-                    <Input
-                      value={newSignal}
-                      onChange={handleSignalChange}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
-                      placeholder="Ex: Evitar perguntas sobre faturamento..."
-                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 rounded-xl text-sm font-medium transition-all shadow-none placeholder:text-[var(--text3)]"
-                    />
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
                   </div>
+                )}
+
+                <div className="relative">
+                  <Target className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
+                  <Input
+                    value={newSignal}
+                    onChange={handleSignalChange}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
+                    placeholder={lt('modal.sensitivePointsPlaceholder')}
+                    className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 rounded-xl text-sm pl-9 placeholder:text-[var(--text3)]"
+                  />
                 </div>
               </div>
 
-              {/* ── AI Reasoning Feedback ─────────────────────────── */}
+              {/* ── AI Reasoning Feedback ─────────── */}
               <AnimatePresence>
                 {aiReasoning && (
                   <motion.div
@@ -493,39 +508,39 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-[var(--orange-light)] border border-[var(--orange-mid)]"
+                    className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--orange-light)] border border-[var(--orange-mid)]"
                   >
-                    <Sparkles className="w-4 h-4 text-[var(--orange)] flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-black italic leading-relaxed">{aiReasoning}</p>
+                    <Sparkles className="w-3.5 h-3.5 text-[var(--orange)] flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-black italic leading-relaxed">{aiReasoning}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* ── Package Selection ─────────────────────────────── */}
-              <div className="space-y-3">
+              {/* ── 5. Package Selection ──────────── */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-1.5 sm:gap-2 shrink-0">
-                    <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">5</span>
+                  <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5 shrink-0">
+                    <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">5</span>
                     <span className="truncate">{t('modal.aiPackages')}</span>
                   </label>
                   {selectedSlugs.length > 0 && (
-                    <span className="text-[10px] sm:text-xs text-[var(--text3)] font-bold tracking-tight flex items-center gap-1 sm:gap-2 truncate">
-                      <span className="text-[var(--actext)]">{selectedSlugs.length}</span> <span className="hidden sm:inline">{t('modal.selected').toUpperCase()}</span>
-                      <span className="text-[var(--text3)] opacity-30">·</span>
-                      ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} <span className="hidden sm:inline">{t('modal.questions').toUpperCase()}</span>
+                    <span className="text-[10px] text-[var(--text3)] font-bold tracking-tight flex items-center gap-1 whitespace-nowrap">
+                      <span className="text-[var(--actext)]">{selectedSlugs.length}</span> {t('modal.selected').toUpperCase()}
+                      <span className="opacity-30">·</span>
+                      ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} {t('modal.questions').toUpperCase()}
                     </span>
                   )}
                 </div>
 
                 {loadingPackages ? (
-                  <div className="flex items-center justify-center py-10">
-                    <Loader2 className="w-6 h-6 text-[var(--actext)] animate-spin" />
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 text-[var(--actext)] animate-spin" />
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {Object.entries(groupedPackages).map(([dept, pkgs]) => (
                       <div key={dept}>
-                        <p className="text-[10px] sm:text-xs font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-2 px-0.5 truncate">
+                        <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-1.5 truncate">
                           {t(`dept.${dept}`)}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -541,10 +556,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                                 type="button"
                                 whileTap={{ scale: 0.98 }}
                                 className={`
-                                  relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-200
-                                  border group cursor-pointer outline-none
+                                  relative flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all duration-200
+                                  border cursor-pointer outline-none min-w-0
                                   ${isSelected
-                                    ? `bg-[var(--acbg)] border-[var(--acbd)] shadow-sm text-[var(--actext)]`
+                                    ? 'bg-[var(--acbg)] border-[var(--acbd)] shadow-sm text-[var(--actext)]'
                                     : 'border-[var(--bd)] bg-[var(--bg)] hover:bg-[var(--bg2)] hover:border-[var(--bd-strong)]'
                                   }
                                 `}
@@ -556,31 +571,31 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                                     : 'border-[var(--bd-strong)] bg-[var(--bg2)]'
                                   }
                                 `}>
-                                  {isSelected && <CheckCircle2 className={`w-3 h-3 text-[var(--actext)]`} />}
+                                  {isSelected && <CheckCircle2 className="w-3 h-3 text-[var(--actext)]" />}
                                 </div>
                                 <div className={`
-                                  w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors
+                                  w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors
                                   ${isSelected ? 'bg-white' : 'bg-[var(--bg3)]'}
                                 `}>
-                                  <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-[var(--actext)]' : 'text-[var(--text3)]'}`} />
+                                  <IconComp className={`w-3 h-3 ${isSelected ? 'text-[var(--actext)]' : 'text-[var(--text3)]'}`} />
                                 </div>
                                 <div className="flex-1 min-w-0 overflow-hidden">
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex items-center gap-1">
                                     <span className={`text-xs font-semibold truncate ${isSelected ? 'text-[var(--text)]' : 'text-[var(--text2)]'}`}>
                                       {pkg.name}
                                     </span>
                                     {isAiSuggested && (
-                                      <span className="shrink-0 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-[var(--orange)]/10 text-[var(--orange)] border border-[var(--orange)]/20">
+                                      <span className="shrink-0 text-[9px] font-bold tracking-wider uppercase px-1 py-px rounded-full bg-[var(--orange)]/10 text-[var(--orange)] border border-[var(--orange)]/20">
                                         IA
                                       </span>
                                     )}
                                     {pkg.is_default_enabled && !isAiSuggested && (
-                                      <span className="shrink-0 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-[var(--text2)] text-[var(--bg)] border border-[var(--text3)]">
+                                      <span className="shrink-0 text-[9px] font-bold tracking-wider uppercase px-1 py-px rounded-full bg-[var(--text2)] text-[var(--bg)] border border-[var(--text3)]">
                                         ON
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-xs text-[var(--text3)] truncate mt-0.5 leading-snug">
+                                  <p className="text-[11px] text-[var(--text3)] truncate leading-snug">
                                     {pkg.description}
                                   </p>
                                 </div>
@@ -597,61 +612,59 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                 )}
               </div>
 
-              {/* ── Security & Passwords (Optional) ────────────────────────── */}
-              <div className="space-y-4 pt-4 border-t border-[var(--bd)] mt-2">
-                <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-                  <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">6</span>
-                  Segurança & Senhas
-                  <span className="text-[var(--text3)] lowercase font-medium ml-1">
-                    ({t('modal.optional')})
-                  </span>
+              {/* ── 6. Security & Passwords ──────── */}
+              <div className="space-y-3 pt-3 border-t border-[var(--bd)]">
+                <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">6</span>
+                  {lt('modal.securityPasswords')}
+                  <span className="text-[var(--text3)] lowercase font-medium">{t('modal.optional')}</span>
                 </label>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Access Password */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--text3)] block truncate">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)] block">
                       {t('modal.accessPasswordLabel')}
                     </label>
                     <div className="relative">
-                      <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text3)] pointer-events-none" />
+                      <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
                       <Input
                         value={accessPassword}
                         onChange={(e) => setAccessPassword(e.target.value)}
-                        className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full pl-10 pr-4 placeholder:text-[var(--text3)] transition-all"
+                        className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
                         placeholder="Ex: senha123"
                       />
                     </div>
-                    <p className="text-[10px] text-[var(--text3)] mt-1 px-1 leading-snug">
+                    <p className="text-[10px] text-[var(--text3)] leading-snug">
                       {t('modal.accessPasswordClientDesc')}
                     </p>
                   </div>
 
                   {/* Document Password */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--text3)] block truncate">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)] block">
                         {t('modal.documentPassword')}
                       </label>
                       <button
                         type="button"
                         onClick={generateCoolPassphrase}
-                        className="text-[var(--actext)] hover:underline text-[10px] sm:text-xs font-bold tracking-wider flex items-center gap-1 transition-colors"
+                        className="text-[var(--actext)] hover:underline text-[10px] font-bold tracking-wider flex items-center gap-1 transition-colors"
                       >
-                        <Wand2 className="w-3 h-3" />
-                        <span className="hidden sm:inline">{t('modal.generateAnother')}</span>
+                        <Wand2 className="w-2.5 h-2.5" />
+                        {t('modal.generateAnother')}
                       </button>
                     </div>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text3)] pointer-events-none" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
                       <Input
                         value={editPassphrase}
                         onChange={(e) => setEditPassphrase(e.target.value)}
-                        className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 font-mono text-sm rounded-full pl-10 pr-4 placeholder:text-[var(--text3)] transition-all"
+                        className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 font-mono text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
                         placeholder={t('modal.passphrasePlaceholder')}
                       />
                     </div>
-                    <p className="text-[10px] text-[var(--text3)] mt-1 px-1 leading-snug">
+                    <p className="text-[10px] text-[var(--text3)] leading-snug">
                       {t('modal.documentPasswordDesc')}
                     </p>
                   </div>
@@ -659,16 +672,16 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
               </div>
             </div>
 
-            {/* ── CTA ─────────────────────────────────────────────── */}
-            <div className="pt-4 border-t border-[var(--bd)] shrink-0 mt-auto">
+            {/* ── Fixed CTA ──────────────────────── */}
+            <div className="shrink-0 px-5 py-3 sm:px-6 sm:py-4 border-t border-[var(--bd)] bg-[var(--bg)]">
               <Button
                 onClick={generateSession}
-                disabled={loading || !sessionName.trim() || selectedSlugs.length === 0}
-                className="w-full h-12 text-sm font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2"
+                disabled={!canSubmit}
+                className="w-full h-11 text-sm font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all duration-300 disabled:opacity-40 disabled:shadow-none gap-2"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     {t('modal.preparingAI').toUpperCase()}
                   </>
                 ) : (
@@ -679,7 +692,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
                 )}
               </Button>
             </div>
-          </>
+          </div>
         )}
 
         {/* ========== STEP 2: DONE ========== */}
@@ -688,99 +701,116 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 py-5 sm:px-6 sm:py-6 max-w-md mx-auto w-full"
           >
-            <div className="flex flex-col items-center justify-center py-2 sm:py-6 space-y-4 sm:space-y-6">
+            <div className="flex flex-col items-center justify-center space-y-4">
               {/* Success Icon */}
-              <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center mb-1 animate-in zoom-in duration-500">
-                  <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-[var(--actext)]" />
+              <div className="flex flex-col items-center text-center space-y-2">
+                <div className="w-14 h-14 rounded-full bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center mb-1 animate-in zoom-in duration-500">
+                  <CheckCircle2 className="w-7 h-7 text-[var(--actext)]" />
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text)]">
+                <h3 className="text-xl font-bold tracking-tight text-[var(--text)]">
                   {t('modal.readyToShare')}
                 </h3>
-                <p className="text-[var(--text3)] text-xs sm:text-sm max-w-[280px] leading-relaxed">
+                <p className="text-[var(--text3)] text-xs max-w-[260px] leading-relaxed">
                   {t('modal.readyToShareSub')}
                 </p>
               </div>
 
-              <div className="w-full space-y-4 sm:space-y-6">
-                {/* ── Direct Link ───────────────────────────────────── */}
-                <div className="space-y-2">
-                  <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2 px-1">
+              <div className="w-full space-y-4">
+                {/* ── Direct Link ──────────────────── */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2 px-1">
                     {t('modal.accessLink')}
                   </label>
-                  <div className="flex items-center w-full gap-2 p-1.5 bg-[var(--bg2)] border border-[var(--bd)] rounded-full group transition-colors hover:border-[var(--bd-strong)] overflow-hidden">
-                    <div className="pl-3 sm:pl-4 pr-1 sm:pr-2 text-xs sm:text-sm font-medium text-[var(--text2)] truncate flex-1 min-w-0">
-                      <span className="hidden sm:inline">{generatedLink}</span>
-                      <span className="inline sm:hidden">{generatedLink.split('/b/')[1] ? `b/${generatedLink.split('/b/')[1].slice(0,12)}...` : generatedLink}</span>
+                  <div className="flex items-center w-full gap-2 p-1.5 bg-[var(--bg2)] border border-[var(--bd)] rounded-full overflow-hidden">
+                    <div className="pl-3 pr-1 text-xs font-medium text-[var(--text2)] truncate flex-1 min-w-0">
+                      {generatedLink}
                     </div>
                     <Button
                       onClick={copyLinkOnly}
-                      className="h-8 sm:h-9 px-3 sm:px-4 text-[10px] sm:text-xs font-bold rounded-full bg-black text-white hover:opacity-90 shrink-0 gap-1.5 sm:gap-2"
+                      className="h-8 px-3 text-[10px] font-bold rounded-full bg-black text-white hover:opacity-90 shrink-0 gap-1.5"
                     >
-                      <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      <span className="hidden sm:inline">{t('modal.copyLink').toUpperCase()}</span>
-                      <span className="inline sm:hidden">{t('modal.copy').toUpperCase()}</span>
+                      {copied ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3" />
+                          {t('modal.copied').toUpperCase()}
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          {t('modal.copy').toUpperCase()}
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
 
-                {/* ── Document Password ─────────────────────────────── */}
+                {/* ── Passwords Display ────────────── */}
                 {(editPassphrase || accessPassword) && (
                   <div className="flex flex-col gap-2">
                     {accessPassword && (
-                      <div className="p-3 sm:p-4 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between gap-3 overflow-hidden">
+                      <div className="p-3 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between gap-3 overflow-hidden">
                         <div className="flex-1 min-w-0">
-                          <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] block mb-0.5 sm:mb-1 truncate">
+                          <label className="text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] block mb-0.5">
                             {t('modal.accessPasswordLabel')}
                           </label>
-                          <code className="text-sm sm:text-lg font-bold text-[var(--text)] tracking-wider block truncate">
+                          <code className="text-sm font-bold text-[var(--text)] tracking-wider block truncate">
                             {accessPassword}
                           </code>
                         </div>
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)] shrink-0">
-                          <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <div className="w-8 h-8 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)] shrink-0">
+                          <ShieldCheck className="w-4 h-4" />
                         </div>
                       </div>
                     )}
                     {editPassphrase && (
-                      <div className="p-3 sm:p-4 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between gap-3 overflow-hidden">
+                      <div className="p-3 bg-[var(--bg)] border border-[var(--bd)] rounded-2xl flex items-center justify-between gap-3 overflow-hidden">
                         <div className="flex-1 min-w-0">
-                          <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] block mb-0.5 sm:mb-1 truncate">
+                          <label className="text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] block mb-0.5">
                             {t('modal.documentPassword')}
                           </label>
-                          <code className="text-sm sm:text-lg font-bold text-[var(--text)] tracking-wider block truncate">
+                          <code className="text-sm font-bold text-[var(--text)] tracking-wider block truncate">
                             {editPassphrase}
                           </code>
                         </div>
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)] shrink-0">
-                          <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <div className="w-8 h-8 rounded-xl bg-[var(--bg2)] flex items-center justify-center text-[var(--text2)] shrink-0">
+                          <Lock className="w-4 h-4" />
                         </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* ── Share CTA ─────────────────────────────────────── */}
-                <div className="pt-1 sm:pt-2 w-full">
+                {/* ── Share CTA ───────────────────── */}
+                <div className="w-full pt-1">
                   <Button
                     onClick={copyInviteMessage}
-                    className="w-full h-11 sm:h-12 text-[10px] sm:text-sm font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all gap-1.5 sm:gap-2 truncate"
+                    className="w-full h-11 text-xs font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all gap-1.5"
                   >
-                    <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                    <span className="truncate">{t('modal.copyInviteMessage').toUpperCase()}</span>
+                    {shared ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{t('modal.copied').toUpperCase()}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{t('modal.copyInviteMessage').toUpperCase()}</span>
+                      </>
+                    )}
                   </Button>
-                  <p className="text-center text-[10px] sm:text-xs text-[var(--text3)] mt-2 sm:mt-3 font-medium px-2 truncate sm:whitespace-normal">
+                  <p className="text-center text-[10px] text-[var(--text3)] mt-2 font-medium">
                     {t('modal.copyInviteMessageSub')}
                   </p>
                 </div>
               </div>
 
-              <div className="w-full pt-4 border-t border-[var(--bd)]">
+              <div className="w-full pt-3 border-t border-[var(--bd)]">
                 <Button
                   variant="ghost"
                   onClick={() => setOpen(false)}
-                  className="w-full h-11 text-xs font-bold text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-full uppercase tracking-wider"
+                  className="w-full h-10 text-xs font-bold text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-full uppercase tracking-wider"
                 >
                   {t('modal.close')}
                 </Button>

@@ -31,6 +31,66 @@ const ICON_MAP: Record<string, React.ElementType> = {
   TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Package,
 };
 
+// ── i18n helper for keys not yet in the dictionary ──────────────────
+const LOCAL_T: Record<string, Record<string, string>> = {
+  'modal.purpose': { pt: 'Propósito', en: 'Purpose', es: 'Propósito' },
+  'modal.purposePlaceholder': {
+    pt: 'Ex: Quero descobrir as maiores dores do meu cliente ideal...',
+    en: 'E.g.: I want to discover my ideal client\'s biggest pain points...',
+    es: 'Ej: Quiero descubrir los mayores dolores de mi cliente ideal...',
+  },
+  'modal.sensitivePoints': {
+    pt: 'Pontos Sensíveis ou Limitadores',
+    en: 'Sensitive Points or Limitations',
+    es: 'Puntos Sensibles o Limitadores',
+  },
+  'modal.sensitivePointsPlaceholder': {
+    pt: 'Ex: Evitar perguntas sobre faturamento...',
+    en: 'E.g.: Avoid questions about revenue...',
+    es: 'Ej: Evitar preguntas sobre facturación...',
+  },
+  'modal.securityPasswords': {
+    pt: 'Segurança & Senhas',
+    en: 'Security & Passwords',
+    es: 'Seguridad y Contraseñas',
+  },
+  'modal.editBriefing': {
+    pt: 'Editar Briefing',
+    en: 'Edit Briefing',
+    es: 'Editar Briefing',
+  },
+  'modal.editDesc': {
+    pt: 'Atualize as informações que a IA usará durante a sessão.',
+    en: 'Update the information the AI will use during the session.',
+    es: 'Actualiza la información que utilizará la IA durante la sesión.',
+  },
+  'modal.editBtn': {
+    pt: 'Editar',
+    en: 'Edit',
+    es: 'Editar',
+  },
+  'modal.cancel': {
+    pt: 'Cancelar',
+    en: 'Cancel',
+    es: 'Cancelar',
+  },
+  'modal.saving': {
+    pt: 'Salvando...',
+    en: 'Saving...',
+    es: 'Guardando...',
+  },
+  'modal.saveChanges': {
+    pt: 'Salvar Alterações',
+    en: 'Save Changes',
+    es: 'Guardar Cambios',
+  },
+  'modal.remove': {
+    pt: 'Remover',
+    en: 'Remove',
+    es: 'Eliminar',
+  },
+};
+
 interface CategoryPackage {
   slug: string;
   name: string;
@@ -58,6 +118,9 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
   const router = useRouter();
   const { t, language } = useDashboardLanguage();
   const [open, setOpen] = useState(false);
+
+  // Local translate helper
+  const lt = (key: string) => LOCAL_T[key]?.[language] || LOCAL_T[key]?.['en'] || key;
 
   // Form state
   const [sessionName, setSessionName] = useState(initialName || '');
@@ -191,8 +254,10 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
     return pkg?.max_questions === null;
   });
 
+  const canSave = sessionName.trim() && briefingPurpose.trim() && selectedSlugs.length > 0 && !saving;
+
   const saveChanges = async () => {
-    if (!sessionName.trim()) return;
+    if (!canSave) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/sessions/${sessionId}`, {
@@ -219,7 +284,7 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
 
       toast.success(language === 'pt' ? 'Alterações salvas com sucesso!' : language === 'es' ? '¡Cambios guardados con éxito!' : 'Changes saved successfully!');
       setOpen(false);
-      router.refresh(); // Refresh the active page to reflect changes
+      router.refresh();
     } catch (err) {
       console.error('Error updating session:', err);
       toast.error(language === 'pt' ? 'Erro ao salvar alterações.' : language === 'es' ? 'Error al guardar.' : 'Error saving changes.');
@@ -244,362 +309,360 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
           render={
             <Button variant="outline" className="h-8 px-3 gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--text2)] border-[var(--bd-strong)] bg-[var(--bg)] hover:bg-[var(--bg2)] hover:text-[var(--text)]">
               <Edit2 className="w-3.5 h-3.5" />
-              Editar
+              {lt('modal.editBtn')}
             </Button>
           }
         />
       )}
 
-      <DialogContent 
-        className="bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] transition-all duration-500 sm:max-w-[780px]"
+      <DialogContent
+        className="!max-w-none sm:!max-w-none w-[calc(100vw-1.5rem)] sm:w-[min(720px,calc(100vw-3rem))] bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] p-0 gap-0 overflow-hidden"
         style={{ fontFamily: '"DM Sans", sans-serif' }}
       >
-        <DialogHeader>
-          <DialogTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2 text-[var(--text)] tracking-tight">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center shrink-0">
-              <Edit2 className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--actext)]" />
-            </div>
-            <span className="truncate">Editar Briefing</span>
-          </DialogTitle>
-          <DialogDescription className="text-[var(--text3)] text-xs sm:text-sm">
-            {language === 'pt' ? 'Atualize as informações que a IA usará durante a sessão.' : language === 'es' ? 'Actualiza la información que utilizará la IA durante la sesión.' : 'Update the information the AI will use during the session.'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-5 py-2">
-          {/* ── Session Name ─────────────────────────────────── */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">1</span>
-              {t('modal.briefingName')} <span className="text-[var(--actext)] lowercase font-medium">({t('modal.required')})</span>
-            </label>
-            <Input
-              placeholder={t('modal.briefingNamePlaceholder')}
-              value={sessionName}
-              onChange={(e) => setSessionName(e.target.value)}
-              className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-12 text-base rounded-full px-6 placeholder:text-[var(--text3)]"
-            />
-          </div>
-
-          {/* ── Briefing Purpose ───────────────────────────── */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">2</span>
-              Propósito <span className="text-[var(--actext)] lowercase font-medium">({t('modal.required')})</span>
-            </label>
-            <Input
-              placeholder="Ex: Quero descobrir as maiores dores do meu cliente ideal..."
-              value={briefingPurpose}
-              onChange={(e) => setBriefingPurpose(e.target.value)}
-              className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-12 text-base rounded-full px-6 placeholder:text-[var(--text3)]"
-            />
-          </div>
-
-          {/* ── Context (Collapsible) ────────────────────────── */}
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setShowContext(!showContext)}
-              className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
-            >
-              <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">3</span>
-              {t('modal.priorContext')}
-              <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
-              <ChevronDown className={`w-4 h-4 text-[var(--text3)] ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
-            </button>
-
-            <AnimatePresence>
-              {showContext && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  <div className="space-y-2 pt-1 border-t border-transparent">
-                    <Textarea
-                      placeholder={t('modal.contextPlaceholder')}
-                      value={initialContext}
-                      onChange={(e) => setInitialContext(e.target.value)}
-                      className="bg-[var(--bg)] border-[var(--bd-strong)] min-h-[90px] focus-visible:ring-[var(--orange)] rounded-[32px] px-6 py-4 resize-y placeholder:text-[var(--text3)] text-sm"
-                    />
-                    {initialContext.trim() && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={suggestPackages}
-                          disabled={isSuggesting}
-                          className="text-[var(--orange)] hover:opacity-80 hover:bg-[var(--orange)]/10 text-xs gap-1.5 h-8 rounded-lg mt-1"
-                        >
-                          {isSuggesting ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Wand2 className="w-3 h-3" />
-                          )}
-                          {isSuggesting ? t('modal.analyzing') : t('modal.aiSuggestPackages')}
-                        </Button>
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* ── Depth Signals ───────────────────────────── */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-xs font-bold text-[var(--text)]">4</span>
-              Pontos Sensíveis ou Limitadores <span className="text-[var(--text3)] lowercase font-medium">({t('modal.optional')})</span>
-            </label>
-            
-            <div className="relative">
-              <div className="absolute left-3 top-3.5 z-10 flex items-center gap-1.5 pointer-events-none">
-                <Target className="w-4 h-4 text-brieffy-text3" />
+        <div className="flex flex-col max-h-[calc(100dvh-3rem)]">
+          {/* Fixed header */}
+          <DialogHeader className="shrink-0 px-5 pt-5 pb-3 sm:px-6 sm:pt-6 border-b border-[var(--bd)]">
+            <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2 text-[var(--text)] tracking-tight">
+              <div className="w-8 h-8 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] flex items-center justify-center shrink-0">
+                <Edit2 className="w-4 h-4 text-[var(--actext)]" />
               </div>
-              
+              <span className="truncate">{lt('modal.editBriefing')}</span>
+            </DialogTitle>
+            <DialogDescription className="text-[var(--text3)] text-xs">
+              {lt('modal.editDesc')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-5 space-y-5">
+
+            {/* ── 1. Session Name ────────────────── */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">1</span>
+                {t('modal.briefingName')} <span className="text-[var(--actext)]">*</span>
+              </label>
+              <Input
+                placeholder={t('modal.briefingNamePlaceholder')}
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full px-4 placeholder:text-[var(--text3)]"
+              />
+            </div>
+
+            {/* ── 2. Briefing Purpose ────────────── */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">2</span>
+                {lt('modal.purpose')} <span className="text-[var(--actext)]">*</span>
+              </label>
+              <Input
+                placeholder={lt('modal.purposePlaceholder')}
+                value={briefingPurpose}
+                onChange={(e) => setBriefingPurpose(e.target.value)}
+                className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full px-4 placeholder:text-[var(--text3)]"
+              />
+            </div>
+
+            {/* ── 3. Context (Collapsible) ──────── */}
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => setShowContext(!showContext)}
+                className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] hover:text-[var(--text)] transition-colors w-full"
+              >
+                <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">3</span>
+                {t('modal.priorContext')}
+                <span className="text-[var(--text3)] lowercase font-medium">{t('modal.optional')}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-[var(--text3)] ml-auto transition-transform duration-300 ${showContext ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {showContext && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-2 pt-1">
+                      <Textarea
+                        placeholder={t('modal.contextPlaceholder')}
+                        value={initialContext}
+                        onChange={(e) => setInitialContext(e.target.value)}
+                        className="bg-[var(--bg)] border-[var(--bd-strong)] min-h-[80px] focus-visible:ring-[var(--orange)] rounded-2xl px-4 py-3 resize-y placeholder:text-[var(--text3)] text-sm"
+                      />
+                      {initialContext.trim() && (
+                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={suggestPackages}
+                            disabled={isSuggesting}
+                            className="text-[var(--orange)] hover:opacity-80 hover:bg-[var(--orange)]/10 text-xs gap-1.5 h-7 rounded-lg"
+                          >
+                            {isSuggesting ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Wand2 className="w-3 h-3" />
+                            )}
+                            {isSuggesting ? t('modal.analyzing') : t('modal.aiSuggestPackages')}
+                          </Button>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ── 4. Depth Signals ──────────────── */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">4</span>
+                {lt('modal.sensitivePoints')} <span className="text-[var(--text3)] lowercase font-medium">{t('modal.optional')}</span>
+              </label>
+
               {depthSignals.length > 0 && (
-                <div className="px-3 pt-3 flex flex-wrap gap-2 relative z-10 w-full mb-2">
+                <div className="flex flex-wrap gap-1.5">
                   {depthSignals.map(signal => (
                     <span 
                       key={signal}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brieffy-surface border border-brieffy-border text-[13px] font-medium text-foreground shadow-sm"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] text-xs font-medium text-[var(--text)]"
                     >
                       {signal}
                       <button
                         type="button"
                         onClick={() => removeSignal(signal)}
-                        className="w-4 h-4 flex items-center justify-center rounded bg-foreground/5 hover:bg-red-500 hover:text-white transition-colors"
+                        className="w-3.5 h-3.5 flex items-center justify-center rounded hover:bg-red-500 hover:text-white transition-colors"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
                   ))}
                 </div>
               )}
-              
-              <div className="pl-10">
+
+              <div className="relative">
+                <Target className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
                 <Input
                   value={newSignal}
                   onChange={handleSignalChange}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
-                  placeholder="Ex: Evitar perguntas sobre faturamento..."
-                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 rounded-xl text-sm font-medium transition-all shadow-none placeholder:text-[var(--text3)]"
+                  placeholder={lt('modal.sensitivePointsPlaceholder')}
+                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 rounded-xl text-sm pl-9 placeholder:text-[var(--text3)]"
                 />
               </div>
             </div>
-          </div>
 
-          {/* ── AI Reasoning Feedback ─────────────────────────── */}
-          <AnimatePresence>
-            {aiReasoning && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-[var(--orange-light)] border border-[var(--orange-mid)] mt-1"
-              >
-                <Sparkles className="w-4 h-4 text-[var(--orange)] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-black italic leading-relaxed">{aiReasoning}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            {/* ── AI Reasoning Feedback ─────────── */}
+            <AnimatePresence>
+              {aiReasoning && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--orange-light)] border border-[var(--orange-mid)]"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--orange)] flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-black italic leading-relaxed">{aiReasoning}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* ── Package Selection ─────────────────────────────── */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">5</span>
-                <span className="truncate">{t('modal.aiPackages')}</span>
-              </label>
-              {selectedSlugs.length > 0 && (
-                <span className="text-[10px] sm:text-xs text-[var(--text3)] font-bold tracking-tight flex items-center gap-1 sm:gap-2 truncate">
-                  <span className="text-[var(--actext)]">{selectedSlugs.length}</span> <span className="hidden sm:inline">{t('modal.selected').toUpperCase()}</span>
-                  <span className="text-[var(--text3)] opacity-30">·</span>
-                  ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} <span className="hidden sm:inline">{t('modal.questions').toUpperCase()}</span>
-                </span>
+            {/* ── 5. Package Selection ──────────── */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5 shrink-0">
+                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">5</span>
+                  <span className="truncate">{t('modal.aiPackages')}</span>
+                </label>
+                {selectedSlugs.length > 0 && (
+                  <span className="text-[10px] text-[var(--text3)] font-bold tracking-tight flex items-center gap-1 whitespace-nowrap">
+                    <span className="text-[var(--actext)]">{selectedSlugs.length}</span> {t('modal.selected').toUpperCase()}
+                    <span className="opacity-30">·</span>
+                    ~<span className="text-[var(--text)]">{totalQuestions}</span>{hasUnlimited ? '+∞' : ''} {t('modal.questions').toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              {loadingPackages ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 text-[var(--actext)] animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {Object.entries(groupedPackages).map(([dept, pkgs]) => (
+                    <div key={dept}>
+                      <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-1.5 truncate">
+                        {t(`dept.${dept}`)}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {pkgs.map((pkg) => {
+                          const isSelected = selectedSlugs.includes(pkg.slug);
+                          const isAiSuggested = aiSuggestedSlugs.includes(pkg.slug);
+                          const IconComp = ICON_MAP[pkg.icon] || Package;
+
+                          return (
+                            <motion.button
+                              key={pkg.slug}
+                              onClick={() => togglePackage(pkg.slug)}
+                              type="button"
+                              whileTap={{ scale: 0.98 }}
+                              className={`
+                                relative flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all duration-200
+                                border cursor-pointer outline-none min-w-0
+                                ${isSelected
+                                  ? 'bg-[var(--acbg)] border-[var(--acbd)] shadow-sm text-[var(--actext)]'
+                                  : 'border-[var(--bd)] bg-[var(--bg)] hover:bg-[var(--bg2)] hover:border-[var(--bd-strong)]'
+                                }
+                              `}
+                            >
+                              <div className={`
+                                w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200
+                                ${isSelected
+                                  ? 'border-[var(--actext)] bg-white'
+                                  : 'border-[var(--bd-strong)] bg-[var(--bg2)]'
+                                }
+                              `}>
+                                {isSelected && <CheckCircle2 className="w-3 h-3 text-[var(--actext)]" />}
+                              </div>
+                              <div className={`
+                                w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors
+                                ${isSelected ? 'bg-white' : 'bg-[var(--bg3)]'}
+                              `}>
+                                <IconComp className={`w-3 h-3 ${isSelected ? 'text-[var(--actext)]' : 'text-[var(--text3)]'}`} />
+                              </div>
+                              <div className="flex-1 min-w-0 overflow-hidden">
+                                <div className="flex items-center gap-1">
+                                  <span className={`text-xs font-semibold truncate ${isSelected ? 'text-[var(--text)]' : 'text-[var(--text2)]'}`}>
+                                    {pkg.name}
+                                  </span>
+                                  {isAiSuggested && (
+                                    <span className="shrink-0 text-[9px] font-bold tracking-wider uppercase px-1 py-px rounded-full bg-[var(--orange)]/10 text-[var(--orange)] border border-[var(--orange)]/20">
+                                      IA
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-[var(--text3)] truncate leading-snug">
+                                  {pkg.description}
+                                </p>
+                              </div>
+                              <span className="text-[10px] font-mono text-[var(--text3)] shrink-0">
+                                {pkg.max_questions === null ? '∞' : `≤${pkg.max_questions}`}
+                              </span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
-            {loadingPackages ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="w-6 h-6 text-[var(--actext)] animate-spin" />
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-[30vh] overflow-y-auto pr-2 custom-scrollbar">
-                {Object.entries(groupedPackages).map(([dept, pkgs]) => (
-                  <div key={dept}>
-                    <p className="text-[10px] sm:text-xs font-bold tracking-[0.15em] uppercase text-[var(--text3)] mb-2 px-0.5 truncate">
-                      {t(`dept.${dept}`)}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                      {pkgs.map((pkg) => {
-                        const isSelected = selectedSlugs.includes(pkg.slug);
-                        const isAiSuggested = aiSuggestedSlugs.includes(pkg.slug);
-                        const IconComp = ICON_MAP[pkg.icon] || Package;
+            {/* ── 6. Security & Passwords ──────── */}
+            <div className="space-y-3 pt-3 border-t border-[var(--bd)]">
+              <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">6</span>
+                {lt('modal.securityPasswords')}
+                <span className="text-[var(--text3)] lowercase font-medium">{t('modal.optional')}</span>
+              </label>
 
-                        return (
-                          <motion.button
-                            key={pkg.slug}
-                            onClick={() => togglePackage(pkg.slug)}
-                            type="button"
-                            whileTap={{ scale: 0.98 }}
-                            className={`
-                              relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-200
-                              border group cursor-pointer outline-none
-                              ${isSelected
-                                ? 'bg-[var(--acbg)] border-[var(--acbd)] shadow-sm text-[var(--actext)]'
-                                : 'border-[var(--bd)] bg-[var(--bg)] hover:bg-[var(--bg2)] hover:border-[var(--bd-strong)]'
-                              }
-                            `}
-                          >
-                            <div className={`
-                              w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200
-                              ${isSelected
-                                ? 'border-[var(--actext)] bg-white'
-                                : 'border-[var(--bd-strong)] bg-[var(--bg2)]'
-                              }
-                            `}>
-                              {isSelected && <CheckCircle2 className={`w-3 h-3 text-[var(--actext)]`} />}
-                            </div>
-                            <div className={`
-                              w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors
-                              ${isSelected ? 'bg-white' : 'bg-[var(--bg3)]'}
-                            `}>
-                              <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-[var(--actext)]' : 'text-[var(--text3)]'}`} />
-                            </div>
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-xs font-semibold truncate ${isSelected ? 'text-[var(--text)]' : 'text-[var(--text2)]'}`}>
-                                  {pkg.name}
-                                </span>
-                                {isAiSuggested && (
-                                  <span className="shrink-0 text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-[var(--orange)]/10 text-[var(--orange)] border border-[var(--orange)]/20">
-                                    IA
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-[var(--text3)] truncate mt-0.5 leading-snug">
-                                {pkg.description}
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-mono text-[var(--text3)] shrink-0">
-                              {pkg.max_questions === null ? '∞' : `≤${pkg.max_questions}`}
-                            </span>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ── Security & Passwords ────────────────────────── */}
-          <div className="space-y-4 pt-4 border-t border-[var(--bd)] mt-2">
-            <label className="text-[10px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[var(--text3)] flex items-center gap-2">
-              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[10px] sm:text-xs font-bold text-[var(--text)]">6</span>
-              Segurança & Senhas
-            </label>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Access Password */}
-              <div className="space-y-2">
-                <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--text3)] block truncate">
-                  {t('modal.accessPasswordLabel') || 'Senha de Acesso'}
-                </label>
-                <div className="relative">
-                  <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text3)] pointer-events-none" />
-                  <Input
-                    value={accessPassword}
-                    onChange={(e) => setAccessPassword(e.target.value)}
-                    className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full pl-10 pr-4 placeholder:text-[var(--text3)] transition-all"
-                    placeholder="Ex: senha123"
-                  />
-                </div>
-                <p className="text-[10px] text-[var(--text3)] mt-1 px-1 leading-snug">
-                  {t('modal.accessPasswordClientDesc') || 'Exigida para acessar o briefing'}
-                </p>
-              </div>
-
-              {/* Document Password */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--text3)] block truncate">
-                    {t('modal.documentPassword')}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Access Password */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)] block">
+                    {t('modal.accessPasswordLabel')}
                   </label>
-                  <div className="flex items-center gap-3">
-                    {editPassphrase && (
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
+                    <Input
+                      value={accessPassword}
+                      onChange={(e) => setAccessPassword(e.target.value)}
+                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
+                      placeholder="Ex: senha123"
+                    />
+                  </div>
+                  <p className="text-[10px] text-[var(--text3)] leading-snug">
+                    {t('modal.accessPasswordClientDesc')}
+                  </p>
+                </div>
+
+                {/* Document Password */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)] block">
+                      {t('modal.documentPassword')}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {editPassphrase && (
+                        <button
+                          type="button"
+                          onClick={() => setEditPassphrase('')}
+                          className="text-red-400 hover:text-red-500 text-[10px] font-bold uppercase tracking-wider transition-colors"
+                        >
+                          {lt('modal.remove')}
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => setEditPassphrase('')}
-                        className="text-red-400 hover:text-red-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors"
+                        onClick={generateCoolPassphrase}
+                        className="text-[var(--actext)] hover:underline text-[10px] font-bold tracking-wider flex items-center gap-1 transition-colors"
                       >
-                        {language === 'pt' ? 'Remover' : language === 'es' ? 'Eliminar' : 'Remove'}
+                        <Wand2 className="w-2.5 h-2.5" />
+                        {t('modal.generateAnother')}
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={generateCoolPassphrase}
-                      className="text-[var(--actext)] hover:underline text-[10px] sm:text-xs font-bold tracking-wider flex items-center gap-1 transition-colors"
-                    >
-                      <Wand2 className="w-3 h-3" />
-                      <span className="hidden sm:inline">{t('modal.generateAnother')}</span>
-                    </button>
+                    </div>
                   </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
+                    <Input
+                      value={editPassphrase}
+                      onChange={(e) => setEditPassphrase(e.target.value)}
+                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 font-mono text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
+                      placeholder={t('modal.passphrasePlaceholder')}
+                    />
+                  </div>
+                  <p className="text-[10px] text-[var(--text3)] leading-snug">
+                    {t('modal.documentPasswordDesc')}
+                  </p>
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text3)] pointer-events-none" />
-                  <Input
-                    value={editPassphrase}
-                    onChange={(e) => setEditPassphrase(e.target.value)}
-                    className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 font-mono text-sm rounded-full pl-10 pr-4 placeholder:text-[var(--text3)] transition-all"
-                    placeholder={t('modal.passphrasePlaceholder')}
-                  />
-                </div>
-                <p className="text-[10px] text-[var(--text3)] mt-1 px-1 leading-snug">
-                  {t('modal.documentPasswordDesc') || 'Define quem pode ver o doc final'}
-                </p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ── CTA ─────────────────────────────────────────────── */}
-        <div className="pt-4 border-t border-[var(--bd)] flex justify-end gap-3 mt-4">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setOpen(false)}
-            className="text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)]"
-          >
-            {language === 'pt' ? 'Cancelar' : language === 'es' ? 'Cancelar' : 'Cancel'}
-          </Button>
-          <Button
-            onClick={saveChanges}
-            disabled={saving || !sessionName.trim() || selectedSlugs.length === 0}
-            className="h-10 px-6 font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all disabled:opacity-40 gap-2"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {language === 'pt' ? 'Salvando...' : language === 'es' ? 'Guardando...' : 'Saving...'}
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                {language === 'pt' ? 'Salvar Alterações' : language === 'es' ? 'Guardar Cambios' : 'Save Changes'}
-              </>
-            )}
-          </Button>
+          {/* ── Fixed CTA ──────────────────────── */}
+          <div className="shrink-0 px-5 py-3 sm:px-6 sm:py-4 border-t border-[var(--bd)] bg-[var(--bg)] flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              className="text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-full h-10 px-4 text-xs font-bold"
+            >
+              {lt('modal.cancel')}
+            </Button>
+            <Button
+              onClick={saveChanges}
+              disabled={!canSave}
+              className="h-10 px-6 font-bold rounded-full bg-[var(--orange)] hover:opacity-90 text-black transition-all disabled:opacity-40 gap-2 text-sm"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {lt('modal.saving')}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  {lt('modal.saveChanges')}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

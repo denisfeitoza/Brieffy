@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { GenerateLinkModal } from '@/components/dashboard/GenerateLinkModal';
+import { DeleteTemplateButton } from '@/components/dashboard/DeleteTemplateButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,21 +25,28 @@ export default async function TemplateDetailsPage({ params }: { params: Promise<
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col gap-4">
         <Link href="/dashboard/templates">
-          <Button variant="ghost" className="w-fit text-zinc-400 hover:text-white -ml-4">
+          <Button variant="ghost" className="w-fit text-[var(--text3)] hover:text-[var(--text)] -ml-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar para Meus Briefings
           </Button>
         </Link>
         
-        <div className="w-full flex flex-col items-center justify-center py-24 px-6 border border-dashed border-zinc-800 rounded-3xl bg-zinc-950/50 text-center">
-          <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-6">
-            <Sparkles className="w-8 h-8 text-zinc-600" />
+        <div className="w-full flex flex-col items-center justify-center py-24 px-6 border border-dashed border-[var(--bd-strong)] rounded-3xl bg-[var(--bg2)] text-center">
+          <div className="w-16 h-16 bg-[var(--bg)] rounded-full flex items-center justify-center mb-6 border border-[var(--bd)]">
+            <Sparkles className="w-8 h-8 text-[var(--text3)]" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">{template.name}</h3>
-          <p className="text-zinc-500 max-w-sm mb-8">
+          <h3 className="text-xl font-bold text-[var(--text)] mb-2">{template.name}</h3>
+          <p className="text-[var(--text3)] max-w-sm mb-8">
             Nenhuma sessão de atendimento foi criada para este briefing ainda. Gere um link para iniciar.
           </p>
-          <GenerateLinkModal templateId={template.id} templateName={template.name} />
+          <div className="flex items-center gap-3">
+            <GenerateLinkModal templateId={template.id} templateName={template.name} />
+            <DeleteTemplateButton 
+              templateId={template.id} 
+              templateName={template.name} 
+              hasSession={false}
+            />
+          </div>
         </div>
       </div>
     </div>
