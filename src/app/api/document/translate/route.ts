@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
 
+export const maxDuration = 120; // Allow sufficient time for translation
+
 export async function POST(req: Request) {
   try {
     const { documentContent, targetLanguage } = await req.json();
@@ -40,7 +42,6 @@ CRITICAL RULES:
       body: JSON.stringify({
         model: llmConfig.model,
         temperature: 0.1, // low temperature for translation stability
-        max_tokens: 6000,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: documentContent }

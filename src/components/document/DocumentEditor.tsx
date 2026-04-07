@@ -131,28 +131,28 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
   return (
     <div className="w-full flex flex-col space-y-4">
       {/* TOOLBAR */}
-      <div className="flex flex-col sm:flex-row justify-between items-center bg-white/[0.05] border border-white/10 rounded-xl p-3 gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap justify-between items-center bg-white/[0.05] border border-white/10 rounded-xl p-3 gap-4 w-full">
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto custom-scrollbar pb-1 flex-nowrap">
           {!readOnly && (
             isEditing ? (
-               <Button onClick={handleSave} disabled={isSaving} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white">
+               <Button onClick={handleSave} disabled={isSaving} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white shrink-0">
                  {isSaving ? <span className="animate-spin w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4 mr-2" />}
                  Salvar Edições
                </Button>
             ) : (
-               <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="bg-transparent border-white/20 text-white hover:bg-white/10">
+               <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="bg-transparent border-white/20 text-white hover:bg-white/10 shrink-0">
                  <Edit2 className="w-4 h-4 mr-2" />
                  Habilitar Edição
                </Button>
             )
           )}
-          <Button onClick={handleCopy} variant="outline" size="sm" className="bg-transparent border-white/20 text-white hover:bg-white/10 mx-1">
+          <Button onClick={handleCopy} variant="outline" size="sm" className="bg-transparent border-white/20 text-white hover:bg-white/10 shrink-0">
             <Copy className="w-4 h-4 mr-2" />
             Copiar Texto
           </Button>
 
           {/* Tradutor */}
-          <div className="flex items-center border border-white/10 rounded-lg p-0.5 bg-black/20 relative ml-2">
+          <div className="flex border border-white/10 rounded-lg bg-black/20 relative items-center shrink-0 min-w-max">
             {isTranslating && (
               <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
                   <Loader2 className="w-4 h-4 text-[var(--orange)] animate-spin" />
@@ -163,7 +163,7 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
                 disabled={isTranslating} 
                 onValueChange={(val) => handleTranslate(String(val))}
             >
-              <SelectTrigger className="w-fit border-0 bg-transparent text-xs text-zinc-300 focus:ring-0 gap-2 font-medium">
+              <SelectTrigger className="w-fit border-0 bg-transparent text-xs text-zinc-300 focus:ring-0 gap-2 font-medium shrink-0 h-8 px-2">
                 <SelectValue placeholder="Traduzir..." />
               </SelectTrigger>
               <SelectContent>
@@ -174,8 +174,8 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
             </Select>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={generatePDF} size="sm" className="bg-[var(--orange)] hover:opacity-90 text-white font-semibold">
+        <div className="flex items-center w-full md:w-auto shrink-0 mt-2 md:mt-0">
+          <Button onClick={generatePDF} size="sm" className="bg-[var(--orange)] hover:opacity-90 text-white font-semibold w-full md:w-auto">
             <Download className="w-4 h-4 mr-2" />
             Baixar PDF Premium
           </Button>

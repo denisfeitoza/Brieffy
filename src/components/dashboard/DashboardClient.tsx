@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { format, subDays, isAfter } from 'date-fns';
 import {
   Search, ExternalLink, Trash2, Copy, CheckCircle2, Clock,
-  AlertCircle, FileText, Eye, CalendarDays, X, Download, Package,
+  AlertCircle, FileText, Eye, CalendarDays, X, Download, Package, Lock
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { exportSessionsAsZip } from '@/lib/exportZip';
@@ -369,15 +369,24 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                         <Copy className="w-4 h-4 mr-1.5" />
                         {copiedId === session.id ? t('dashboard.copied') : t('dashboard.link')}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(session.id)}
-                        disabled={deletingId === session.id}
-                        className="text-[var(--text3)] hover:text-red-500 hover:bg-red-50 rounded-lg text-xs"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      {hasDocument ? (
+                        <div
+                          className="flex items-center justify-center w-8 h-8 text-[var(--text3)] opacity-50 rounded-lg text-xs"
+                          title={language === 'pt' ? 'Briefing preenchido não pode ser apagado' : language === 'es' ? 'No se puede eliminar un briefing completado' : 'Cannot delete a completed briefing'}
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(session.id)}
+                          disabled={deletingId === session.id}
+                          className="text-[var(--text3)] hover:text-red-500 hover:bg-red-50 rounded-lg text-xs"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

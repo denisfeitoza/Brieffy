@@ -212,6 +212,7 @@ async function SessionContent({ id }: { id: string }) {
             initialAccessPassword={session.access_password || ''}
             initialPurpose={session.briefing_purpose || ''}
             initialDepthSignals={session.depth_signals || []}
+            isLocked={session.status === 'finished' || !!session.final_assets?.document || !!session.final_document}
           >
             <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)] gap-1.5" title="Editar Informações do Briefing">
               <Edit2 className="w-3.5 h-3.5" />

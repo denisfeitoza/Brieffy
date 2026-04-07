@@ -111,10 +111,11 @@ interface EditBriefingModalProps {
   initialAccessPassword?: string;
   initialPurpose?: string;
   initialDepthSignals?: string[];
+  isLocked?: boolean;
   children?: React.ReactElement;
 }
 
-export function EditBriefingModal({ sessionId, initialName, initialContextValue, initialPackages, initialPassphrase, initialAccessPassword, initialPurpose, initialDepthSignals, children }: EditBriefingModalProps) {
+export function EditBriefingModal({ sessionId, initialName, initialContextValue, initialPackages, initialPassphrase, initialAccessPassword, initialPurpose, initialDepthSignals, isLocked, children }: EditBriefingModalProps) {
   const router = useRouter();
   const { t, language } = useDashboardLanguage();
   const [open, setOpen] = useState(false);
@@ -360,7 +361,8 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                 placeholder={lt('modal.purposePlaceholder')}
                 value={briefingPurpose}
                 onChange={(e) => setBriefingPurpose(e.target.value)}
-                className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full px-4 placeholder:text-[var(--text3)]"
+                disabled={isLocked}
+                className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-11 text-sm rounded-full px-4 placeholder:text-[var(--text3)] disabled:opacity-50"
               />
             </div>
 
@@ -391,7 +393,8 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                         placeholder={t('modal.contextPlaceholder')}
                         value={initialContext}
                         onChange={(e) => setInitialContext(e.target.value)}
-                        className="bg-[var(--bg)] border-[var(--bd-strong)] min-h-[80px] focus-visible:ring-[var(--orange)] rounded-2xl px-4 py-3 resize-y placeholder:text-[var(--text3)] text-sm"
+                        disabled={isLocked}
+                        className="bg-[var(--bg)] border-[var(--bd-strong)] min-h-[80px] focus-visible:ring-[var(--orange)] rounded-2xl px-4 py-3 resize-y placeholder:text-[var(--text3)] text-sm disabled:opacity-50"
                       />
                       {initialContext.trim() && (
                         <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
@@ -400,8 +403,8 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                             variant="ghost"
                             size="sm"
                             onClick={suggestPackages}
-                            disabled={isSuggesting}
-                            className="text-[var(--orange)] hover:opacity-80 hover:bg-[var(--orange)]/10 text-xs gap-1.5 h-7 rounded-lg"
+                            disabled={isSuggesting || isLocked}
+                            className="text-[var(--orange)] hover:opacity-80 hover:bg-[var(--orange)]/10 text-xs gap-1.5 h-7 rounded-lg disabled:opacity-50"
                           >
                             {isSuggesting ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -433,13 +436,15 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] text-xs font-medium text-[var(--text)]"
                     >
                       {signal}
-                      <button
-                        type="button"
-                        onClick={() => removeSignal(signal)}
-                        className="w-3.5 h-3.5 flex items-center justify-center rounded hover:bg-red-500 hover:text-white transition-colors"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
+                      {!isLocked && (
+                        <button
+                          type="button"
+                          onClick={() => removeSignal(signal)}
+                          className="w-3.5 h-3.5 flex items-center justify-center rounded hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -450,9 +455,10 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                 <Input
                   value={newSignal}
                   onChange={handleSignalChange}
+                  disabled={isLocked}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
                   placeholder={lt('modal.sensitivePointsPlaceholder')}
-                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 rounded-xl text-sm pl-9 placeholder:text-[var(--text3)]"
+                  className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 rounded-xl text-sm pl-9 placeholder:text-[var(--text3)] disabled:opacity-50"
                 />
               </div>
             </div>
@@ -509,12 +515,14 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                           return (
                             <motion.button
                               key={pkg.slug}
-                              onClick={() => togglePackage(pkg.slug)}
+                              onClick={() => !isLocked && togglePackage(pkg.slug)}
                               type="button"
-                              whileTap={{ scale: 0.98 }}
+                              disabled={isLocked}
+                              whileTap={isLocked ? {} : { scale: 0.98 }}
                               className={`
                                 relative flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all duration-200
-                                border cursor-pointer outline-none min-w-0
+                                border outline-none min-w-0
+                                ${isLocked ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
                                 ${isSelected
                                   ? 'bg-[var(--acbg)] border-[var(--acbd)] shadow-sm text-[var(--actext)]'
                                   : 'border-[var(--bd)] bg-[var(--bg)] hover:bg-[var(--bg2)] hover:border-[var(--bd-strong)]'
@@ -583,7 +591,8 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                     <Input
                       value={accessPassword}
                       onChange={(e) => setAccessPassword(e.target.value)}
-                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
+                      disabled={isLocked}
+                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)] disabled:opacity-50"
                       placeholder="Ex: senha123"
                     />
                   </div>
@@ -599,7 +608,7 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                       {t('modal.documentPassword')}
                     </label>
                     <div className="flex items-center gap-2">
-                      {editPassphrase && (
+                      {editPassphrase && !isLocked && (
                         <button
                           type="button"
                           onClick={() => setEditPassphrase('')}
@@ -608,14 +617,16 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                           {lt('modal.remove')}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={generateCoolPassphrase}
-                        className="text-[var(--actext)] hover:underline text-[10px] font-bold tracking-wider flex items-center gap-1 transition-colors"
-                      >
-                        <Wand2 className="w-2.5 h-2.5" />
-                        {t('modal.generateAnother')}
-                      </button>
+                      {!isLocked && (
+                        <button
+                          type="button"
+                          onClick={generateCoolPassphrase}
+                          className="text-[var(--actext)] hover:underline text-[10px] font-bold tracking-wider flex items-center gap-1 transition-colors"
+                        >
+                          <Wand2 className="w-2.5 h-2.5" />
+                          {t('modal.generateAnother')}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="relative">
@@ -623,7 +634,8 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                     <Input
                       value={editPassphrase}
                       onChange={(e) => setEditPassphrase(e.target.value)}
-                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 font-mono text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
+                      disabled={isLocked}
+                      className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 font-mono text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)] disabled:opacity-50"
                       placeholder={t('modal.passphrasePlaceholder')}
                     />
                   </div>
