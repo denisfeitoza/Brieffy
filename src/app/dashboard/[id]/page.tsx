@@ -20,6 +20,7 @@ import { GenerateDocumentAction } from '@/components/dashboard/GenerateDocumentA
 import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
 import { PrintPdfButton } from '@/components/dashboard/PrintPdfButton';
 import { EditBriefingModal } from '@/components/dashboard/EditBriefingModal';
+import { TranslateDocumentAction } from '@/components/dashboard/TranslateDocumentAction';
 
 export const dynamic = 'force-dynamic';
 
@@ -220,14 +221,27 @@ async function SessionContent({ id }: { id: string }) {
             </button>
           </EditBriefingModal>
 
+          <TranslateDocumentAction 
+            documentContent={session.final_assets?.document || ''}
+            originalDocument={session.final_assets?.original_document}
+            finalAssets={session.final_assets || {}}
+            baseLanguage={session.chosen_language || 'pt'}
+            onSaveAssets={async (updatedAssets) => {
+              'use server';
+              const { createServerSupabaseClient } = await import('@/lib/supabase/server');
+              const supabase = await createServerSupabaseClient();
+              await supabase.from('briefing_sessions').update({ final_assets: updatedAssets }).eq('id', session.id);
+            }}
+          />
+
           {/* ── SHEET: MAIS OPÇÕES E METADADOS ──────────────────────── */}
           <Sheet>
-            <SheetTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)]" title="Relatório Detalhado">
-              Relatório Detalhado
+            <SheetTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)]" title="Relatório">
+              Relatório
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto !max-w-full bg-[var(--bg)] border-l border-[var(--bd)] p-0">
+            <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto !max-w-full bg-[var(--bg)] border-l border-[var(--bd)] p-0 z-[100]">
               <SheetHeader className="p-6 border-b border-[var(--bd)] sticky top-0 bg-[var(--bg)] z-50">
-                <SheetTitle className="text-xl">Relatório Detalhado</SheetTitle>
+                <SheetTitle className="text-xl">Relatório</SheetTitle>
                 <SheetDescription>
                   Dados técnicos da coleta, métricas e transcrição do briefing.
                 </SheetDescription>

@@ -62,25 +62,36 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { sessionName, initialContext, selectedPackages, editPassphrase, accessPassword, briefingPurpose, depthSignals } = await request.json();
+  const body = await request.json();
 
-  if (!sessionName) {
-    return NextResponse.json({ error: 'Session name is required' }, { status: 400 });
+  // Permite update seletivo (parcial) de features
+  const updateData: Record<string, any> = {
+    updated_at: new Date().toISOString()
+  };
+
+  if ('sessionName' in body) updateData.session_name = body.sessionName?.trim();
+  if ('initialContext' in body) updateData.initial_context = body.initialContext?.trim() || null;
+  if ('selectedPackages' in body) updateData.selected_packages = body.selectedPackages || [];
+  if ('editPassphrase' in body) updateData.edit_passphrase = body.editPassphrase?.trim() || null;
+  if ('accessPassword' in body) updateData.access_password = body.accessPassword?.trim() || null;
+  if ('briefingPurpose' in body) updateData.briefing_purpose = body.briefingPurpose?.trim() || null;
+  if ('depthSignals' in body) updateData.depth_signals = body.depthSignals || [];
+  if ('finalAssets' in body) updateData.final_assets = body.finalAssets;
+
+  // Se não tem absolutamente nada para atualizar, erro
+  if (Object.keys(updateData).length <= 1) {
+    return NextResponse.json({ error: 'No data to update' }, { status: 400 });
+  }
+
+  // Se tem `sessionName`, não permite ficar vazio.
+  if ('sessionName' in body && (!body.sessionName || body.sessionName.trim() === '')) {
+     return NextResponse.json({ error: 'Session name is required' }, { status: 400 });
   }
 
   // Update session
   const { error } = await supabase
     .from('briefing_sessions')
-    .update({
-      session_name: sessionName.trim(),
-      initial_context: initialContext?.trim() || null,
-      selected_packages: selectedPackages || [],
-      edit_passphrase: editPassphrase?.trim() || null,
-      access_password: accessPassword?.trim() || null,
-      briefing_purpose: briefingPurpose?.trim() || null,
-      depth_signals: depthSignals || [],
-      updated_at: new Date().toISOString()
-    })
+    .update(updateData)
     .eq('id', id)
     .eq('user_id', user.id);
 

@@ -31,7 +31,9 @@ CRITICAL RULES:
 1. Translate the TEXT ONLY.
 2. DO NOT change ANY markdown formatting, structural elements, headings levels (#), lists (*, -, 1.), bold (**), italics (*), blockquotes (>), or code blocks (\`).
 3. Keep the exact same structure as the original document.
-4. Output nothing except the translated Markdown. Do not add conversational text like "Here is your translation...".`;
+4. Output nothing except the translated Markdown. Do not add conversational text like "Here is your translation...".
+5. 100% COMPLETENESS REQUIRED: You MUST translate the ENTIRE document from the very first word to the absolute last word. DO NOT summarize, DO NOT truncate, DO NOT omit any paragraphs, bullet points, or sections, regardless of length.
+6. MAXIMUM ACCURACY: Preserve the exact professional tone, technical terminology, and contextual business meaning. Localization must be flawless and native-sounding without losing original intent.`;
 
     const res = await fetch(llmConfig.baseUrl, {
       method: "POST",
@@ -42,6 +44,7 @@ CRITICAL RULES:
       body: JSON.stringify({
         model: llmConfig.model,
         temperature: 0.1, // low temperature for translation stability
+        max_tokens: 8192, // Required to strictly prevent large doc truncation
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: documentContent }

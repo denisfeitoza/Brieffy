@@ -5,6 +5,9 @@ import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { Button } from "@/components/ui/button";
 import { Lock, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { TranslateDocumentAction } from "@/components/dashboard/TranslateDocumentAction";
+import CollectedBriefingData from "@/components/dashboard/CollectedBriefingData";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 type DocLanguage = 'pt' | 'en' | 'es';
 
@@ -49,6 +52,8 @@ export function PublicDocumentView({ token }: { token: string }) {
   const [passphrase, setPassphrase] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [documentContent, setDocumentContent] = useState<string>("");
+  const [finalAssets, setFinalAssets] = useState<any>({});
+  const [companyInfo, setCompanyInfo] = useState<any>({});
   const [isVerifying, setIsVerifying] = useState(false);
   // Start with browser language, then override with session language once verified
   const [lang, setLang] = useState<DocLanguage>(detectBrowserLanguage);
@@ -83,6 +88,8 @@ export function PublicDocumentView({ token }: { token: string }) {
       }
 
       setDocumentContent(data.document || data.documentContent || "");
+      setFinalAssets(data.finalAssets || {});
+      setCompanyInfo(data.companyInfo || {});
       setIsAuthenticated(true);
       // Use finalLang directly to avoid stale closure on tr
       toast.success(DOC_TRANSLATIONS[finalLang].accessGranted);
@@ -115,17 +122,68 @@ export function PublicDocumentView({ token }: { token: string }) {
     }
   };
 
+  const handleSaveAssets = async (updatedAssets: any) => {
+    const res = await fetch("/api/document/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        editToken: token,
+        passphrase,
+        finalAssets: updatedAssets
+      })
+    });
+    
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Error saving translation.");
+    }
+
+    setFinalAssets(updatedAssets);
+    if (updatedAssets.document) {
+      setDocumentContent(updatedAssets.document);
+    }
+  };
+
   if (isAuthenticated) {
     return (
       <div className="max-w-5xl mx-auto py-10 px-4 md:px-8">
         <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-2xl font-outfit font-bold tracking-tight text-white flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffcfbc] to-[var(--orange)] flex items-center justify-center">
-              <span className="text-white text-sm">B</span>
+          <div className="flex items-center gap-4">
+            <div className="text-2xl font-outfit font-bold tracking-tight text-white flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffcfbc] to-[var(--orange)] flex items-center justify-center">
+                <span className="text-white text-sm">B</span>
+              </div>
+              Brieffy
             </div>
-            Brieffy
+            <h1 className="text-xl text-neutral-400 font-medium tracking-tight hidden md:block">| {tr.interactiveDiagnostic}</h1>
           </div>
-          <h1 className="text-xl text-neutral-400 font-medium tracking-tight">{tr.interactiveDiagnostic}</h1>
+          
+          <div className="flex items-center gap-2">
+            <TranslateDocumentAction 
+              documentContent={documentContent}
+              originalDocument={finalAssets?.original_document}
+              finalAssets={finalAssets}
+              baseLanguage={lang}
+              onSaveAssets={handleSaveAssets}
+            />
+
+            <Sheet>
+              <SheetTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)]" title="Relatório">
+                Relatório
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto !max-w-full bg-[var(--bg)] border-l border-[var(--bd)] p-0 z-[100]">
+                <SheetHeader className="p-6 border-b border-[var(--bd)] sticky top-0 bg-[var(--bg)] z-50">
+                  <SheetTitle className="text-xl">Relatório</SheetTitle>
+                  <SheetDescription>
+                    Dados técnicos da coleta e respostas fornecidas.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="p-6 pb-24">
+                  <CollectedBriefingData companyInfo={companyInfo} lang={lang} />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </header>
 
         <DocumentEditor 

@@ -31,9 +31,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const { editToken, passphrase, documentContent } = await req.json();
+    const { editToken, passphrase, documentContent, finalAssets } = await req.json();
 
-    if (!editToken || !passphrase || documentContent === undefined) {
+    if (!editToken || !passphrase || (documentContent === undefined && finalAssets === undefined)) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -51,9 +51,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Palavra-chave incorreta." }, { status: 401 });
     }
 
+    const updatePayload: any = { updated_at: new Date().toISOString() };
+    if (documentContent !== undefined) updatePayload.document_content = documentContent;
+    if (finalAssets !== undefined) updatePayload.final_assets = finalAssets;
+
     const { error: updError } = await supabaseAdmin
       .from('briefing_sessions')
-      .update({ document_content: documentContent, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', session.id);
 
     if (updError) {

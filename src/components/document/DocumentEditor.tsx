@@ -150,29 +150,6 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
             <Copy className="w-4 h-4 mr-2" />
             Copiar Texto
           </Button>
-
-          {/* Tradutor */}
-          <div className="flex border border-white/10 rounded-lg bg-black/20 relative items-center shrink-0 min-w-max">
-            {isTranslating && (
-              <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
-                  <Loader2 className="w-4 h-4 text-[var(--orange)] animate-spin" />
-              </div>
-            )}
-            <Languages className="w-4 h-4 text-zinc-400 ml-2" />
-            <Select 
-                disabled={isTranslating} 
-                onValueChange={(val) => handleTranslate(String(val))}
-            >
-              <SelectTrigger className="w-fit border-0 bg-transparent text-xs text-zinc-300 focus:ring-0 gap-2 font-medium shrink-0 h-8 px-2">
-                <SelectValue placeholder="Traduzir..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pt">Português</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="es">Español</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
         <div className="flex items-center w-full md:w-auto shrink-0 mt-2 md:mt-0">
           <Button onClick={generatePDF} size="sm" className="bg-[var(--orange)] hover:opacity-90 text-white font-semibold w-full md:w-auto">

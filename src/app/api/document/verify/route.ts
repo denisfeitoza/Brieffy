@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       valid: true,
       document: session.document_content || session.final_assets?.document || "",
+      finalAssets: session.final_assets || {},
       companyInfo: session.company_info,
       chosenLanguage: session.chosen_language || 'pt',
     });
