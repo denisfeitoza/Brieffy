@@ -325,7 +325,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   voiceLanguage={chosenLanguage}
                   messages={messages}
                   isDiscoveryPhase={isDiscoveryPhase}
-                  showVoiceTutorial={currentStepIndex === 1}
+                  showVoiceTutorial={currentStepIndex === 0}
                 />
               )}
             </div>
@@ -336,20 +336,20 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                 <Button 
                   variant="ghost" 
                   onClick={goBack}
-                  className="text-gray-500 hover:text-black rounded-full px-6 h-12"
+                  className="text-gray-500 hover:text-black rounded-full px-4 sm:px-6 h-12"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  {t.goBackAdjust}
+                  <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t.goBackAdjust}</span>
                 </Button>
                 <div className="relative shrink-0 flex justify-end">
                   <AnimatePresence>
-                    {currentStepIndex === 6 && !inputText && !dismissedSkipHint && (
+                    {currentStepIndex === 5 && !inputText && !dismissedSkipHint && (
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 5, scale: 0.95 }}
                         transition={{ delay: 0.5, duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
-                        className="absolute bottom-[calc(100%+8px)] right-0 bg-gray-900 border border-white/10 text-white p-4 rounded-[1.25rem] shadow-2xl w-72 pointer-events-none origin-bottom-right z-50 flex items-start gap-4"
+                        className="absolute bottom-[calc(100%+8px)] right-0 bg-gray-900 border border-white/10 text-white p-4 rounded-[1.25rem] shadow-2xl w-[calc(100vw-2rem)] max-w-[18rem] md:w-72 md:max-w-none pointer-events-none origin-bottom-right z-50 flex items-start gap-3 sm:gap-4"
                       >
                         <button 
                           onClick={(e) => { e.stopPropagation(); setDismissedSkipHint(true); }}

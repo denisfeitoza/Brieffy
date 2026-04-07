@@ -137,7 +137,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 5, scale: 0.95 }}
               transition={{ delay: 0.5, duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
-              className="absolute bottom-[calc(100%+14px)] right-4 bg-gray-900 text-white p-4 rounded-[1.25rem] shadow-2xl w-72 pointer-events-none origin-bottom-right z-50 flex items-start gap-4 border border-white/10"
+              className="absolute bottom-[calc(100%+14px)] -right-2 md:right-4 bg-gray-900 text-white p-4 rounded-[1.25rem] shadow-2xl w-[calc(100vw-2rem)] max-w-[18rem] md:w-72 md:max-w-none pointer-events-none origin-bottom-right z-50 flex items-start gap-3 md:gap-4 border border-white/10"
             >
               <div className="bg-[var(--orange)] rounded-[0.85rem] p-2.5 shrink-0 shadow-lg shadow-[var(--orange)]/30">
                 <Mic className="w-5 h-5 text-white" />
@@ -154,7 +154,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
                 </span>
               </div>
               {/* Pointer triangle */}
-              <div className="absolute -bottom-2 right-20 w-4 h-4 bg-gray-900 border-r border-b border-white/10 rotate-45 rounded-sm" />
+              <div className="absolute -bottom-2 right-6 md:right-20 w-4 h-4 bg-gray-900 border-r border-b border-white/10 rotate-45 rounded-sm" />
             </motion.div>
           )}
         </AnimatePresence>

@@ -28,16 +28,17 @@ Você é um CONSULTOR ESTRATÉGICO, não um entrevistador. Conversa, não interr
 
 export const PHASE_MODULES: Record<BriefingPhase, (forceFinish?: boolean) => string> = {
   discovery: () => `<Fase nome="DESCOBERTA">
-A PRIMEIRA PERGUNTA (Q1) DEVE focar em entender A EMPRESA. Pergunte de forma empática e natural o que a empresa é, o que ela faz e quais são seus principais diferenciais. Use "text" e personalize com base no contexto já conhecido (segmento, nome).
-NÃO faça perguntas complexas, duplas ou muito profundas nestas 5 primeiras interações. Vá com calma.
-Após Q1: ≥8 inferências→avance para confirmação. 4-7→mais uma pergunta text direcionada. <4→até 2 perguntas text.
-  - DINAMISMO: Se detectou uma barreira ou falta de conhecimento do usuário em um tópico, MUDE DE SEÇÃO imediatamente.
-  - FOCO EM PILARES: Se 'Público Alvo' (target_audience) ou 'Tom de Voz' (brand_tone) ainda não foram validados, PRIORIZE estes pontos antes de perguntas periféricas.
-  - PIPELINE DE EXECUÇÃO: Atue na ordem -> CONTEXTO -> PÚBLICO -> IDENTIDADE -> MERCADO. Se o usuário estiver confuso com um, salte para o próximo e retome later se fizer sentido.
+AS PRIMEIRAS 5 PERGUNTAS DEVEM focar EXCLUSIVAMENTE em entender O CORE DA EMPRESA (o que faz, modelo de negócio, diferenciais, público-alvo inicial e dores que resolve). Não fuja desse foco estratégico inicial.
+A PRIMEIRA PERGUNTA (Q1) deve sempre ser aberta, empática e natural sobre o que a empresa é e o que ela faz. Use "text" e personalize com base no contexto já conhecido (segmento, nome).
+NÃO faça perguntas periféricas (como design, tom de voz, referências visuais, ou jargões complexos) antes da 6ª interação. Vá com calma e garanta o alicerce do negócio primeiro.
+Após Q1: se houver ≥8 inferências completas → avance para confirmação. 4-7 → mais perguntas estratégicas. <4 → puxe mais detalhes abertos.
+  - DINAMISMO: Se detectou uma barreira ou falta de conhecimento do usuário em um tópico central, MUDE DE SEÇÃO imediatamente.
+  - FOCO EM PILARES: Se 'Público Alvo' (target_audience) ou modelo de negócios não está claro, PRIORIZE isso.
+  - PIPELINE DE EXECUÇÃO INICIAL: Atue apenas no CORE -> CONTEXTO -> PÚBLICO -> DIFERENCIAIS.
   - ABANDONO DE INTERROGATÓRIO: Se o usuário já deu 3 respostas curtas ou negativas sobre o mesmo tema, esse tema é DADO COMO ENCERRADO com o que foi coletado (mesmo que seja NADA).
   - CONCORDÂNCIA: Demonstre entusiasmo com as respostas para gerar confiança antes de aprofundar.
-micro_feedback DEVE ser null. Celebre respostas ricas.
-Dê PREFERÊNCIA ao questionType 'text' nesta fase, MAS você PODE e DEVE usar 'multiple_choice', 'single_choice' ou 'card_selector' quando perguntar sobre temas com escolhas conceitualmente limitadas (ex: Tom de voz, Personalidade).
+micro_feedback DEVE ser null nesta fase inicial. Celebre respostas ricas sutilmente.
+Dê PREFERÊNCIA ao questionType 'text' nesta fase, MAS você PODE usar 'multiple_choice' ou 'single_choice' raramente se ajudar a destrinchar o modelo de negócios de forma mais fácil para um usuário silencioso.
 </Fase>`,
   confirm: () => `<Fase nome="CONFIRMAÇÃO-RÁPIDA">
 Confirme inferências em LOTE: use formatos objetivos (ex: card_selector, boolean_toggle ou multiple_choice).
