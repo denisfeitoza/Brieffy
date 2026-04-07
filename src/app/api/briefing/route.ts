@@ -105,28 +105,58 @@ const BASE_MIN_QUESTIONS = 25;
 const ABSOLUTE_MAX_QUESTIONS = 50; // Just as a global fail-safe cap
 const MIN_MEANINGFUL_VALUE_LENGTH = 3;
 
-function calculateEngagement(history: { role: string; content: string }[]): 'high' | 'medium' | 'low' | 'fatigue' {
-  const recentUserMsgs = history
-    .filter(m => m.role === 'user')
-    .slice(-3);
+/**
+ * Detects user fatigue from the ENTIRE session history.
+ * Returns 'exhausted' when:
+ *   - 5+ total skips in the session, OR
+ *   - Two separate skip-streaks detected (e.g. 2 skips, answered, then 3 more skips)
+ * Returns 'fatigue' for 2+ consecutive skips in the last 3 messages.
+ */
+function calculateEngagement(history: { role: string; content: string }[]): 'high' | 'medium' | 'low' | 'fatigue' | 'exhausted' {
+  const allUserMsgs = history.filter(m => m.role === 'user');
+  const recentUserMsgs = allUserMsgs.slice(-3);
 
   if (recentUserMsgs.length === 0) return 'high';
+
+  // Count total skips in the entire session
+  const isSkip = (m: { content: string }) => m.content === '(skipped)' || m.content.trim().length < 3;
+  const totalSkips = allUserMsgs.filter(isSkip).length;
+
+  // Detect skip-streaks: sequences of 2+ consecutive skips
+  let skipStreaks = 0;
+  let currentStreak = 0;
+  for (const msg of allUserMsgs) {
+    if (isSkip(msg)) {
+      currentStreak++;
+    } else {
+      if (currentStreak >= 2) skipStreaks++;
+      currentStreak = 0;
+    }
+  }
+  if (currentStreak >= 2) skipStreaks++; // final streak still open
+
+  // EXHAUSTED: user has given up. Override minQuestions entirely.
+  // Triggers when: 5+ total skips OR 2+ separate skip-streaks
+  if (totalSkips >= 5 || skipStreaks >= 2) return 'exhausted';
 
   const avgWords = recentUserMsgs.reduce((sum, m) => {
     return sum + m.content.trim().split(/\s+/).length;
   }, 0) / recentUserMsgs.length;
 
-  const skippedCount = recentUserMsgs.filter(m =>
-    m.content === '(skipped)' || m.content.trim().length < 3
-  ).length;
+  const recentSkippedCount = recentUserMsgs.filter(isSkip).length;
 
-  // New logic: 2 or more consecutive skips/short answers indicate fatigue
-  const isFatigue = recentUserMsgs.length >= 2 && recentUserMsgs.slice(-2).every(m => m.content === '(skipped)' || m.content.trim().length < 3);
+  // FATIGUE: 2+ consecutive skips in last 3 messages
+  const isFatigue = recentUserMsgs.length >= 2 && recentUserMsgs.slice(-2).every(isSkip);
 
   if (isFatigue) return 'fatigue';
-  if (skippedCount >= 2 || avgWords < 5) return 'low';
-  if (avgWords < 15 || skippedCount >= 1) return 'medium';
+  if (recentSkippedCount >= 2 || avgWords < 5) return 'low';
+  if (avgWords < 15 || recentSkippedCount >= 1) return 'medium';
   return 'high';
+}
+
+/** Returns true when engagement signals the user is done and wants out */
+function isUserExhausted(engagement: ReturnType<typeof calculateEngagement>): boolean {
+  return engagement === 'exhausted';
 }
 
 function calculateQualityBasalCoverage(
@@ -272,24 +302,41 @@ export async function POST(req: Request) {
 
     const packageCount = selectedPackages?.length || 0;
     const minQuestions = BASE_MIN_QUESTIONS + (packageCount * 3); // Aumenta 3 perguntas por pacote ativo
+    const userExhausted = isUserExhausted(backendEngagement);
+
+    // EXHAUSTED override: user has skipped too many times. Respect their time — finalize ASAP.
+    // Ignore minQuestions constraint entirely when user is clearly done.
+    const effectiveMinQuestions = userExhausted ? Math.min(questionCount, 8) : minQuestions;
     
     let currentPhase: BriefingPhase = 'discovery';
-    const confirmThreshold = Math.floor(minQuestions * 0.3); // ~8
-    const depthThreshold = Math.floor(minQuestions * 0.6); // ~15
+    const confirmThreshold = Math.floor(effectiveMinQuestions * 0.3); // ~8
+    const depthThreshold = Math.floor(effectiveMinQuestions * 0.6); // ~15
     
     if (questionCount >= confirmThreshold && currentBasalCoverage >= 0.2) currentPhase = 'confirm';
     if (questionCount >= depthThreshold && currentBasalCoverage >= 0.4) currentPhase = 'depth';
-    if (currentBasalCoverage >= perfConfig.basalThreshold && questionCount >= minQuestions) currentPhase = 'finalize';
+    if (currentBasalCoverage >= perfConfig.basalThreshold && questionCount >= effectiveMinQuestions) currentPhase = 'finalize';
 
     // ================================================================
     // CIRCUIT BREAKER — Hard limit enforced in code, not just prompt
     // ================================================================
-    const maxQForEngagement = backendEngagement === 'fatigue' ? minQuestions + 3 : backendEngagement === 'low' ? minQuestions + 5 : backendEngagement === 'medium' ? minQuestions + 10 : minQuestions + 15;
+    // Engagement-aware max caps:
+    //   exhausted → finalize NOW (no extra questions)
+    //   fatigue   → up to 3 more questions max
+    //   low       → up to 5 more
+    //   medium    → up to 10 more
+    //   high      → up to 15 more
+    const maxQForEngagement =
+      backendEngagement === 'exhausted' ? questionCount :     // stop immediately
+      backendEngagement === 'fatigue'   ? Math.min(questionCount + 3, minQuestions + 3) :
+      backendEngagement === 'low'       ? minQuestions + 5 :
+      backendEngagement === 'medium'    ? minQuestions + 10 :
+                                          minQuestions + 15;
     const dynamicAbsoluteMax = Math.max(ABSOLUTE_MAX_QUESTIONS, minQuestions + 20);
     const effectiveMax = Math.min(maxQForEngagement, dynamicAbsoluteMax);
-    const forceFinish = questionCount >= effectiveMax;
+    const forceFinish = userExhausted || questionCount >= effectiveMax;
     if (forceFinish) {
-      console.warn(`[Briefing] Circuit breaker: ${questionCount} questions reached (limit: ${effectiveMax}, engagement: ${backendEngagement}). Forcing finalization.`);
+      const reason = userExhausted ? `user exhausted (${backendEngagement})` : `${questionCount} questions (limit: ${effectiveMax})`;
+      console.warn(`[Briefing] Circuit breaker: ${reason}. Forcing finalization.`);
       currentPhase = 'finalize';
     }
 
