@@ -1,24 +1,20 @@
 import { getSessionById, getInteractionsBySession } from '@/lib/services/briefingService';
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import {
   ArrowLeft, Clock, FileText, MessageSquare,
-  Activity, Brain, CheckCircle2, BarChart3, Eye,
-  Zap, Shield, Code, ChevronDown, Printer, Edit2, Loader2, Sparkles
+  Activity, Brain, CheckCircle2, BarChart3,
+  Code, ChevronDown, Edit2, Loader2, Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CopyButtons } from '@/components/dashboard/CopyButtons';
 import { Suspense } from 'react';
 import CollectedBriefingData from '@/components/dashboard/CollectedBriefingData';
-import { humanizeFieldKey } from '@/lib/briefing/fieldLabels';
+
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { GenerateDocumentAction } from '@/components/dashboard/GenerateDocumentAction';
 import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
-import { PrintPdfButton } from '@/components/dashboard/PrintPdfButton';
+
 import { EditBriefingModal } from '@/components/dashboard/EditBriefingModal';
 import { TranslateDocumentAction } from '@/components/dashboard/TranslateDocumentAction';
 
@@ -26,25 +22,8 @@ export const dynamic = 'force-dynamic';
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 
-function simpleMarkdownToHtml(md: string): string {
-  let html = md
-    .replace(/&/g, '&amp;')
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    .replace(/^\\> (.*$)/gim, '<blockquote>$1</blockquote>')
-    .replace(/^[\-\*] (.*$)/gim, '<li>$1</li>')
-    .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
-    .replace(/^---$/gim, '<hr />')
-    .replace(/`(.*?)`/gim, '<code>$1</code>')
-    .replace(/\n\n/gim, '</p><p>')
-    .replace(/\n/gim, '<br />');
-  html = html.replace(/<\/ul>\s*<ul>/gim, '');
-  return '<p>' + html + '</p>';
-}
+// DashboardDocumentEditor is a client component that wraps the Tiptap editor
+import { DashboardDocumentEditor } from '@/components/dashboard/DashboardDocumentEditor';
 
 function engagementColor(level: string) {
   switch (level) {
@@ -483,43 +462,14 @@ async function SessionContent({ id }: { id: string }) {
 
 
       {/* ── ÁREA DO DOCUMENTO PRINCIPAL (Folha A4) ──────────────── */}
-      <div className="a4-document-container print:shadow-none print:border-0 print:m-0 print:p-0 bg-[var(--bg)] text-[var(--text)] border border-[var(--bd-strong)] shadow-sm rounded-2xl md:rounded-[2rem] overflow-hidden min-h-[60vh]">
+      <div className="a4-document-container print:shadow-none print:border-0 print:m-0 print:p-0 bg-[var(--bg)] text-[var(--text)] border border-[var(--bd-strong)] shadow-sm rounded-2xl md:rounded-[2rem] overflow-clip min-h-[60vh]">
         {session.final_assets?.document ? (
-          <div className="p-6 md:p-12 lg:p-16 print:p-0 print:pt-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--bd)]">
-              <div className="flex items-center gap-2">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-                  <rect width="32" height="32" rx="9" fill="#ff6029" />
-                  <circle cx="26" cy="6" r="2.5" fill="white" />
-                  <text x="16" y="23.5" fontFamily="system-ui, -apple-system, sans-serif" fontSize="21" fontWeight="900" fill="white" textAnchor="middle">B</text>
-                </svg>
-                <span className="font-bold text-xl tracking-tight text-[var(--text)]">Brieffy</span>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-2 print:hidden">
-                <CopyButtons
-                  markdown={session.final_assets.document}
-                  html={simpleMarkdownToHtml(session.final_assets.document)}
-                />
-                <PrintPdfButton className="flex-1 md:flex-none" />
-              </div>
-            </div>
-            <div
-              className="prose max-w-3xl mx-auto
-                prose-headings:font-bold prose-headings:tracking-tight
-                prose-h1:text-3xl prose-h1:mb-8 prose-h1:text-[var(--text)]
-                prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:text-[var(--text)] prose-h2:flex prose-h2:items-center prose-h2:gap-2
-                prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-[var(--text2)]
-                prose-p:text-[15px] prose-p:leading-relaxed prose-p:text-[var(--text)]
-                prose-li:text-[15px] prose-li:text-[var(--text)] prose-li:my-1
-                prose-strong:text-[var(--text)] prose-strong:font-bold
-                prose-blockquote:border-l-4 prose-blockquote:border-[var(--orange)] prose-blockquote:bg-[var(--bg2)] prose-blockquote:px-5 prose-blockquote:py-3 prose-blockquote:rounded-r-xl prose-blockquote:text-[var(--text2)] prose-blockquote:not-italic prose-blockquote:my-6
-                prose-a:text-[var(--orange)] prose-a:no-underline hover:prose-a:underline"
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {session.final_assets.document}
-              </ReactMarkdown>
-            </div>
+          <div className="p-6 md:p-8 lg:p-10 print:p-0 print:pt-4">
+            <DashboardDocumentEditor
+              sessionId={session.id}
+              documentContent={session.final_assets.document}
+              finalAssets={session.final_assets as Record<string, unknown>}
+            />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text3)] p-6 text-center animate-in fade-in zoom-in duration-500">

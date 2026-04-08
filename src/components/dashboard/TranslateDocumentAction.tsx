@@ -55,20 +55,27 @@ export function TranslateDocumentAction({
       let newDoc = documentContent;
       
       if (targetLang === baseLanguage) {
-         // Pull naturally from original document
-         if (originalDocument) {
+         // FIX #3: Restore to original language.
+         // If there's a saved original_document in the assets, use it.
+         // But if the current documentContent is HTML (edited by Tiptap), it already IS the original.
+         // Prefer original_document only if it was explicitly stored and differs from current.
+         if (originalDocument && originalDocument !== documentContent) {
            newDoc = originalDocument;
+         } else {
+           newDoc = documentContent; // Already at the base version
          }
       } else if (finalAssets?.translations?.[targetLang] && !forceRetranslate) {
          // Load cached translation
          newDoc = finalAssets.translations[targetLang];
       } else {
          // Call the AI translation endpoint for the first time
+         // Always translate from the base-language document (not a previously translated version)
+         const sourceDoc = originalDocument || documentContent;
          const res = await fetch('/api/document/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-              documentContent: originalDocument || documentContent, 
+              documentContent: sourceDoc, 
               targetLanguage: targetLang 
             })
          });
@@ -93,10 +100,12 @@ export function TranslateDocumentAction({
       }
 
       // Update Session DB state
+      // FIX #3: Preserve original_document — never overwrite with a translation or HTML-edited version
       const updatedAssets = {
         ...finalAssets,
         document: newDoc,
-        original_document: originalDocument || documentContent,
+        // Only set original_document if it hasn't been set yet
+        original_document: finalAssets?.original_document || documentContent,
         translations: updatedTranslations,
         current_lang: targetLang,
       };

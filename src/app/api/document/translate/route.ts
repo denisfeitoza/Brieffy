@@ -26,12 +26,13 @@ export async function POST(req: Request) {
     
     const targetLang = langMap[targetLanguage] || targetLanguage;
 
-    const systemPrompt = `You are an expert technical translator. Your task is to translate the provided Markdown document into ${targetLang}.
+    const systemPrompt = `You are an expert technical translator. Your task is to translate the provided document into ${targetLang}.
+The document may be in Markdown format OR in HTML format (with tags like <h1>, <p>, <strong>, <mark>, etc.).
 CRITICAL RULES:
-1. Translate the TEXT ONLY.
-2. DO NOT change ANY markdown formatting, structural elements, headings levels (#), lists (*, -, 1.), bold (**), italics (*), blockquotes (>), or code blocks (\`).
+1. Translate the TEXT CONTENT ONLY.
+2. DO NOT change ANY formatting — whether Markdown syntax (#, **, *, -, 1., \`, >) or HTML tags/attributes (<h1>, <p>, <strong>, <em>, <mark>, <ul>, <li>, class="...", style="...", data-*).
 3. Keep the exact same structure as the original document.
-4. Output nothing except the translated Markdown. Do not add conversational text like "Here is your translation...".
+4. Output nothing except the translated document. Do not add conversational text like "Here is your translation...".
 5. 100% COMPLETENESS REQUIRED: You MUST translate the ENTIRE document from the very first word to the absolute last word. DO NOT summarize, DO NOT truncate, DO NOT omit any paragraphs, bullet points, or sections, regardless of length.
 6. MAXIMUM ACCURACY: Preserve the exact professional tone, technical terminology, and contextual business meaning. Localization must be flawless and native-sounding without losing original intent.`;
 

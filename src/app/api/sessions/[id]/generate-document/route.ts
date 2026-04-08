@@ -97,7 +97,43 @@ export async function POST(
     };
     const t = t_labels[chosenLanguage] || t_labels.pt;
 
-    const systemPrompt = `${t.role}\n\n${t.langRule}\n\n${t.task}\n\nTEMPLATE: ${templateName}\n\nDATA:\n${JSON.stringify(briefingState, null, 2)}\n\nTRANSCRIPT:\n${conversationTranscript}\n\nRULES:\n- Write in ${targetLang}\n- Be extremely detailed\n- Professional agency-level tone\n- IT IS STRICTLY PROHIBITED TO USE EMOJIS ANYWHERE IN THE DOCUMENT.\n- ${t.watermark}`;
+    const formatInstructions = chosenLanguage === 'en'
+      ? `OUTPUT FORMAT: Return the document as clean, semantic HTML. Use ONLY these tags:
+- <h1> for the document title (one only)
+- <h2> for main sections
+- <h3> for subsections
+- <p> for paragraphs
+- <ul>/<li> for bullet lists, <ol>/<li> for numbered lists
+- <blockquote> for important quotes, insights, or signal interpretations
+- <strong> for bold emphasis, <em> for italic
+- <hr> for section dividers
+DO NOT use Markdown syntax (no #, *, -, > etc). Output pure HTML tags only.
+DO NOT wrap the output in \`\`\`html code blocks. Return raw HTML directly.`
+      : chosenLanguage === 'es'
+      ? `FORMATO DE SALIDA: Devuelve el documento como HTML limpio y semántico. Usa SOLO estas etiquetas:
+- <h1> para el título del documento (solo uno)
+- <h2> para secciones principales
+- <h3> para subsecciones
+- <p> para párrafos
+- <ul>/<li> para listas con viñetas, <ol>/<li> para listas numeradas
+- <blockquote> para citas importantes, insights o interpretaciones de señales
+- <strong> para énfasis en negrita, <em> para cursiva
+- <hr> para divisores de sección
+NO uses sintaxis Markdown (nada de #, *, -, > etc). Solo etiquetas HTML puras.
+NO envuelvas la salida en bloques de código \`\`\`html. Devuelve HTML directamente.`
+      : `FORMATO DE SAÍDA: Retorne o documento como HTML limpo e semântico. Use APENAS estas tags:
+- <h1> para o título do documento (apenas um)
+- <h2> para seções principais
+- <h3> para subseções
+- <p> para parágrafos
+- <ul>/<li> para listas com marcadores, <ol>/<li> para listas numeradas
+- <blockquote> para citações importantes, insights ou interpretações de sinais
+- <strong> para ênfase em negrito, <em> para itálico
+- <hr> para divisores de seção
+NÃO use sintaxe Markdown (nada de #, *, -, > etc). Apenas tags HTML puras.
+NÃO envolva a saída em blocos de código \`\`\`html. Retorne HTML diretamente.`;
+
+    const systemPrompt = `${t.role}\n\n${t.langRule}\n\n${t.task}\n\nTEMPLATE: ${templateName}\n\nDATA:\n${JSON.stringify(briefingState, null, 2)}\n\nTRANSCRIPT:\n${conversationTranscript}\n\n${formatInstructions}\n\nRULES:\n- Write in ${targetLang}\n- Be extremely detailed\n- Professional agency-level tone\n- IT IS STRICTLY PROHIBITED TO USE EMOJIS ANYWHERE IN THE DOCUMENT.\n- ${t.watermark}`;
 
     // 3. Call LLM
     const res = await fetch(llmConfig.baseUrl, {
@@ -119,11 +155,14 @@ export async function POST(
 
     if (!res.ok) throw new Error(`LLM Error: ${res.status}`);
     const llmData = await res.json();
-    const document = llmData.choices?.[0]?.message?.content;
+    let document = llmData.choices?.[0]?.message?.content;
 
     if (!document) throw new Error("No document content generated");
 
-    // 4. Update the Database
+    // Strip possible ```html fencing if the LLM wraps it
+    document = document.replace(/^```html\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    // 4. Update the Database — persist in both final_assets AND document_content
     const updatedFinalAssets = {
       ...assets,
       document: document,
@@ -134,6 +173,7 @@ export async function POST(
       .from('briefing_sessions')
       .update({ 
         final_assets: updatedFinalAssets,
+        document_content: document,
         updated_at: new Date().toISOString()
       })
       .eq('id', sessionId);

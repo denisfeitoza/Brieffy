@@ -344,3 +344,84 @@
   page-break-inside: avoid !important;
   break-inside: avoid !important;
 }
+
+/* ============================================
+   TIPTAP EDITOR STYLES
+   ============================================ */
+
+/* Editor content area — ProseMirror */
+.tiptap.ProseMirror {
+  outline: none;
+  min-height: 50vh;
+}
+
+/* Compact spacing — avoids excessive gaps from AI-generated Markdown */
+.tiptap.ProseMirror p {
+  margin-bottom: 0.5em;
+}
+
+.tiptap.ProseMirror h1,
+.tiptap.ProseMirror h2,
+.tiptap.ProseMirror h3 {
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
+}
+
+.tiptap.ProseMirror ul,
+.tiptap.ProseMirror ol {
+  margin-bottom: 0.5em;
+}
+
+.tiptap.ProseMirror li {
+  margin-bottom: 0.15em;
+}
+
+.tiptap.ProseMirror blockquote {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text3);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Highlight marker — warm amber for both themes */
+.brieffy-highlight,
+.tiptap mark {
+  background-color: #fbbf2420;
+  border-bottom: 2px solid #fbbf24;
+  border-radius: 2px;
+  padding: 1px 2px;
+  color: inherit;
+}
+
+.dark .brieffy-highlight,
+.dark .tiptap mark {
+  background-color: #fbbf2425;
+  border-bottom-color: #f59e0b;
+}
+
+/* PDF mode: make highlight visible on print */
+.pdf-mode-active .brieffy-highlight,
+.pdf-mode-active mark {
+  background-color: #fef3c7 !important;
+  border-bottom: 2px solid #f59e0b !important;
+  color: #000 !important;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Selection style inside editor */
+.tiptap.ProseMirror ::selection {
+  background-color: var(--orange);
+  color: white;
+}
+
+/* Editing cursor color */
+.tiptap.ProseMirror {
+  caret-color: var(--orange);
+}

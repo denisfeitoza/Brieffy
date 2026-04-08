@@ -77,6 +77,7 @@ export async function PATCH(
   if ('briefingPurpose' in body) updateData.briefing_purpose = body.briefingPurpose?.trim() || null;
   if ('depthSignals' in body) updateData.depth_signals = body.depthSignals || [];
   if ('finalAssets' in body) updateData.final_assets = body.finalAssets;
+  if ('documentContent' in body) updateData.document_content = body.documentContent;
 
   // Se não tem absolutamente nada para atualizar, erro
   if (Object.keys(updateData).length <= 1) {

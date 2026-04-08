@@ -20,7 +20,7 @@ async function requireAuth() {
     const { data: profile } = await adminSupabase
       .from("briefing_profiles")
       .select("is_admin")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single();
 
     isAdmin = !!profile?.is_admin;
@@ -218,7 +218,7 @@ export async function DELETE(req: Request) {
       const { data: existing } = await adminSupabase!
         .from("briefing_category_packages")
         .select("author_id")
-        .eq("id", id)
+        .eq("slug", id)
         .single();
         
       if (!existing || existing.author_id !== user.id) {

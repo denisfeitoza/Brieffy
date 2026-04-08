@@ -235,6 +235,39 @@ REGRAS:
 - Se o negócio é novo, foque em validação. Se é maduro, foque em otimização e escala.
 - Cruze com campos basais (services_offered, sector_segment) — contextualize as perguntas.`,
   },
+  {
+    id: "ai-management-system",
+    name: "AI Management System & Tech Stack",
+    description: "Mapeamento do ecossistema de software atual (sistemas, planilhas) buscando oportunidades de unificação via IA e automação sob demanda.",
+    department: "technology",
+    icon: "Cpu",
+    suggested_slug: "ai_management_system",
+    max_questions: 6,
+    briefing_purpose: "Identificar os departamentos da empresa e o que usam hoje de sistema ou planilhas, visando unificar e reconstruir as operações sob demanda com inteligência artificial.",
+    depth_signals: ["sistemas legados", "automação de processos", "planilhas e controles manuais", "unificação", "AI management", "transformação digital"],
+    system_prompt_fragment: `SKILL: AI Management System Architect
+CAMPOS ÚNICOS PARA EXTRAIR: company_departments, current_systems_used, spreadsheet_reliance, manual_bottlenecks, unified_ai_opportunities
+
+ESTRATÉGIA CONVERSACIONAL:
+MISSÃO: Mapear todo o ecossistema tecnológico, identificando os departamentos da empresa e o que usam hoje de sistema ou planilhas, com o objetivo de unificar e reconstruir essas operações sob demanda usando Inteligência Artificial.
+
+FASE 1 — INVENTÁRIO & DEPARTAMENTOS
+- Identifique as frentes de trabalho. "Quais são os principais departamentos ou áreas da sua empresa hoje?"
+- "Tirando email e WhatsApp, que sistemas, CRMs ou ferramentas cada um desses departamentos utiliza no dia a dia?"
+
+FASE 2 — A DOR DAS PLANILHAS E GARGALOS MANUAIS
+- "Até que ponto a operação ainda depende de planilhas pesadas (Excel/Google Sheets) ou de trabalho manual (controle duplo, copiar e colar)?"
+- Descubra onde a informação quebra ou se perde na troca entre setores.
+
+FASE 3 — UNIFICAÇÃO & IA SOB DEMANDA
+- Baseado no diagnóstico acima, proponha a visão de um sistema único e integrado.
+- "Se pudéssemos aposentar essas ferramentas desconexas e construir um sistema/dashboard interno unificado e 100% sob demanda gerido por Inteligência Artificial, qual seria o problema operacional número 1 a ser resolvido?"
+- Direcione o contexto para a possível automação robótica e substituição de softwares engessados por microsserviços customizados de IA.
+
+REGRAS:
+- Evite complexidade técnica exagerada (termos como API, relacional, servidores) a menos que o cliente seja técnico.
+- Foque na "dor do retrabalho" e na transição para a "eficiência centralizada".`,
+  },
 ];
 
 export function getSkillTemplateById(id: string): SkillTemplate | undefined {
