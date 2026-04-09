@@ -44,7 +44,7 @@ export function TranslateDocumentAction({
   const router = useRouter();
 
   // Determine the active requested language
-  const currentLang = finalAssets?.current_lang || baseLanguage;
+  const currentLang = (finalAssets?.current_lang as string) || baseLanguage;
 
   const handleTranslate = async (targetLang: string, forceRetranslate: boolean = false) => {
     if (targetLang === currentLang && !forceRetranslate) return; // Prevent loop
@@ -64,9 +64,9 @@ export function TranslateDocumentAction({
          } else {
            newDoc = documentContent; // Already at the base version
          }
-      } else if (finalAssets?.translations?.[targetLang] && !forceRetranslate) {
+      } else if ((finalAssets?.translations as Record<string, string>)?.[targetLang] && !forceRetranslate) {
          // Load cached translation
-         newDoc = finalAssets.translations[targetLang];
+         newDoc = (finalAssets.translations as Record<string, string>)[targetLang];
       } else {
          // Call the AI translation endpoint for the first time
          // Always translate from the base-language document (not a previously translated version)
@@ -89,7 +89,7 @@ export function TranslateDocumentAction({
       }
 
       // Preserve cache of previous translation if we are leaving a translated state
-      const updatedTranslations = { ...(finalAssets?.translations || {}) };
+      const updatedTranslations = { ...((finalAssets?.translations as Record<string, string>) || {}) };
       
       if (currentLang !== baseLanguage) {
          updatedTranslations[currentLang] = documentContent;
