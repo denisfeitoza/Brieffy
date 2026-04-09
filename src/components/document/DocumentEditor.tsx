@@ -355,67 +355,6 @@ function createPdfHtml(htmlContent: string): HTMLDivElement {
   return wrapper;
 }
 
-/* ─── Toolbar Wrapper: JS-based sticky (works regardless of parent overflow) ─── */
-function ToolbarWrapper({ children }: { children: ReactNode }) {
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const [isFixed, setIsFixed] = useState(false);
-  const [toolbarHeight, setToolbarHeight] = useState(0);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    const toolbar = toolbarRef.current;
-    if (!sentinel || !toolbar) return;
-
-    // Measure toolbar height for the placeholder
-    setToolbarHeight(toolbar.offsetHeight);
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsFixed(!entry.isIntersecting);
-      },
-      { threshold: 0, rootMargin: "0px" }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, []);
-
-  const toolbarClasses = `
-    bg-[var(--bg2)]/90 backdrop-blur-xl border border-[var(--bd)]
-    rounded-xl py-2 px-2 overflow-x-auto custom-scrollbar shadow-lg
-    transition-shadow duration-200
-  `;
-
-  return (
-    <>
-      {/* Sentinel: invisible marker at the toolbar's natural position */}
-      <div ref={sentinelRef} className="h-0 w-full" />
-
-      {/* Placeholder: keeps layout stable when toolbar is fixed */}
-      {isFixed && <div style={{ height: toolbarHeight }} />}
-
-      {/* Toolbar: switches between in-flow and fixed */}
-      <div
-        ref={toolbarRef}
-        className={
-          isFixed
-            ? `fixed top-0 left-0 right-0 z-50 px-3 pt-2 print:hidden`
-            : toolbarClasses
-        }
-      >
-        {isFixed ? (
-          <div className={`mx-auto max-w-3xl ${toolbarClasses} shadow-2xl`}>
-            {children}
-          </div>
-        ) : (
-          children
-        )}
-      </div>
-    </>
-  );
-}
-
 /* ─── Main DocumentEditor ─── */
 interface DocumentEditorProps {
   initialContent: string;
@@ -738,11 +677,13 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
         </div>
       </div>
 
-      {/* FORMATTING TOOLBAR — uses IntersectionObserver for reliable sticky behavior */}
+      {/* FORMATTING TOOLBAR — uses native CSS sticky for reliable behavior */}
       {!readOnly && editor && (
-        <ToolbarWrapper>
-          <EditorToolbar editor={editor} />
-        </ToolbarWrapper>
+        <div className="sticky top-2 z-[60] print:hidden w-full transition-all duration-200">
+          <div className="bg-[var(--bg2)]/90 backdrop-blur-xl border border-[var(--bd)] rounded-xl py-2 px-2 overflow-x-auto custom-scrollbar shadow-lg w-full max-w-3xl mx-auto">
+            <EditorToolbar editor={editor} />
+          </div>
+        </div>
       )}
 
       {/* DOCUMENT CONTENT */}

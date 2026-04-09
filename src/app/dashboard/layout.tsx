@@ -224,7 +224,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* ============ MAIN CONTENT ============ */}
-      <main className="flex-1 overflow-x-hidden p-4 md:p-10 pb-24 md:pb-10">
+      <main className="flex-1 overflow-x-clip p-4 md:p-10 pb-24 md:pb-10">
         {children}
       </main>
 

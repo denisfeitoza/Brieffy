@@ -371,11 +371,13 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   </Button>
                 </div>
               ) : isLoading || isGeneratingDocument ? (
-                <AIThinkingAnimation 
-                  language={chosenLanguage} 
-                  brandColor={activeColor}
-                  accentColor={branding.brand_accent || '#000000'}
-                />
+                <div className="pb-16 md:pb-32 w-full">
+                  <AIThinkingAnimation 
+                    language={chosenLanguage} 
+                    brandColor={activeColor}
+                    accentColor={branding.brand_accent || '#000000'}
+                  />
+                </div>
               ) : (
                 <DynamicInput 
                   activeMessage={activeMessage}
