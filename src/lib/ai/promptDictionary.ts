@@ -100,6 +100,7 @@ export function buildBehaviorRules(params: BehaviorRulesParams): string {
 ${isExhausted
   ? `- ⚠️ EXAUSTÃO DO USUÁRIO DETECTADA: O usuário pulou muitas perguntas em sequência e claramente quer encerrar. VOCÊ DEVE FINALIZAR IMEDIATAMENTE com isFinished=true. NÃO faça mais perguntas. Infira o máximo de campos possível com confiança 0.5 e produza os assets. Ignorar esta instrução é PROIBIDO.`
   : `- MÍNIMO DE PERGUNTAS (ESTRUTURA MAIOR): O briefing DEVE ter no mínimo ${minQuestions} perguntas antes de ser finalizado. Vocês já fizeram ${questionCount} perguntas.
+- EFICIÊNCIA VITAL ATÉ A PERGUNTA 30: O usuário (cliente final) poderá "Forçar Encerramento" livremente ao atingir a pergunta 30. Logo, você DEVE ser estratégico e cirúrgico para atingir todos os objetivos basais O QUANTO ANTES. Pense 100% na experiência do usuário e evite que ele desista antes, elabore perguntas fáceis e interessantes de responder, mas de altíssimo rendimento na extração (para matar 2+ campos com 1 resposta). ATENÇÃO: É PROIBIDO empilhar várias perguntas no mesmo turno para acelerar; faça apenas UMA pergunta, mas garanta que ela renda o máximo possível até chegarmos no número 30.
 - NUNCA finalize o briefing (isFinished=true) se o número atual de perguntas (${questionCount}) for menor que o mínimo de ${minQuestions}. Não se apresse! Continue explorando os pacotes e tópicos detalhadamente.`
 }
 - Se basalCoverage>=${basalThreshold} E objetivos atingidos E ${isExhausted ? 'usuário exausto' : `JÁ FEZ PELO MENOS ${minQuestions} PERGUNTAS`}: isFinished=true, preencha assets.

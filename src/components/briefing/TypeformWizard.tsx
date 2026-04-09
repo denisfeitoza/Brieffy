@@ -56,6 +56,11 @@ interface TranslationMap {
   fileWord: string;
   filesWord: string;
   withTextWord: string;
+  forceFinishBtn: string;
+  forceFinishTitle: string;
+  forceFinishDesc: string;
+  forceFinishCancel: string;
+  forceFinishConfirm: string;
 }
 
 const I18N: Record<string, TranslationMap> = {
@@ -99,6 +104,11 @@ const I18N: Record<string, TranslationMap> = {
     fileWord: "arquivo",
     filesWord: "arquivos",
     withTextWord: "+ texto",
+    forceFinishBtn: "Forçar Encerrar",
+    forceFinishTitle: "Forçar Encerramento?",
+    forceFinishDesc: "Faremos apenas as 2 últimas perguntas obrigatórias (algo a acrescentar e anexos de arquivos) e o encerramento do briefing será concluído hoje. Deseja prosseguir?",
+    forceFinishCancel: "Cancelar",
+    forceFinishConfirm: "Entendi, Encerrar",
   },
   en: {
     docGenerated: "Diagnosis Generated ✓",
@@ -140,6 +150,11 @@ const I18N: Record<string, TranslationMap> = {
     fileWord: "file",
     filesWord: "files",
     withTextWord: "+ text",
+    forceFinishBtn: "Force Finish",
+    forceFinishTitle: "Force Finish?",
+    forceFinishDesc: "We will only ask the last 2 mandatory questions (additional remarks and file attachments) before closing the briefing. Do you wish to continue?",
+    forceFinishCancel: "Cancel",
+    forceFinishConfirm: "Got it, Finish",
   },
   es: {
     docGenerated: "Diagnóstico Gerado ✓",
@@ -181,6 +196,11 @@ const I18N: Record<string, TranslationMap> = {
     fileWord: "archivo",
     filesWord: "archivos",
     withTextWord: "+ texto",
+    forceFinishBtn: "Forzar Cierre",
+    forceFinishTitle: "¿Forzar Cierre?",
+    forceFinishDesc: "Haremos solo las 2 últimas preguntas obligatorias (comentarios iniciales y archivos adjuntos) y el briefing concluirá. ¿Deseas continuar?",
+    forceFinishCancel: "Cancelar",
+    forceFinishConfirm: "Entendido, Cerrar",
   }
 };
 
@@ -219,6 +239,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   const [showSplash, setShowSplash] = useState(true);
   const [accessUnlocked, setAccessUnlocked] = useState(!hasAccessPassword);
   const [dismissedSkipHint, setDismissedSkipHint] = useState(false);
+  const [showForceFinishModal, setShowForceFinishModal] = useState(false);
   
   const mainRef = useRef<HTMLElement>(null);
   const [prevStep, setPrevStep] = useState(currentStepIndex);
@@ -448,10 +469,10 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   {currentStepIndex >= 30 && (
                     <Button 
                       variant="ghost" 
-                      onClick={() => submitAnswer('(FINALIZAR_AGORA)')}
+                      onClick={() => setShowForceFinishModal(true)}
                       className="text-[var(--orange)] hover:text-orange-600 hover:bg-orange-50 rounded-full px-6 h-12 text-sm transition-colors font-bold mr-1"
                     >
-                      Finalizar Agora
+                      {t.forceFinishBtn}
                     </Button>
                   )}
 
@@ -536,6 +557,50 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
               {renderContent()}
             </AnimatePresence>
           </main>
+
+          {/* Force Finish Modal Overlay */}
+          <AnimatePresence>
+            {showForceFinishModal && (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              >
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="bg-white rounded-[2rem] p-6 sm:p-8 max-w-[22rem] w-full shadow-2xl relative overflow-hidden"
+                >
+                  <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-5">
+                    <LogOut className="w-6 h-6 text-red-500 ml-1" />
+                  </div>
+                  <h3 className="text-[22px] font-bold text-gray-900 mb-3 tracking-tight leading-tight">{t.forceFinishTitle}</h3>
+                  <p className="text-[15px] font-medium text-gray-500 leading-relaxed mb-8">{t.forceFinishDesc}</p>
+                  
+                  <div className="flex flex-col gap-2.5">
+                    <Button 
+                      onClick={() => {
+                        setShowForceFinishModal(false);
+                        submitAnswer('(FINALIZAR_AGORA)');
+                      }}
+                      className="w-full bg-[var(--orange)] hover:bg-[var(--orange-dark)] text-white h-[3.25rem] rounded-xl text-[15px] shadow-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {t.forceFinishConfirm}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setShowForceFinishModal(false)}
+                      className="w-full text-gray-400 hover:text-gray-900 h-10 rounded-xl font-medium"
+                    >
+                      {t.forceFinishCancel}
+                    </Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Insights Panel */}
           <InsightsPanel signals={detectedSignals} isOwner={isOwner} />

@@ -134,6 +134,7 @@ export type BriefingContextType = {
   setIsLoading: (loading: boolean) => void;
   isGeneratingMore: boolean;
   isFinished: boolean;
+  isFinalTextStep: boolean;
   isUploadStep: boolean;
   setIsFinished: (finished: boolean) => void;
   finishBriefing: () => void;

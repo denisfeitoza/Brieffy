@@ -201,8 +201,8 @@ export function BriefingProvider({
   const [isLoading, setIsLoading] = useState(false);
   const [chosenLanguage, setChosenLanguage] = useState(savedLanguage || "pt");
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
-  
   const [isFinished, setIsFinished] = useState(initialIsFinished || false);
+  const [isFinalTextStep, setIsFinalTextStep] = useState(initialIsFinished || false);
   const [isUploadStep, setIsUploadStep] = useState(initialIsFinished || false);
   
   const [assets, setAssets] = useState<FinalAssets | null>(null);
@@ -341,12 +341,32 @@ export function BriefingProvider({
       }
 
       if (data.isFinished) {
+        if (!isFinalTextStep) {
+          setIsFinalTextStep(true);
+          const textMsg: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Algo mais a acrescentar antes de finalizar?",
+            type: "question",
+            questionType: "text",
+            allowMoreOptions: false,
+          };
+          setMessages(prev => {
+            const updated = [...prev, textMsg];
+            if (activeSessionId) persistSnapshot(updated, currentStepIndex + 1, activeSessionId);
+            return updated;
+          });
+          setCurrentStepIndex(prev => prev + 1);
+          setIsLoading(false);
+          return;
+        }
+
         if (!isUploadStep) {
           setIsUploadStep(true);
           const uploadMsg: Message = {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: "Para finalizar com excelência, você possui algum documento adicional, PDF, imagem de referência ou anexo que deseja enviar para compor o briefing?",
+            content: "Deseja enviar algum anexo, imagem ou referência?",
             type: "question",
             questionType: "file_upload",
             allowMoreOptions: false,
@@ -414,7 +434,7 @@ export function BriefingProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [isResume, hasRequestedResumeContinuation, isFinished, existingSessionId, perfSettings.timeoutMs, endpoint, briefingState, activeTemplate, initialContext, chosenLanguage, selectedPackages, detectedSignals, persistSnapshot, currentStepIndex, initialDepthSignals, initialPurpose, isUploadStep]);
+  }, [isResume, hasRequestedResumeContinuation, isFinished, existingSessionId, perfSettings.timeoutMs, endpoint, briefingState, activeTemplate, initialContext, chosenLanguage, selectedPackages, detectedSignals, persistSnapshot, currentStepIndex, initialDepthSignals, initialPurpose, isUploadStep, isFinalTextStep]);
 
   useEffect(() => {
     triggerResumeContinuation();
@@ -456,7 +476,11 @@ export function BriefingProvider({
           setCurrentStepIndex(prev => prev + 1);
           return;
         } else if (isFinished) {
-          setIsUploadStep(true);
+          if (!isFinalTextStep) {
+            setIsFinalTextStep(true);
+          } else {
+            setIsUploadStep(true);
+          }
           return;
         }
       }
@@ -607,12 +631,31 @@ export function BriefingProvider({
       }
 
       if (data.isFinished) {
+        if (!isFinalTextStep) {
+          setIsFinalTextStep(true);
+          const textMsg: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Algo mais a acrescentar antes de finalizar?",
+            type: "question",
+            questionType: "text",
+            allowMoreOptions: false,
+          };
+          setMessages(prev => {
+            const updated = [...prev, textMsg];
+            if (activeSessionId) persistSnapshot(updated, currentStepIndex + 1, activeSessionId);
+            return updated;
+          });
+          setCurrentStepIndex(prev => prev + 1);
+          return;
+        }
+
         if (!isUploadStep) {
           setIsUploadStep(true);
           const uploadMsg: Message = {
             id: crypto.randomUUID(),
             role: "assistant", // Using Assistant so it matches Typeform logic
-            content: "Quase pronto! Restou algo a mais que você gostaria de acrescentar por texto ou algum documento/referência para anexar antes de finalizarmos?",
+            content: "Deseja enviar algum anexo, imagem ou referência?",
             type: "question",
             questionType: "file_upload",
             allowMoreOptions: false,
@@ -626,7 +669,7 @@ export function BriefingProvider({
           return;
         }
 
-        // Second time it comes here, we are truly finished
+        // Third time it comes here, we are truly finished
         setIsFinished(true);
         if (data.assets) setAssets(data.assets);
         if (activeSessionId) {
@@ -699,7 +742,7 @@ export function BriefingProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [existingSessionId, sessionId, currentStepIndex, chosenLanguage, messages, briefingState, activeTemplate, initialContext, selectedPackages, detectedSignals, engagementLevel, perfSettings.timeoutMs, endpoint, isOnboarding, updateBriefingState, persistSnapshot, ensureSession, initialDepthSignals, initialPurpose, isFinished, isUploadStep]);
+  }, [existingSessionId, sessionId, currentStepIndex, chosenLanguage, messages, briefingState, activeTemplate, initialContext, selectedPackages, detectedSignals, engagementLevel, perfSettings.timeoutMs, endpoint, isOnboarding, updateBriefingState, persistSnapshot, ensureSession, initialDepthSignals, initialPurpose, isFinished, isUploadStep, isFinalTextStep]);
 
   const generateMoreOptions = useCallback(async () => {
     setIsGeneratingMore(true);
@@ -756,6 +799,7 @@ export function BriefingProvider({
       setBriefingState(initialBase as BriefingState);
       setAssets(null);
       setIsFinished(false);
+      setIsFinalTextStep(false);
       setIsUploadStep(false);
       setGeneratedDocument(null);
       persistSnapshot(initialMsgs, 0, sessionId);
@@ -836,6 +880,7 @@ export function BriefingProvider({
     setIsLoading,
     isGeneratingMore,
     isFinished,
+    isFinalTextStep,
     isUploadStep,
     setIsFinished,
     finishBriefing: () => {
@@ -864,7 +909,7 @@ export function BriefingProvider({
   }), [
     sessionId, briefingState, updateBriefingState, messages, currentStepIndex,
     goBack, goNext, addMessage, isLoading, isGeneratingMore,
-    isFinished, isUploadStep, assets, basalInfo, chosenLanguage,
+    isFinished, isFinalTextStep, isUploadStep, assets, basalInfo, chosenLanguage,
     generatedDocument, isGeneratingDocument, documentError, editToken,
     editPassphrase, detectedSignals, engagementLevel,
     resetBriefing,
