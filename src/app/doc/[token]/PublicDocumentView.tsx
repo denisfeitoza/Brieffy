@@ -139,7 +139,7 @@ export function PublicDocumentView({ token }: { token: string }) {
     }
 
     setFinalAssets(updatedAssets);
-    if (updatedAssets.document) {
+    if (typeof updatedAssets.document === 'string') {
       setDocumentContent(updatedAssets.document);
     }
   };
