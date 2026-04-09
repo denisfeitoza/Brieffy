@@ -102,7 +102,7 @@ const SECTION_PIPELINE = [
 ];
 
 const BASE_MIN_QUESTIONS = 25;
-const ABSOLUTE_MAX_QUESTIONS = 50; // Just as a global fail-safe cap
+const ABSOLUTE_MAX_QUESTIONS = 40; // Just as a global fail-safe cap
 const MIN_MEANINGFUL_VALUE_LENGTH = 3;
 
 /**
@@ -129,15 +129,17 @@ function calculateEngagement(history: { role: string; content: string }[]): 'hig
     if (isSkip(msg)) {
       currentStreak++;
     } else {
-      if (currentStreak >= 2) skipStreaks++;
       currentStreak = 0;
     }
   }
-  if (currentStreak >= 2) skipStreaks++; // final streak still open
 
   // EXHAUSTED: user has given up. Override minQuestions entirely.
-  // Triggers when: 5+ total skips OR 2+ separate skip-streaks
-  if (totalSkips >= 5 || skipStreaks >= 2) return 'exhausted';
+  // Triggers when: 5+ total skips OR 3 consecutive skips OR manual finish requested via UI
+  if (totalSkips >= 5 || currentStreak >= 3) return 'exhausted';
+  
+  if (recentUserMsgs.some(m => m.content === '(FINALIZAR_AGORA)')) {
+    return 'exhausted';
+  }
 
   const avgWords = recentUserMsgs.reduce((sum, m) => {
     return sum + m.content.trim().split(/\s+/).length;
@@ -380,7 +382,6 @@ export async function POST(req: Request) {
     if (formatConfig.multi_slider) allowedFormats.push(`  - multi_slider: Multiple dimensions. Options as [{"label","min":1,"max":5,"minLabel","maxLabel"}]. MUST be 1-5 scale. 3-5 dimensions.`);
     if (formatConfig.color_picker) allowedFormats.push(`  - color_picker: Brand color palette wizard. Use ONLY for color gathering.`);
     if (formatConfig.file_upload) allowedFormats.push(`  - file_upload: Assets/references. Use ONLY at the end.`);
-    if (!formatConfig.font) allowedFormats.push(`  - [PROIBIDO]: NUNCA faça perguntas técnicas de design (fontes exatas/hex/tipografia).`);
 
     // ================================================================
     // PHASE-SPECIFIC MODULES — Only include what's needed for current phase

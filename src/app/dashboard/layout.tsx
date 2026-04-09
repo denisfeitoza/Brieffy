@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, LogOut, FileText, User, Package, Globe, Home, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { DashboardLanguageProvider, useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
@@ -143,19 +144,20 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           {/* Nav Items */}
           <nav className="space-y-1.5 flex flex-col">
             {navItems.map(item => (
-              <Link key={item.href} href={isOnboarded ? item.href : '#'}>
-                <Button
-                  variant="ghost"
-                  disabled={!isOnboarded && !pathname.startsWith('/dashboard/onboarding')}
-                  className={`w-full justify-start rounded-xl transition-all text-sm font-medium ${
-                    item.match(pathname) 
-                      ? 'bg-[var(--acbg)] text-[var(--actext)] border border-[var(--acbd)]' 
-                      : 'text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg2)]'
-                  }`}
-                >
-                  <item.icon className="w-4 h-4 mr-3" />
-                  {t(item.labelKey)}
-                </Button>
+              <Link
+                key={item.href}
+                href={isOnboarded ? item.href : '#'}
+                className={cn(
+                  buttonVariants({ variant: 'ghost' }),
+                  'w-full justify-start rounded-xl transition-all text-sm font-medium',
+                  (!isOnboarded && !pathname.startsWith('/dashboard/onboarding')) && 'pointer-events-none opacity-50',
+                  item.match(pathname) 
+                    ? 'bg-[var(--acbg)] text-[var(--actext)] border border-[var(--acbd)]' 
+                    : 'text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg2)]'
+                )}
+              >
+                <item.icon className="w-4 h-4 mr-3" />
+                {t(item.labelKey)}
               </Link>
             ))}
           </nav>

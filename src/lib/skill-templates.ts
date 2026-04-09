@@ -21,7 +21,7 @@ export const SKILL_TEMPLATES: SkillTemplate[] = [
   {
     id: "brand-dna",
     name: "Brand DNA & Identidade",
-    description: "Exploração profunda de identidade de marca: arquétipo, valores, mood visual, voz da marca.",
+    description: "Exploração profunda de identidade de marca: arquétipo, valores, mood visual, voz da marca, logo e simbolismo.",
     department: "branding",
     icon: "Palette",
     suggested_slug: "brand_dna",
@@ -29,7 +29,7 @@ export const SKILL_TEMPLATES: SkillTemplate[] = [
     briefing_purpose: "Extrair a essência da marca — quem ela é, como se comporta, o que sente e como quer ser percebida.",
     depth_signals: ["identidade visual", "rebranding", "posicionamento de marca", "arquétipo"],
     system_prompt_fragment: `SKILL: Brand DNA & Identidade Visual
-CAMPOS ÚNICOS PARA EXTRAIR: brand_archetype, brand_values_top3, visual_mood, typography_preference, color_palette_vibe, brand_voice_dimensions
+CAMPOS ÚNICOS PARA EXTRAIR: brand_archetype, brand_values_top3, visual_mood, typography_preference, color_palette_vibe, brand_voice_dimensions, logo_status, symbol_references
 
 ESTRATÉGIA CONVERSACIONAL:
 - Use perguntas de poder: "Se sua marca desaparecesse amanhã, que vazio ela deixaria no mundo?"
@@ -37,6 +37,7 @@ ESTRATÉGIA CONVERSACIONAL:
 - Use card_selector para detecção de arquétipo/personalidade (ex: O Herói, O Sábio, O Criador, O Rebelde, O Cuidador, Outro).
 - Para dimensões de voz da marca, use multi_slider com escala 1-5:
   [{"label":"Formalidade","min":1,"max":5,"minLabel":"Descontraído","maxLabel":"Corporativo"},{"label":"Ousadia","min":1,"max":5,"minLabel":"Tradicional","maxLabel":"Disruptivo"},{"label":"Comunicação","min":1,"max":5,"minLabel":"Técnica/Direta","maxLabel":"Emocional/Storytelling"}]
+- Explore LOGO E SÍMBOLO de forma natural: descubra se o cliente já tem um logo, se já pensou em algum símbolo, ícone ou elemento visual que represente a marca. NÃO pergunte de forma técnica — explore por significado e intenção.
 
 PERGUNTAS SUGERIDAS (adapte ao contexto):
 1. "Se sua marca fosse uma pessoa, como ela entraria numa sala?" (text — warm-up)
@@ -44,11 +45,14 @@ PERGUNTAS SUGERIDAS (adapte ao contexto):
 3. "Que 3 palavras NUNCA deveriam descrever sua marca?" (text — abordagem reversa)
 4. Dimensões de voz via multi_slider
 5. "Pense em uma marca que você admira visualmente — o que nela te atrai?" (text — referência indireta)
+6. "Sobre o logo da marca: você já tem algo definido, já pensou em algum símbolo ou elemento visual, ou está partindo do zero?" (single_choice: ["Já tenho um logo definido", "Tenho ideias/referências em mente", "Estou aberto a sugestões", "Quero partir do zero"]). Se o cliente tiver ideias, aprofunde: "Me conta mais — que símbolo, ícone ou imagem vem à sua mente quando pensa na marca?"
+7. "Se sua marca fosse representada por um único símbolo ou objeto, qual seria? Pode ser algo abstrato, da natureza, um animal..." (text — extrai referência simbólica)
 
 REGRAS:
 - NÃO faça perguntas genéricas como "qual sua paleta de cores?". Explore sentimentos e referências.
 - Se o color_picker estiver ativado nos formatos, use-o para paleta. Caso contrário, extraia por texto.
-- Conecte cada pergunta ao contexto do negócio, não apenas à estética.`,
+- Conecte cada pergunta ao contexto do negócio, não apenas à estética.
+- Para logo/símbolo: se o cliente já tem logo, explore o que ele gosta e o que mudaria. Se não tem, explore referências simbólicas e visuais que ressoam com a essência da marca. NUNCA force o tema — se o cliente não se interessa por símbolo, registre e siga em frente.`,
   },
   {
     id: "market-analysis",

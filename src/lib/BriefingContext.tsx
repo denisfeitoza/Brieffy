@@ -341,9 +341,28 @@ export function BriefingProvider({
       }
 
       if (data.isFinished) {
+        if (!isUploadStep) {
+          setIsUploadStep(true);
+          const uploadMsg: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Para finalizar com excelência, você possui algum documento adicional, PDF, imagem de referência ou anexo que deseja enviar para compor o briefing?",
+            type: "question",
+            questionType: "file_upload",
+            allowMoreOptions: false,
+          };
+          setMessages(prev => {
+            const updated = [...prev, uploadMsg];
+            if (activeSessionId) persistSnapshot(updated, currentStepIndex + 1, activeSessionId);
+            return updated;
+          });
+          setCurrentStepIndex(prev => prev + 1);
+          setIsLoading(false);
+          return;
+        }
+
         setIsFinished(true);
         if (data.assets) setAssets(data.assets);
-        setIsUploadStep(true);
       } else {
         const questionsToAdd: Omit<Message, 'id'>[] = [];
 
@@ -588,6 +607,26 @@ export function BriefingProvider({
       }
 
       if (data.isFinished) {
+        if (!isUploadStep) {
+          setIsUploadStep(true);
+          const uploadMsg: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant", // Using Assistant so it matches Typeform logic
+            content: "Quase pronto! Restou algo a mais que você gostaria de acrescentar por texto ou algum documento/referência para anexar antes de finalizarmos?",
+            type: "question",
+            questionType: "file_upload",
+            allowMoreOptions: false,
+          };
+          setMessages(prev => {
+            const updated = [...prev, uploadMsg];
+            if (activeSessionId) persistSnapshot(updated, currentStepIndex + 1, activeSessionId);
+            return updated;
+          });
+          setCurrentStepIndex(prev => prev + 1);
+          return;
+        }
+
+        // Second time it comes here, we are truly finished
         setIsFinished(true);
         if (data.assets) setAssets(data.assets);
         if (activeSessionId) {

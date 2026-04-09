@@ -1,17 +1,17 @@
 'use client';
 
-import {
-  useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X, CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronDown, ShieldCheck, RefreshCw
+  Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X, CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronDown, ShieldCheck, RefreshCw, Square, Mic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { useAudioRecorder } from "@/components/briefing/inputs/shared/useAudioRecorder";
 
 // ─── Icon + Color Maps ──────────────────────────────────────────
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -131,6 +131,80 @@ export default function NewBriefingWizard() {
   const [showContext, setShowContext] = useState(true);
   const [showSignals, setShowSignals] = useState(false);
   const [initialContext, setInitialContext] = useState('');
+
+  const {
+    isRecording: isRecordingContext,
+    isTranscribing: isTranscribingContext,
+    startRecording: startRecordingContext,
+    stopRecording: stopRecordingContext
+  } = useAudioRecorder({
+    voiceLanguage: 'pt',
+    onTranscript: (t) => setInitialContext(prev => prev + (prev ? ' ' : '') + t),
+  });
+
+  const {
+    isRecording: isRecordingPurpose,
+    isTranscribing: isTranscribingPurpose,
+    startRecording: startRecordingPurpose,
+    stopRecording: stopRecordingPurpose
+  } = useAudioRecorder({
+    voiceLanguage: 'pt',
+    onTranscript: (t) => setPurpose(prev => prev + (prev ? ' ' : '') + t),
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isReadingFile, setIsReadingFile] = useState(false);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('O arquivo deve ter no máximo 5MB para leitura.');
+      return;
+    }
+
+    setIsReadingFile(true);
+    try {
+      if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.json') || file.name.endsWith('.csv')) {
+        const text = await file.text();
+        setInitialContext(prev => prev + (prev ? '\n\n' : '') + `[Documento Extraído: ${file.name}]\n${text.substring(0, 5000)}`);
+      } else {
+        // Para Imagens, PDFs e Planilhas, sobe pro Supabase e aciona a AI vision
+        const supabase = createClient();
+        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "")}`;
+        
+        const { error } = await supabase.storage
+          .from("briefing_assets")
+          .upload(fileName, file, { upsert: false });
+        
+        if (error) throw error;
+        
+        const { data: publicUrlData } = supabase.storage
+          .from("briefing_assets")
+          .getPublicUrl(fileName);
+          
+        const res = await fetch('/api/analyze-document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrl: publicUrlData.publicUrl, fileName: file.name, mimeType: file.type })
+        });
+        
+        if (!res.ok) throw new Error("Falha no OCR");
+        const analysis = await res.json();
+        
+        if (analysis.text) {
+          setInitialContext(prev => prev + (prev ? '\n\n' : '') + `[Documento Extraído via IA (${file.name})]:\n${analysis.text}`);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Erro ao ler ou processar o arquivo.');
+    } finally {
+      setIsReadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
   
   // ── Step 2: Packages ────────────
   const [packages, setPackages] = useState<CategoryPackage[]>([]);
@@ -418,24 +492,44 @@ export default function NewBriefingWizard() {
               
               {/* ── Purpose ───────────────────── */}
               <div className="space-y-2.5">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-brieffy-orange-light border border-brieffy-orange-border flex items-center justify-center shrink-0 mt-0.5">
-                    <Target className="w-4 h-4 text-brieffy-orange" />
+                <div className="flex items-start gap-2.5 justify-between">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-brieffy-orange-light border border-brieffy-orange-border flex items-center justify-center shrink-0 mt-0.5">
+                      <Target className="w-4 h-4 text-brieffy-orange" />
+                    </div>
+                    <div>
+                      <label className="label-caps !text-foreground">
+                        O que você precisa descobrir? <span className="text-brieffy-orange">*</span>
+                      </label>
+                      <p className="text-xs text-brieffy-text3 mt-0.5 font-medium">
+                        A IA vai usar isso como bússola para guiar toda a conversa.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="label-caps !text-foreground">
-                      O que você precisa descobrir? <span className="text-brieffy-orange">*</span>
-                    </label>
-                    <p className="text-xs text-brieffy-text3 mt-0.5 font-medium">
-                      A IA vai usar isso como bússola para guiar toda a conversa.
-                    </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => isRecordingPurpose ? stopRecordingPurpose() : startRecordingPurpose()}
+                      disabled={isTranscribingPurpose}
+                      className={`h-8 px-3 rounded-lg border focus-visible:ring-0 ${isRecordingPurpose ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-background hover:bg-[var(--surface2)] text-brieffy-text3 border-brieffy-border'}`}
+                    >
+                      {isTranscribingPurpose ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isRecordingPurpose ? (
+                        <Square className="w-4 h-4" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
                 <Textarea
                   value={purpose}
                   onChange={e => setPurpose(e.target.value)}
                   placeholder="Ex: Entender a identidade atual da marca, o público-alvo e os planos de crescimento para redesenhar o posicionamento visual."
-                  className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm leading-relaxed transition-all font-medium shadow-none"
+                  className={`bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm leading-relaxed transition-all font-medium shadow-none ${isRecordingPurpose ? 'border-[var(--brand)] ring-2 ring-[var(--brand)]/20 animate-pulse' : ''}`}
+                  disabled={isRecordingPurpose || isTranscribingPurpose}
                 />
               </div>
 
@@ -454,12 +548,55 @@ export default function NewBriefingWizard() {
                     </p>
                   </div>
                 </div>
-                <Textarea
-                  value={initialContext}
-                  onChange={e => setInitialContext(e.target.value)}
-                  placeholder="Ex: Já fizemos o logotipo dele em 2023, agora ele quer expandir para o digital..."
-                  className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm font-medium transition-all shadow-none"
-                />
+                  <div className="relative">
+                  <input
+                    type="file"
+                    accept=".txt,.md,.csv,.json,.pdf,.png,.jpg,.jpeg,.xlsx"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <Textarea
+                    value={initialContext}
+                    onChange={e => setInitialContext(e.target.value)}
+                    placeholder="Ex: Já fizemos o logotipo dele em 2023, agora ele quer expandir para o digital..."
+                    className={`bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm font-medium transition-all shadow-none pl-3 pr-20 ${isRecordingContext ? 'border-[var(--brand)] ring-2 ring-[var(--brand)]/20 animate-pulse' : ''}`}
+                    disabled={isRecordingContext || isTranscribingContext || isReadingFile}
+                  />
+                  <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isReadingFile || isRecordingContext || isTranscribingContext}
+                      title="Upload (.txt, .md, .csv)"
+                      className="rounded-full h-8 w-8 text-brieffy-text3 hover:text-[var(--brand)] hover:bg-[var(--brand)]/10 transition-colors"
+                    >
+                      {isReadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => isRecordingContext ? stopRecordingContext() : startRecordingContext()}
+                      disabled={isTranscribingContext || isReadingFile}
+                      className={`rounded-full h-8 w-8 transition-colors ${
+                        isRecordingContext 
+                          ? 'bg-red-500 text-white hover:bg-red-600 hover:text-white animate-pulse' 
+                          : 'text-brieffy-text3 hover:text-[var(--brand)] hover:bg-[var(--brand)]/10'
+                      }`}
+                    >
+                      {isTranscribingContext ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[var(--brand)]" />
+                      ) : isRecordingContext ? (
+                        <Square className="w-3.5 h-3.5 fill-current" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               {/* ── Sensitive Points (Depth Signals) ── */}

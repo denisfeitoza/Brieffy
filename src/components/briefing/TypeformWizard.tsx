@@ -407,7 +407,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   <ArrowLeft className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">{t.goBackAdjust}</span>
                 </Button>
-                <div className="relative shrink-0 flex justify-end">
+                <div className="relative shrink-0 flex justify-end items-center gap-2">
                   <AnimatePresence>
                     {currentStepIndex === 6 && !inputText && !dismissedSkipHint && (
                       <motion.div
@@ -442,6 +442,17 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                       </motion.div>
                     )}
                   </AnimatePresence>
+                  
+                  {currentStepIndex >= 30 && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => submitAnswer('(FINALIZAR_AGORA)')}
+                      className="text-[var(--orange)] hover:text-orange-600 hover:bg-orange-50 rounded-full px-6 h-12 text-sm transition-colors font-bold mr-1"
+                    >
+                      Finalizar Agora
+                    </Button>
+                  )}
+
                   <Button 
                     variant="ghost" 
                     onClick={() => submitAnswer('(skipped)')}

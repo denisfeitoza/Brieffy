@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
     const usedBriefings = sessionCount || 0;
 
-    if (quota && usedBriefings >= quota.max_briefings) {
+    if (quota && quota.max_briefings !== -1 && usedBriefings >= quota.max_briefings) {
       return NextResponse.json({ error: `Você atingiu seu limite de ${quota.max_briefings} briefings. Faça upgrade para continuar.` }, { status: 403 });
     }
 

@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, Loader2, Ban, CheckCircle2, FileText } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Ban, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -156,12 +157,24 @@ export default function AdminUserDetailPage() {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-[var(--text2)]">Max Briefings</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-[var(--text2)]">Max Briefings</Label>
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={maxBriefings === -1}
+                    onCheckedChange={(c) => setMaxBriefings(c ? -1 : 10)}
+                  />
+                  <Label className="text-xs text-[var(--orange)] flex items-center gap-1 cursor-pointer" onClick={() => setMaxBriefings(maxBriefings === -1 ? 10 : -1)}>
+                    <Sparkles className="w-3 h-3" /> God Mode (Unlimited)
+                  </Label>
+                </div>
+              </div>
               <Input
-                type="number"
-                value={maxBriefings}
+                type={maxBriefings === -1 ? "text" : "number"}
+                value={maxBriefings === -1 ? "Unlimited" : maxBriefings}
+                disabled={maxBriefings === -1}
                 onChange={(e) => setMaxBriefings(parseInt(e.target.value) || 0)}
-                className="bg-black/50 border-[var(--bd)] focus-visible:ring-purple-500"
+                className={`bg-black/50 border-[var(--bd)] focus-visible:ring-purple-500 ${maxBriefings === -1 ? 'text-[var(--orange)] font-semibold' : ''}`}
               />
               <p className="text-xs text-[var(--text3)]">Currently used: {quota?.used_briefings || 0}</p>
             </div>

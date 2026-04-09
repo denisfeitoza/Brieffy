@@ -515,8 +515,8 @@ async function SessionContent({ id }: { id: string }) {
                 </div>
                 
                 <div className="w-full max-w-[280px] pt-4 border-t border-[var(--bd)] mt-2">
-                  <p className="text-[11px] uppercase tracking-wider font-bold text-[var(--text3)] mb-3">Está demorando muito?</p>
-                  <GenerateDocumentAction sessionId={session.id} />
+                  <p className="text-[11px] uppercase tracking-wider font-bold text-[var(--text3)] mb-3">Está demorando muito ou travou?</p>
+                  <GenerateDocumentAction sessionId={session.id} delayMs={0} />
                 </div>
               </div>
             )}

@@ -65,6 +65,29 @@ export function FileUploadInput({
 
       if (urls.length > 0) {
         setUploadedFiles(prev => [...prev, ...urls]);
+        
+        // Disparar análise automática (OCR) de cada arquivo upado:
+        let accumulatedText = inputText;
+        for (const uf of urls) {
+          try {
+            const res = await fetch('/api/analyze-document', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileUrl: uf.url, fileName: uf.name })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.text) {
+                // Anexa o conteúdo extraído no contexto transparente!
+                accumulatedText = accumulatedText + (accumulatedText.trim() ? '\n\n' : '') + `[Extrator Analisou "${uf.name}"]:\n${data.text}`;
+                setInputText(accumulatedText);
+              }
+            }
+          } catch (analyzeErr) {
+            console.error("Falha ao analisar documento: ", analyzeErr);
+            // Non-blocking error.
+          }
+        }
       } else {
         alert(t.fileUploadError || "Erro ao fazer upload dos arquivos.");
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { FileText, Loader2, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -8,13 +8,23 @@ import { toast } from 'sonner';
 
 export function GenerateDocumentAction({ 
   sessionId, 
-  isRegenerate = false 
+  isRegenerate = false,
+  delayMs = 0
 }: { 
   sessionId: string;
   isRegenerate?: boolean;
+  delayMs?: number;
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isVisible, setIsVisible] = useState(delayMs === 0);
   const router = useRouter();
+
+  useEffect(() => {
+    if (delayMs > 0) {
+      const timer = setTimeout(() => setIsVisible(true), delayMs);
+      return () => clearTimeout(timer);
+    }
+  }, [delayMs]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -41,6 +51,8 @@ export function GenerateDocumentAction({
       setIsGenerating(false);
     }
   };
+
+  if (!isVisible) return null;
 
   return (
     <Button 

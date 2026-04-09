@@ -347,7 +347,11 @@ export function AdminExtendedCharts({
                         </div>
                         <div className="w-px h-3 bg-white/10" />
                         <div className="flex items-center gap-1">
-                          <span className="text-sm font-bold text-[var(--orange)]">{user.quota.used_briefings}/{user.quota.max_briefings}</span>
+                          <span className="text-sm font-bold text-[var(--orange)]">
+                            {user.quota.max_briefings === -1 
+                              ? `${user.quota.used_briefings}/∞` 
+                              : `${user.quota.used_briefings}/${user.quota.max_briefings}`}
+                          </span>
                           <span>Quota</span>
                         </div>
                       </div>
