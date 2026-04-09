@@ -161,7 +161,7 @@ export function PublicDocumentView({ token }: { token: string }) {
           <div className="flex items-center gap-2">
             <TranslateDocumentAction 
               documentContent={documentContent}
-              originalDocument={finalAssets?.original_document}
+              originalDocument={typeof finalAssets?.original_document === 'string' ? finalAssets.original_document : undefined}
               finalAssets={finalAssets}
               baseLanguage={lang}
               onSaveAssets={handleSaveAssets}
