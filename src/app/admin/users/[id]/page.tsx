@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Loader2, Ban, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { updateUserAdminRecord } from '../actions';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -94,22 +95,12 @@ export default function AdminUserDetailPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const supabase = createClient();
-      
-      await supabase
-        .from('briefing_quotas')
-        .update({
-          max_briefings: maxBriefings,
-          is_blocked: isBlocked,
-          blocked_reason: isBlocked ? blockedReason : '',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
-
-      await supabase
-        .from('briefing_profiles')
-        .update({ plan, updated_at: new Date().toISOString() })
-        .eq('id', userId);
+      await updateUserAdminRecord(userId, {
+        maxBriefings,
+        isBlocked,
+        blockedReason,
+        plan
+      });
 
       router.refresh();
     } catch (err) {

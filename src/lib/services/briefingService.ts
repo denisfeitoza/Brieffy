@@ -404,12 +404,16 @@ export async function getAllUsersAdmin() {
 
   // Merge data
   return profiles.map(profile => {
-    const quota = quotas?.find(q => q.user_id === profile.id);
     const userSessions = sessions?.filter(s => s.user_id === profile.id) || [];
+    
+    let quota = quotas?.find(q => q.user_id === profile.id) || { max_briefings: 10, used_briefings: 0, is_blocked: false };
+    
+    // Override stale DB usage count with live session count
+    quota = { ...quota, used_briefings: userSessions.length };
     
     return {
       ...profile,
-      quota: quota || { max_briefings: 3, used_briefings: 0, is_blocked: false },
+      quota,
       sessionCount: userSessions.length,
       finishedCount: userSessions.filter(s => s.status === 'finished').length,
     };

@@ -16,9 +16,9 @@ import {
 interface TranslateDocumentActionProps {
   documentContent: string;
   originalDocument?: string;
-  finalAssets: any;
+  finalAssets: Record<string, unknown>;
   baseLanguage: string;
-  onSaveAssets: (updatedAssets: any) => Promise<void>;
+  onSaveAssets: (updatedAssets: Record<string, unknown>) => Promise<void>;
 }
 
 const LANG_LABELS: Record<string, string> = {

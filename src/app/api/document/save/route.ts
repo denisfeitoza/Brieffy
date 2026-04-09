@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Palavra-chave incorreta." }, { status: 401 });
     }
 
-    const updatePayload: any = { updated_at: new Date().toISOString() };
+    const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (documentContent !== undefined) updatePayload.document_content = documentContent;
     if (finalAssets !== undefined) updatePayload.final_assets = finalAssets;
 

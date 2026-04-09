@@ -123,7 +123,6 @@ function calculateEngagement(history: { role: string; content: string }[]): 'hig
   const totalSkips = allUserMsgs.filter(isSkip).length;
 
   // Detect skip-streaks: sequences of 2+ consecutive skips
-  let skipStreaks = 0;
   let currentStreak = 0;
   for (const msg of allUserMsgs) {
     if (isSkip(msg)) {

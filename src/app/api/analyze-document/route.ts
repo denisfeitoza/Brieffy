@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 // It dynamically imports them to avoid crashing if the user didn't install them.
 async function extractPdfText(buffer: Buffer): Promise<string> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfParseAny = (await import("pdf-parse")) as any;
     const pdfParse = pdfParseAny.default || pdfParseAny;
     const data = await pdfParse(buffer);
@@ -37,6 +38,7 @@ async function extractExcelText(buffer: Buffer): Promise<string> {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function analyzeVision(imageUrl: string, dbSettings: any): Promise<string> {
   // Always use a capable vision model regardless of default standard LLM model.
   // Gemini 1.5 Flash via OpenRouter is ultra fast and excellent at OCR.

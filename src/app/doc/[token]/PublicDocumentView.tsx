@@ -52,8 +52,8 @@ export function PublicDocumentView({ token }: { token: string }) {
   const [passphrase, setPassphrase] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [documentContent, setDocumentContent] = useState<string>("");
-  const [finalAssets, setFinalAssets] = useState<any>({});
-  const [companyInfo, setCompanyInfo] = useState<any>({});
+  const [finalAssets, setFinalAssets] = useState<Record<string, unknown>>({});
+  const [companyInfo, setCompanyInfo] = useState<Record<string, unknown>>({});
   const [isVerifying, setIsVerifying] = useState(false);
   // Start with browser language, then override with session language once verified
   const [lang, setLang] = useState<DocLanguage>(detectBrowserLanguage);
@@ -122,7 +122,7 @@ export function PublicDocumentView({ token }: { token: string }) {
     }
   };
 
-  const handleSaveAssets = async (updatedAssets: any) => {
+  const handleSaveAssets = async (updatedAssets: Record<string, unknown>) => {
     const res = await fetch("/api/document/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

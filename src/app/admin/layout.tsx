@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div suppressHydrationWarning className="min-h-screen bg-[var(--bg)] text-[var(--text)] font-sans flex flex-col md:flex-row">
+    <div suppressHydrationWarning className="dark min-h-screen bg-[var(--bg)] text-[var(--text)] font-sans flex flex-col md:flex-row">
       {/* ============ DESKTOP SIDEBAR ============ */}
       <aside className="hidden md:flex w-64 flex-shrink-0 bg-[var(--bg)] border-r border-[var(--bd)] flex-col justify-between">
         <div className="p-6">
@@ -113,7 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Button
             variant="ghost"
             onClick={handleLogout}
-            className="w-full justify-start rounded-xl text-[var(--text3)] hover:text-red-500 hover:bg-red-50"
+            className="w-full justify-start rounded-xl text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)]"
           >
             <LogOut className="w-4 h-4 mr-3" />
             Sign Out
@@ -170,7 +170,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Button
             variant="ghost"
             onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-            className="w-full justify-start rounded-xl text-red-500 hover:bg-red-50 py-6 text-lg"
+            className="w-full justify-start rounded-xl text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] py-6 text-lg"
           >
             <LogOut className="w-5 h-5 mr-4" />
             Sign Out

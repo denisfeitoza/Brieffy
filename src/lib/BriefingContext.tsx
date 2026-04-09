@@ -414,7 +414,7 @@ export function BriefingProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [isResume, hasRequestedResumeContinuation, isFinished, existingSessionId, perfSettings.timeoutMs, endpoint, briefingState, activeTemplate, initialContext, chosenLanguage, selectedPackages, detectedSignals, persistSnapshot]);
+  }, [isResume, hasRequestedResumeContinuation, isFinished, existingSessionId, perfSettings.timeoutMs, endpoint, briefingState, activeTemplate, initialContext, chosenLanguage, selectedPackages, detectedSignals, persistSnapshot, currentStepIndex, initialDepthSignals, initialPurpose, isUploadStep]);
 
   useEffect(() => {
     triggerResumeContinuation();
@@ -699,7 +699,7 @@ export function BriefingProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [existingSessionId, sessionId, currentStepIndex, chosenLanguage, messages, briefingState, activeTemplate, initialContext, selectedPackages, detectedSignals, engagementLevel, perfSettings.timeoutMs, endpoint, isOnboarding, updateBriefingState, persistSnapshot, ensureSession]);
+  }, [existingSessionId, sessionId, currentStepIndex, chosenLanguage, messages, briefingState, activeTemplate, initialContext, selectedPackages, detectedSignals, engagementLevel, perfSettings.timeoutMs, endpoint, isOnboarding, updateBriefingState, persistSnapshot, ensureSession, initialDepthSignals, initialPurpose, isFinished, isUploadStep]);
 
   const generateMoreOptions = useCallback(async () => {
     setIsGeneratingMore(true);
@@ -743,7 +743,7 @@ export function BriefingProvider({
     } finally {
       setIsGeneratingMore(false);
     }
-  }, [messages, currentStepIndex, briefingState, chosenLanguage, selectedPackages, activeTemplate, sessionId, detectedSignals, endpoint, persistSnapshot]);
+  }, [messages, currentStepIndex, briefingState, chosenLanguage, selectedPackages, activeTemplate, sessionId, detectedSignals, endpoint, persistSnapshot, initialDepthSignals, initialPurpose]);
 
   const resetBriefing = useCallback(async () => {
     if (!sessionId) return;

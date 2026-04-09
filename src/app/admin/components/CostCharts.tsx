@@ -39,28 +39,28 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
       {/* Global Cost KPI Cards */}
       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-emerald-950/20 border-emerald-500/20">
+        <Card className="bg-[var(--acbg)] border-[var(--acbd)]">
           <CardHeader className="pb-2 pt-4 px-4 md:px-6">
-            <CardTitle className="text-xs md:text-sm text-emerald-400/80 font-normal flex items-center gap-1.5">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
+            <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4 text-[var(--orange)]" />
               Custo Total API (USD)
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4">
-            <p className="text-2xl sm:text-3xl font-bold text-emerald-400">${totalCostUSD.toFixed(4)}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[var(--orange)]">${totalCostUSD.toFixed(4)}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-emerald-950/20 border-emerald-500/20">
+        <Card className="bg-[var(--acbg)] border-[var(--acbd)]">
           <CardHeader className="pb-2 pt-4 px-4 md:px-6">
-            <CardTitle className="text-xs md:text-sm text-emerald-400/80 font-normal flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-emerald-400" />
+            <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-[var(--orange)]" />
               Custo Total API (BRL)
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4">
-            <p className="text-2xl sm:text-3xl font-bold text-emerald-400">R$ {totalCostBRL.toFixed(4)}</p>
-            <p className="text-xs text-emerald-400/60 mt-1">Estimativa Conversão R$ 6.00</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[var(--orange)]">R$ {totalCostBRL.toFixed(4)}</p>
+            <p className="text-xs text-[var(--text3)] mt-1">Estimativa Conversão R$ 6.00</p>
           </CardContent>
         </Card>
       </div>
@@ -74,14 +74,14 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
           <div className="h-[200px] sm:h-[250px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={formattedTimeline} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                <XAxis dataKey="date" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--bd)" vertical={false} />
+                <XAxis dataKey="date" stroke="var(--text3)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', color: '#111827', borderRadius: '8px' }}
-                  itemStyle={{ color: '#ff6029' }}
+                  contentStyle={{ backgroundColor: 'var(--bg)', borderColor: 'var(--bd)', color: 'var(--text)', borderRadius: '8px' }}
+                  itemStyle={{ color: 'var(--orange)' }}
                 />
-                <Line type="monotone" dataKey="costUSD" name="Custo USD" stroke="#ff6029" strokeWidth={3} dot={{ r: 4, fill: '#ffffff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="costUSD" name="Custo USD" stroke="var(--orange)" strokeWidth={3} dot={{ r: 4, fill: 'var(--bg)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -97,14 +97,14 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
           <div className="h-[200px] sm:h-[250px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topCompanies} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--bd)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--text3)" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb', color: '#111827', borderRadius: '8px' }}
-                  cursor={{ fill: '#e5e7eb' }}
+                  contentStyle={{ backgroundColor: 'var(--bg)', borderColor: 'var(--bd)', color: 'var(--text)', borderRadius: '8px' }}
+                  cursor={{ fill: 'var(--bg3)' }}
                 />
-                <Bar dataKey="cost" name="Custo USD" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                <Bar dataKey="cost" name="Custo USD" fill="var(--orange)" radius={[4, 4, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -132,8 +132,8 @@ export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timeline
                   <tr key={index} className="border-b border-[var(--bd)] hover:bg-[var(--bg3)]">
                     <td className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-[var(--text)] text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{company.companyName}</td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-[var(--text2)] text-xs hidden sm:table-cell">{company.tokens.toLocaleString()}</td>
-                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-emerald-400 text-xs sm:text-sm">${company.costUsd.toFixed(4)}</td>
-                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-emerald-400 text-xs hidden md:table-cell">R$ {(company.costUsd * 6.0).toFixed(4)}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-[var(--text)] font-semibold text-xs sm:text-sm">${company.costUsd.toFixed(4)}</td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-right text-[var(--text)] font-semibold text-xs hidden md:table-cell">R$ {(company.costUsd * 6.0).toFixed(4)}</td>
                   </tr>
                 ))}
                 {costByCompany.length === 0 && (

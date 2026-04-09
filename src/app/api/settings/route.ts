@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { invalidateSettingsCache } from "@/lib/aiConfig";
 
 // BUG-03 FIX: All settings endpoints now require an authenticated admin session.
@@ -37,10 +38,16 @@ export async function GET() {
   if (authError) return authError;
 
   try {
-    const { data, error } = await supabase!
+    const adminDb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const { data, error } = await adminDb
       .from("app_settings")
       .select("*")
-      .order("category");
+      .order("key");
 
     if (error) throw error;
     return NextResponse.json(data);
@@ -63,9 +70,15 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
+    const adminDb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
     // Batch upsert all settings
     const promises = updates.map(({ key, value }) =>
-      supabase!
+      adminDb
         .from("app_settings")
         .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" })
     );

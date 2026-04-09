@@ -65,7 +65,7 @@ export async function PATCH(
   const body = await request.json();
 
   // Permite update seletivo (parcial) de features
-  const updateData: Record<string, any> = {
+  const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString()
   };
 

@@ -178,14 +178,14 @@ export async function getDBSettings(): Promise<SettingsOverride> {
 
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    if (!supabaseUrl || !supabaseKey) return {};
+    if (!supabaseUrl || !serviceKey) return {};
 
     const res = await fetch(`${supabaseUrl}/rest/v1/app_settings?select=key,value`, {
       headers: {
-        "apikey": supabaseKey,
-        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": serviceKey,
+        "Authorization": `Bearer ${serviceKey}`,
       },
       cache: "no-store",
     });

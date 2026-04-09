@@ -163,8 +163,8 @@ export default function AdminSettingsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
-            Global AI Configuration
+          <h2 className="text-3xl font-bold tracking-tight text-[var(--text)]">
+            Global AI Config<span className="text-[var(--orange)]">.</span>
           </h2>
           <p className="text-[var(--text2)] mt-2">
             Configure AI providers, models, performance, and briefing parameters for all users.
@@ -187,7 +187,7 @@ export default function AdminSettingsPage() {
             disabled={!hasChanges || isSaving}
             className={`rounded-xl px-6 h-11 transition-all ${
               hasChanges
-                ? "bg-[var(--orange)] hover:bg-[#e8552a] text-[var(--text)] shadow-md"
+                ? "bg-[var(--orange)] hover:opacity-90 text-[#000] border-none shadow-none"
                 : "bg-zinc-800 text-[var(--text3)] cursor-not-allowed"
             }`}
           >
@@ -206,26 +206,26 @@ export default function AdminSettingsPage() {
       {/* Tabs */}
       <Tabs defaultValue="ai" className="w-full">
         <TabsList className="bg-[var(--bg)]/80 border border-[var(--bd)] rounded-xl p-1 h-auto flex-wrap">
-          <TabsTrigger value="ai" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
+          <TabsTrigger value="ai" className="rounded-lg data-[state=active]:bg-[var(--acbg)] data-[state=active]:text-[var(--actext)] data-[state=active]:border-[var(--acbd)] px-4 py-2.5 gap-2">
             <Brain className="w-4 h-4" />
             <span className="hidden sm:inline">Intelligence</span>
             <span className="sm:hidden">AI</span>
           </TabsTrigger>
-          <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
+          <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-[var(--acbg)] data-[state=active]:text-[var(--actext)] data-[state=active]:border-[var(--acbd)] px-4 py-2.5 gap-2">
             <Volume2 className="w-4 h-4" />
             Voice
           </TabsTrigger>
-          <TabsTrigger value="performance" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
+          <TabsTrigger value="performance" className="rounded-lg data-[state=active]:bg-[var(--acbg)] data-[state=active]:text-[var(--actext)] data-[state=active]:border-[var(--acbd)] px-4 py-2.5 gap-2">
             <Gauge className="w-4 h-4" />
             <span className="hidden sm:inline">Performance</span>
             <span className="sm:hidden">Perf</span>
           </TabsTrigger>
-          <TabsTrigger value="briefing" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
+          <TabsTrigger value="briefing" className="rounded-lg data-[state=active]:bg-[var(--acbg)] data-[state=active]:text-[var(--actext)] data-[state=active]:border-[var(--acbd)] px-4 py-2.5 gap-2">
             <Target className="w-4 h-4" />
             <span className="hidden sm:inline">Briefing</span>
             <span className="sm:hidden">Brief</span>
           </TabsTrigger>
-          <TabsTrigger value="formats" className="rounded-lg data-[state=active]:bg-purple-500/10 data-[state=active]:text-[var(--orange)] px-4 py-2.5 gap-2">
+          <TabsTrigger value="formats" className="rounded-lg data-[state=active]:bg-[var(--acbg)] data-[state=active]:text-[var(--actext)] data-[state=active]:border-[var(--acbd)] px-4 py-2.5 gap-2">
             <LayoutTemplate className="w-4 h-4" />
             <span className="hidden sm:inline">Formats</span>
             <span className="sm:hidden">Fmt</span>
@@ -237,7 +237,7 @@ export default function AdminSettingsPage() {
           <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-purple-500/10 border focus-visible:border-[var(--orange)] border-[var(--orange)]/30">
+                <div className="p-2 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)]">
                   <Cpu className="w-5 h-5 text-[var(--orange)]" />
                 </div>
                 LLM Provider
@@ -312,7 +312,7 @@ export default function AdminSettingsPage() {
                   <Label className="text-[var(--text2)] text-sm font-medium">
                     Temperature
                   </Label>
-                  <span className="text-[var(--orange)] font-mono text-sm font-bold bg-purple-500/10 px-3 py-1 rounded-lg">
+                  <span className="text-[var(--actext)] font-mono text-sm font-bold bg-[var(--acbg)] border border-[var(--acbd)] px-3 py-1 rounded-lg">
                     {settings.ai_llm_temperature || "0"}
                   </span>
                 </div>
@@ -354,8 +354,8 @@ export default function AdminSettingsPage() {
           <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                  <Mic className="w-5 h-5 text-[var(--text)]" />
+                <div className="p-2 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)]">
+                  <Mic className="w-5 h-5 text-[var(--orange)]" />
                 </div>
                 Voice Transcription (STT)
               </CardTitle>
@@ -437,8 +437,8 @@ export default function AdminSettingsPage() {
           <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <Gauge className="w-5 h-5 text-amber-400" />
+                <div className="p-2 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)]">
+                  <Gauge className="w-5 h-5 text-[var(--orange)]" />
                 </div>
                 Performance & Speed
               </CardTitle>
@@ -452,12 +452,12 @@ export default function AdminSettingsPage() {
                       Full conversation context is sent to the AI for maximum intelligence.
                     </p>
                   </div>
-                  <span className="text-emerald-400 font-mono text-sm font-bold bg-emerald-500/10 px-3 py-1 rounded-lg">
+                  <span className="text-[var(--actext)] font-mono text-sm font-bold bg-[var(--acbg)] px-3 py-1 rounded-lg">
                     FULL
                   </span>
                 </div>
-                <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-3 flex gap-3">
-                  <Brain className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] p-3 flex gap-3">
+                  <Brain className="w-4 h-4 text-[var(--actext)] shrink-0 mt-0.5" />
                   <p className="text-[11px] text-[var(--text2)]">
                     O motor de briefing envia o histórico completo da conversa para que a IA possa 
                     fazer deduções cross-package, evitar redundâncias e manter contexto total. O 
@@ -476,7 +476,7 @@ export default function AdminSettingsPage() {
                       Maximum wait time (ms) before aborting the AI call.
                     </p>
                   </div>
-                  <span className="text-amber-400 font-mono text-sm font-bold bg-amber-500/10 px-3 py-1 rounded-lg">
+                  <span className="text-[var(--actext)] font-mono text-sm font-bold bg-[var(--acbg)] px-3 py-1 rounded-lg">
                     {(parseInt(settings.briefing_timeout_ms || "30000") / 1000).toFixed(0)}s
                   </span>
                 </div>
@@ -495,10 +495,10 @@ export default function AdminSettingsPage() {
               </div>
 
               {/* Speed Tips */}
-              <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 flex gap-3">
-                <Zap className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] p-4 flex gap-3">
+                <Zap className="w-5 h-5 text-[var(--actext)] shrink-0 mt-0.5" />
                 <div className="text-sm text-[var(--text2)]">
-                  <p className="font-medium text-amber-300 mb-1">Speed Tips</p>
+                  <p className="font-medium text-[var(--actext)] mb-1">Speed Tips</p>
                   <ul className="text-[var(--text2)] space-y-1 text-xs">
                     <li>• Use <strong className="text-[var(--text2)]">Groq</strong> as provider for ultra-fast inference</li>
                     <li>• <strong className="text-[var(--text2)]">Temperature 0</strong> eliminates random sampling</li>
@@ -516,8 +516,8 @@ export default function AdminSettingsPage() {
           <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                  <Target className="w-5 h-5 text-emerald-400" />
+                <div className="p-2 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)]">
+                  <Target className="w-5 h-5 text-[var(--orange)]" />
                 </div>
                 Briefing Parameters
               </CardTitle>
@@ -531,7 +531,7 @@ export default function AdminSettingsPage() {
                       Minimum percentage of required fields to finalize the briefing.
                     </p>
                   </div>
-                  <span className="text-emerald-400 font-mono text-sm font-bold bg-emerald-500/10 px-3 py-1 rounded-lg">
+                  <span className="text-[var(--actext)] font-mono text-sm font-bold bg-[var(--acbg)] px-3 py-1 rounded-lg">
                     {Math.round(parseFloat(settings.briefing_basal_threshold || "0.85") * 100)}%
                   </span>
                 </div>
@@ -550,10 +550,10 @@ export default function AdminSettingsPage() {
               </div>
 
               {/* Info card */}
-              <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4 flex gap-3">
-                <AlertCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] p-4 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-[var(--actext)] shrink-0 mt-0.5" />
                 <div className="text-sm text-[var(--text2)]">
-                  <p className="font-medium text-emerald-300 mb-1">About Basal Coverage</p>
+                  <p className="font-medium text-[var(--actext)] mb-1">About Basal Coverage</p>
                   <p className="text-xs">
                     The AI only advances to visual questions (colors, style, logo) when this threshold 
                     is met. A higher value ensures the AI extracts more business information 
@@ -570,17 +570,17 @@ export default function AdminSettingsPage() {
           <Card className="bg-[var(--bg2)] backdrop-blur-md border-[var(--bd)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                  <LayoutTemplate className="w-5 h-5 text-blue-400" />
+                <div className="p-2 rounded-xl bg-[var(--acbg)] border border-[var(--acbd)]">
+                  <LayoutTemplate className="w-5 h-5 text-[var(--orange)]" />
                 </div>
                 Format Sandbox
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="rounded-xl bg-blue-500/5 border border-blue-500/20 p-4 flex gap-3 mb-6">
-                <AlertCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+              <div className="rounded-xl bg-[var(--acbg)] border border-[var(--acbd)] p-4 flex gap-3 mb-6">
+                <AlertCircle className="w-5 h-5 text-[var(--orange)] shrink-0 mt-0.5" />
                 <div className="text-sm text-[var(--text2)]">
-                  <p className="font-medium text-blue-300 mb-1">Modular Format Capabilities</p>
+                  <p className="font-medium text-[var(--text)] mb-1">Modular Format Capabilities</p>
                   <p className="text-xs">
                     Enable or disable specific question formats that the AI is permitted to use. 
                     The &quot;Text&quot; format cannot be disabled as it is required for the Discovery phase.
@@ -616,8 +616,8 @@ export default function AdminSettingsPage() {
                         <button
                           type="button"
                           onClick={() => updateSetting(fmt.id, currentValue ? "false" : "true")}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-neutral-900 ${
-                            currentValue ? "bg-blue-500" : "bg-neutral-700"
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[var(--orange)] focus:ring-offset-2 focus:ring-offset-neutral-900 ${
+                            currentValue ? "bg-[var(--orange)]" : "bg-[var(--bg2)]"
                           }`}
                         >
                           <span className="sr-only">Toggle {fmt.label}</span>
@@ -643,7 +643,7 @@ export default function AdminSettingsPage() {
                     <button
                       type="button"
                       disabled
-                      className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-indigo-500/50"
+                      className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-[var(--bg2)]"
                     >
                       <span className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5" />
                     </button>
@@ -662,7 +662,7 @@ export default function AdminSettingsPage() {
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full h-12 rounded-xl bg-[var(--orange)] hover:bg-[#e8552a] text-[var(--text)] font-semibold shadow-md"
+            className="w-full h-12 rounded-xl bg-[var(--orange)] hover:opacity-90 text-[#000] font-semibold shadow-none border-none"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

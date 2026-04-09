@@ -20,9 +20,9 @@ export default async function AdminDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-[#ffcfbc] to-[var(--orange)] bg-clip-text text-transparent flex items-center gap-2">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--text)] flex items-center gap-2">
             <Shield className="w-7 h-7 text-[var(--orange)]" />
-            Admin Overview
+            Admin<span className="text-[var(--orange)]">.</span> Overview
           </h2>
           <p className="text-[var(--text2)] mt-1 text-sm">Global platform metrics and user management.</p>
         </div>
@@ -30,7 +30,7 @@ export default async function AdminDashboardPage() {
 
       {/* Global KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-sm">
+        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-none">
           <CardHeader className="pb-2 pt-4 px-4 md:px-6">
             <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-[var(--orange)]" />
@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-sm">
+        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-none">
           <CardHeader className="pb-2 pt-4 px-4 md:px-6">
             <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" />
@@ -54,27 +54,27 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-sm">
+        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-none">
           <CardHeader className="pb-2 pt-4 px-4 md:px-6">
             <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
-              <CalendarDays className="w-3.5 h-3.5 text-amber-400" />
+              <CalendarDays className="w-3.5 h-3.5 text-[var(--text)]" />
               Today
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4">
-            <p className="text-2xl md:text-3xl font-bold text-amber-400">{stats.todaySessions}</p>
+            <p className="text-2xl md:text-3xl font-bold text-[var(--text)]">{stats.todaySessions}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-sm">
+        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-none">
           <CardHeader className="pb-2 pt-4 px-4 md:px-6">
             <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--orange)]" />
               Completed
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4">
-            <p className="text-2xl md:text-3xl font-bold text-emerald-400">{stats.finishedSessions}</p>
+            <p className="text-2xl md:text-3xl font-bold text-[var(--orange)]">{stats.finishedSessions}</p>
           </CardContent>
         </Card>
       </div>
