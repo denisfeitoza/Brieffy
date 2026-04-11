@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X, CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronDown, ShieldCheck, RefreshCw, Square, Mic
+  Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X, CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronDown, ShieldCheck, RefreshCw, Square, Mic, MousePointerClick
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ import { useAudioRecorder } from "@/components/briefing/inputs/shared/useAudioRe
 // ─── Icon + Color Maps ──────────────────────────────────────────
 const ICON_MAP: Record<string, React.ElementType> = {
   Palette, Brain, Cpu, Megaphone, Headphones, DollarSign, Users,
-  TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Package,
+  TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Package, MousePointerClick,
 };
 
 const DEPT_COLORS: Record<string, { bg: string; border: string; text: string; glow: string }> = {
