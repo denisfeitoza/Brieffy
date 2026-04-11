@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { DashboardLanguageProvider, useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
 import type { DashboardLanguage } from '@/i18n/dashboardTranslations';
+import { ModeToggle } from '@/components/ui/mode-toggle';
 
 // Language flag map for switcher
 const LANG_FLAGS: Record<DashboardLanguage, string> = { pt: '🇧🇷', en: '🇺🇸', es: '🇪🇸' };
@@ -172,6 +173,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-[var(--text)] truncate">{userName}</p>
             </div>
+            <ModeToggle />
             {/* Language Switcher */}
             <button
               onClick={cycleLang}
@@ -207,6 +209,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           )}
         </Link>
         <div className="flex items-center gap-2">
+          <ModeToggle />
           <button
             onClick={cycleLang}
             className="w-8 h-8 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] flex items-center justify-center text-sm"
