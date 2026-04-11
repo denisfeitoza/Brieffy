@@ -4,6 +4,7 @@ import { getSessionById, getTemplateById, getBrandingByUserId, getPackagesBySlug
 import { getDBSettings, getPerformanceConfig } from "@/lib/aiConfig";
 import { notFound } from "next/navigation";
 import type { BrandingInfo } from "@/lib/types";
+import { ForceLightMode } from "@/components/ui/force-light-mode";
 
 export const dynamic = 'force-dynamic';
 
@@ -129,6 +130,7 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        initialPurpose={session.briefing_purpose || ''}
        initialDepthSignals={session.depth_signals || []}
     >
+      <ForceLightMode />
       <main className="h-screen w-full bg-[var(--bg)] font-inter relative">
         <TypeformWizard 
           hasAccessPassword={hasAccessPassword}
