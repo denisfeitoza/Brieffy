@@ -267,8 +267,25 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   const t = (I18N[chosenLanguage] || I18N.pt);
 
   const activeColor = useMemo(() => {
+    const colorMsg = messages.slice().reverse().find(m => m.questionType === 'color_picker' && Array.isArray(m.userAnswer) && m.userAnswer.length > 0);
+    if (colorMsg && Array.isArray(colorMsg.userAnswer)) {
+      return colorMsg.userAnswer[0] as string;
+    }
     return branding.brand_color || '#171717';
-  }, [branding.brand_color]);
+  }, [messages, branding.brand_color]);
+
+  const activeLogoUrl = useMemo(() => {
+    const uploadMsg = messages.slice().reverse().find(m => m.userAnswer && typeof m.userAnswer === 'string' && m.userAnswer.includes('[Anexos via UI]:'));
+    if (uploadMsg && typeof uploadMsg.userAnswer === 'string') {
+      const match = uploadMsg.userAnswer.match(/\[Anexos via UI\]:\s*(.+)/);
+      if (match && match[1]) {
+        const urls = match[1].split(',').map(s => s.trim());
+        const imgUrl = urls.find(u => u.match(/\.(png|jpe?g|webp|svg|gif|avif)/i) || u.includes("supabase.co/storage"));
+        if (imgUrl) return imgUrl;
+      }
+    }
+    return branding.logo_url;
+  }, [messages, branding.logo_url]);
 
   const activeFont = useMemo(() => {
     return (branding.brand_font && branding.brand_font !== 'Outfit') ? branding.brand_font : 'DM Sans';
@@ -324,7 +341,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     if (isFinished) {
       return (
         <ClientThankYouScreen 
-          branding={branding}
+          branding={{ ...branding, logo_url: activeLogoUrl }}
           activeColor={activeColor}
           activeCompanyName={activeCompanyName}
           activeFont={activeFont}
@@ -511,9 +528,9 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
           <AILoadingSplash
             key="splash"
             branding={{
-              logo_url: branding.logo_url,
+              logo_url: activeLogoUrl,
               company_name: activeCompanyName,
-              brand_color: branding.brand_color,
+              brand_color: activeColor,
               brand_accent: branding.brand_accent,
               tagline: branding.tagline,
             }}
@@ -538,7 +555,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                 </Button>
               )}
               <div className="flex items-center gap-3">
-                 <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
+                 <BrandedLogo branding={{ ...branding, logo_url: activeLogoUrl, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
                  <span className="font-bold text-sm hidden sm:block">{activeCompanyName}</span>
               </div>
             </div>

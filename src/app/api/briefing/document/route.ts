@@ -105,7 +105,7 @@ export async function POST(req: Request) {
         s5: '🎨 Identidade & Personalidade da Marca', s5items: '- Palavras-chave relatadas que definem a marca\n- Traços de personalidade da marca declarados\n- Tom de voz (com exemplos de como soa na prática segundo eles)\n- Missão, visão, valores (se capturados)',
         s6: '🖼 Direção Visual', s6items: '- Preferências de paleta de cores mencionadas (com códigos HEX se disponíveis)\n- Referências de estilo indicadas e preferências visuais ditas\n- Direção tipográfica desejada\n- Ideias para o logo (se discutido)', s6fallback: 'Se poucos dados visuais foram coletados, apenas omita a seção.',
         s7: '🧠 Insights Estratégicos & Inteligência', s7items: '- Inferências-chave extraídas (o que o cliente DISSE vs o que QUIS DIZER factualmente, sem sugerir ações)\n- Dores observadas que o cliente não relatou diretamente\n- Contradições ou tensões encontradas durante a conversa\n- Observações "nas entrelinhas"',
-        s8: '', s8instr: '', s8headers: '', s8cond: '',
+        s8: '🚨 Inteligência de Escuta Ativa', s8items: '- VOCÊ DEVE LER os "DETECTED SIGNALS" fornecidos nos dados acima.\n- Para cada sinal detectado, explique de forma aprofundada O CONTEXTO GERAL (o que estava sendo discutido) e escreva UMA ANÁLISE COMPLETA do por que aquela fala é estrategicamente importante.\n- NUNCA apenas liste citações. Você deve desenvolver a ideia baseada na transcrição completa.\n- Inclua também a citação exata (Ativado por: "...") e a pontuação de relevância de cada sinal.', s8instr: '', s8headers: '', s8cond: '',
         s9: '', s9instr: '', s9legend: '', s9dims: '', s9overall: '',
         s10: '', s10instr: '', s10what: '', s10why: '', s10impact: '',
         rules: [
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
           'NÃO DÊ NENHUMA SUGESTÃO, IDEAÇÃO, RECOMENDAÇÃO OU PRÓXIMO PASSO. O intuito é registrar as respostas, fato e inferência. Zero sugestões.',
           'Proibido fazer recomendações de como melhorar ou resolver.',
           'É ESTRITAMENTE PROIBIDO O USO DE EMOJIS EM TODO O DOCUMENTO. NENHUM EMOJI DEVE SER GERADO.',
-          'Se a seção Inteligência da Escuta Ativa existir, use linguagem analítica, agrupada por categoria com citações diretas',
+          'A seção de Inteligência da Escuta Ativa NÃO PODE SER uma lista crua. Tem que ser uma elaboração em formato de texto contínuo contextualizando cada sinal.',
         ],
         watermark: 'Este briefing foi gerado pela Brieffy AI.',
         userMsg: 'Gere o documento de briefing estritamente representativo agora com base em todas as informações coletadas, sem sugestões.',
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
         s5: '🎨 Brand Identity & Personality', s5items: '- Reported keywords that define the brand\n- Stated brand personality traits\n- Tone of voice (with examples of how it sounds in practice according to them)\n- Mission, vision, values (if captured)',
         s6: '🖼 Visual Direction', s6items: '- Mentioned color palette preferences (with HEX codes if available)\n- Indicated style references and visual preferences\n- Desired typography direction\n- Logo direction/ideas (if discussed)', s6fallback: 'If minimal visual data was collected, simply omit the section.',
         s7: '🧠 Strategic Insights & Intelligence', s7items: '- Key inferences extracted (factually what the client SAID vs what they MEANT, without suggesting actions)\n- Observed pain points that the client did not directly state\n- Contradictions or tensions found during the conversation\n- "Between the lines" observations',
-        s8: '', s8instr: '', s8headers: '', s8cond: '',
+        s8: '🚨 Active Listening Intelligence', s8items: '- YOU MUST READ the "DETECTED SIGNALS" provided in the data above.\n- For each detected signal, thoroughly explain THE BROAD CONTEXT (what was being discussed) and write a DEEP ANALYSIS on why that statement is strategically important.\n- NEVER just list quotes. You must develop the idea based on the full transcript.\n- Also include the exact quote (Triggered by: "...") and the relevance score for each signal.', s8instr: '', s8headers: '', s8cond: '',
         s9: '', s9instr: '', s9legend: '', s9dims: '', s9overall: '',
         s10: '', s10instr: '', s10what: '', s10why: '', s10impact: '',
         rules: [
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
           'DO NOT PROVIDE ANY SUGGESTION, IDEATION, RECOMMENDATION OR NEXT STEP. The goal is to record responses, facts, and inference. Zero suggestions.',
           'It is strictly forbidden to make recommendations on how to improve or resolve things.',
           'IT IS STRICTLY PROHIBITED TO USE EMOJIS ANYWHERE IN THE DOCUMENT.',
-          'If Active Listening Intelligence section is present, use analytical language, grouped by category with direct quoted triggers',
+          'The Active Listening Intelligence section CANNOT BE a raw list. It must be an elaboration in prose contextualizing each signal.',
         ],
         watermark: 'This briefing was generated by Brieffy AI.',
         userMsg: 'Generate the strictly representative briefing document now based on all collected information, without any suggestions.',
@@ -175,7 +175,7 @@ export async function POST(req: Request) {
         s5: '🎨 Identidad & Personalidad de Marca', s5items: '- Palabras clave relatadas que definen la marca\n- Rasgos de personalidad de la marca declarados\n- Tono de voz (con ejemplos de cómo suena en la práctica según ellos)\n- Misión, visión, valores (si fueron capturados)',
         s6: '🖼 Dirección Visual', s6items: '- Preferencias de paleta de colores mencionadas (con códigos HEX si están disponibles)\n- Referencias de estilo indicadas y preferencias visuales discutidas\n- Dirección tipográfica deseada\n- Dirección/ideas de logo (si se discutió)', s6fallback: 'Si se recopilaron pocos datos visuales, simplemente omite la sección.',
         s7: '🧠 Insights Estratégicos & Inteligencia', s7items: '- Inferencias clave extraídas (lo que el cliente DIJO vs lo que QUISO DECIR factualmente, sin sugerir acciones)\n- Dolores observados que el cliente no declaró directamente\n- Contradicciones o tensiones encontradas durante la conversación\n- Observaciones "entre líneas"',
-        s8: '', s8instr: '', s8headers: '', s8cond: '',
+        s8: '🚨 Inteligencia de Escucha Activa', s8items: '- DEBES LEER los "DETECTED SIGNALS" proporcionados en los datos anteriores.\n- Para cada señal detectada, explica detalladamente EL CONTEXTO GENERAL (lo que se estaba discutiendo) y escribe un ANÁLISIS PROFUNDO de por qué esa afirmación es estratégicamente importante.\n- NUNCA hagas simplemente una lista de citas. Debes desarrollar la idea basándote en la transcripción completa.\n- Incluye también la cita exacta (Activado por: "...") y el puntaje de relevancia de cada señal.', s8instr: '', s8headers: '', s8cond: '',
         s9: '', s9instr: '', s9legend: '', s9dims: '', s9overall: '',
         s10: '', s10instr: '', s10what: '', s10why: '', s10impact: '',
         rules: [
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
           'NO DES NINGUNA SUGERENCIA, IDEACIÓN, RECOMENDACIÓN O PRÓXIMO PASO. El objetivo es registrar las respuestas, hechos e inferencias. Cero sugerencias.',
           'Está terminantemente prohibido hacer recomendaciones sobre cómo mejorar o resolver.',
           'ESTÁ ESTRICTAMENTE PROHIBIDO EL USO DE EMOJIS EN TODO EL DOCUMENTO.',
-          'Si la sección Inteligencia de Escucha Activa existe, usa lenguaje analítico, agrupado por categoría con citas directas',
+          'La sección Inteligencia de Escucha Activa NO PUEDE SER una lista cruda. Tiene que ser una elaboración en formato de prosa contextualizando cada señal.',
         ],
         watermark: 'Este briefing fue generado por Brieffy AI.',
         userMsg: 'Genera el documento de briefing estrictamente representativo ahora con base en toda la información recopilada, sin sugerencias.',
@@ -195,16 +195,17 @@ export async function POST(req: Request) {
 
     const t = docI18n[chosenLanguage || 'pt'] || docI18n.pt;
 
-    const activeListeningSection = (Array.isArray(detectedSignals) && detectedSignals.length > 0)
-      ? `\n## 11. ${t.listeningTitle}\n*${t.listeningSubtitle}*\n\n${
-          detectedSignals.map((s: { category: string; summary: string; relevance_score: number; source_answer: string }) => {
-            const label = catLabels[s.category] || s.category;
-            const score = Math.round((s.relevance_score || 0) * 100);
-            const src = s.source_answer ? s.source_answer.substring(0, 120) + (s.source_answer.length > 120 ? '...' : '') : '';
-            return `### ${label} — ${score}% ${t.relevanceLabel}\n${s.summary}\n${src ? `> *${t.triggeredBy}:* "${src}"\n` : ''}`;
-          }).join('\n')
-        }`
-      : '';
+    let signalsDataPayload = '';
+    
+    if (Array.isArray(detectedSignals) && detectedSignals.length > 0) {
+      signalsDataPayload = `\nDETECTED SIGNALS (${t.listeningSubtitle})\nA IA marcou os seguintes trechos precisos como cruciais. Use esses sinais detalhadamente na seção 8.\n\n` + 
+        detectedSignals.map((s: { category: string; summary: string; relevance_score: number; source_answer: string }) => {
+          const label = catLabels[s.category] || s.category;
+          const score = Math.round((s.relevance_score || 0) * 100);
+          const src = s.source_answer ? s.source_answer.substring(0, 180) + (s.source_answer.length > 180 ? '...' : '') : '';
+          return `Sinal (${label}) [Score: ${score}%]\nResumo da IA que captou o sinal: ${s.summary}\nCitação exata do cliente ("${src}")`;
+        }).join('\n\n');
+    }
 
     const systemPrompt = `${t.role}
 
@@ -220,6 +221,8 @@ ${t.collectedLabel}:
 ${JSON.stringify(briefingState, null, 2)}
 
 ${assets ? `${t.assetsLabel}: ${JSON.stringify(assets, null, 2)}` : ""}
+
+${signalsDataPayload}
 
 ${t.transcriptLabel}:
 ${conversationTranscript}
@@ -262,7 +265,7 @@ ${t.s6fallback}
 ## 7. ${t.s7}
 ${t.s7items}
 
-${activeListeningSection}
+${signalsDataPayload ? `## 8. ${t.s8}\n${t.s8items}` : ''}
 
 ═══ ${chosenLanguage === 'en' ? 'PREMIUM RULES' : chosenLanguage === 'es' ? 'REGLAS PREMIUM' : 'REGRAS PREMIUM'} ═══
 ${t.rules.map(r => `- ${r}`).join('\n')}

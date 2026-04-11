@@ -112,7 +112,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div suppressHydrationWarning className="min-h-screen bg-[var(--bg)] text-[var(--text)] font-sans flex flex-col md:flex-row">
       {/* ============ DESKTOP SIDEBAR ============ */}
-      <aside className="hidden md:flex w-64 flex-shrink-0 bg-[var(--bg)] border-r border-[var(--bd)] flex-col justify-between">
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-[var(--bg)] border-r border-[var(--bd)] flex-col justify-between sticky top-0 h-screen">
         <div className="p-6">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3 mb-10 group">

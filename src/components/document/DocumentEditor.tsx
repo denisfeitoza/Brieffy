@@ -679,7 +679,7 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
 
       {/* FORMATTING TOOLBAR — uses native CSS sticky for reliable behavior */}
       {!readOnly && editor && (
-        <div className="sticky top-2 z-[60] print:hidden w-full transition-all duration-200">
+        <div className="sticky top-2 z-40 print:hidden w-full transition-all duration-200">
           <div className="bg-[var(--bg2)]/90 backdrop-blur-xl border border-[var(--bd)] rounded-xl py-2 px-2 overflow-x-auto custom-scrollbar shadow-lg w-full max-w-3xl mx-auto">
             <EditorToolbar editor={editor} />
           </div>

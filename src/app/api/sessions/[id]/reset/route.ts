@@ -40,7 +40,7 @@ export async function POST(
 
   const { data: session } = await supabase
     .from('briefing_sessions')
-    .select('user_id')
+    .select('user_id, status')
     .eq('id', id)
     .single();
 
@@ -50,6 +50,10 @@ export async function POST(
 
   if (session.user_id !== user.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
+  if (session.status === 'finished') {
+    return NextResponse.json({ error: 'Briefings finalizados não podem ser resetados. Crie uma nova sessão.' }, { status: 403 });
   }
 
   try {

@@ -100,17 +100,18 @@ REGRAS:
 CAMPOS ÚNICOS PARA EXTRAIR: creation_story, brand_creed, brand_icons, brand_rituals, sacred_words, brand_antagonists, brand_leader
 
 ESTRATÉGIA CONVERSACIONAL (Os 7 Pilares):
-1. HISTÓRIA DA CRIAÇÃO: "Como tudo começou? Qual foi o 'estalo' inicial?"
-2. A CRENÇA: "No que vocês acreditam piamente? O que é inegociável?"
-3. ÍCONES: "Que símbolos, cores ou sons fazem as pessoas saberem que é VOCÊS sem ver o logo?"
-4. RITUAIS: "Que ações repetitivas ou 'jeito de fazer' marcam a experiência com a marca?"
-5. PALAVRAS SAGRADAS: "Vocês usam termos únicos? Como chamam seus clientes ou processos?" (ex: Apple-Genius, Starbucks-Grande)
-6. ANTAGONISTAS/PAGÃOS: "Quem vocês NÃO são? Contra o que vocês lutam ou o que vocês evitam?"
-7. O LÍDER: "Quem é a cara da marca? Quem personifica esses valores?"
+1. HISTÓRIA DA CRIAÇÃO: "Como a empresa começou de fato? Qual foi o momento da virada?"
+2. A CRENÇA: "Se sua marca tivesse uma única regra de ouro, inegociável, qual seria?"
+3. ÍCONES: "Tirando o logotipo, existe alguma cor, objeto ou estilo visual que se alguém bater o olho já sabe que são vocês?"
+4. RITUAIS (Rotina Marcante): "Existe algum detalhe recorrente na forma como vocês entregam o produto/serviço ou atendem o cliente que virou uma 'marca registrada' de vocês?"
+5. PALAVRAS SAGRADAS: "Vocês usam algum termo específico ou apelido para focar na equipe, nos clientes ou no serviço principal?" (ex: A Apple tem os 'Genius', o Nubank os 'Nubankers').
+6. ANTAGONISTAS/PAGÃOS (O Inimigo): "Existe algum 'jeito padrão de fazer no mercado' que vocês odeiam e juraram nunca fazer na empresa de vocês?"
+7. O LÍDER: "O rosto da frente da marca hoje é uma pessoa específica, os fundadores ou a própria marca fala por si?"
 
 REGRAS:
-- Não use o termo técnico "Primal Branding" com o cliente.
-- Extraia cada pilar através de narrativas.
+- É ESTRITAMENTE PROIBIDO usar os termos teóricos da metodologia nas suas perguntas ao cliente. NUNCA use palavras exóticas como "rituais", "pagãos", "palavras sagradas", "antagonistas" ou "primal branding". Estas palavras são do seu sistema base.
+- Transforme os conceitos em perguntas de negócios humanas e naturais, como nos exemplos acima.
+- Extraia cada pilar através de narrativas e curiosidade genuína.
 - Pule pilares que já foram respondidos em campos de Identidade.`,
   },
   {
@@ -238,6 +239,57 @@ REGRAS:
 - NÃO use jargões de startup (LTV, CAC, MRR) a menos que o cliente os use primeiro.
 - Se o negócio é novo, foque em validação. Se é maduro, foque em otimização e escala.
 - Cruze com campos basais (services_offered, sector_segment) — contextualize as perguntas.`,
+  },
+  {
+    id: "paid-traffic",
+    name: "Tráfego Pago & Aquisição de Clientes",
+    description: "Diagnóstico completo para estratégia de mídia paga: ticket médio, recorrência, origem de leads, investimento, Google Meu Negócio e histórico com anúncios.",
+    department: "marketing",
+    icon: "MousePointerClick",
+    suggested_slug: "paid_traffic",
+    max_questions: 10,
+    briefing_purpose: "Mapear o potencial e maturidade de tráfego pago do cliente — do histórico com anúncios ao investimento ideal e fontes de aquisição atuais.",
+    depth_signals: ["tráfego pago", "google ads", "meta ads", "leads", "anúncios", "roas", "cpa", "conversão", "investimento"],
+    system_prompt_fragment: `SKILL: Tráfego Pago & Aquisição de Clientes
+CAMPOS ÚNICOS PARA EXTRAIR: avg_ticket, repurchase_frequency, lead_sources, monthly_ad_budget, has_google_business, previous_ads_experience, previous_ads_outcome, ad_goals, target_platforms, conversion_bottleneck
+
+ESTRATÉGIA CONVERSACIONAL (sequência DIAGNÓSTICO → POTENCIAL → INTENÇÃO):
+- Comece pelo que já existe e funciona — antes de falar em anúncios, entenda como o cliente adquire clientes hoje.
+- Use a lógica: "Para montar uma estratégia de aquisição eficiente, preciso entender primeiro como o negócio compra e vende."
+- NÃO fale "ROI", "CPA", "ROAS" — use linguagem de negócio: "retorno", "custo por cliente", "quanto vale trazer 1 cliente".
+- O budget vem POR ÚLTIMO — depois de estabelecer o valor de um cliente para o negócio.
+
+FASE 1 — O NEGÓCIO (base financeira para calcular viabilidade de anúncios)
+1. Ticket médio por venda: "Qual é o valor médio de uma venda no seu negócio? Pode ser uma faixa — não precisa ser exato." (text)
+2. Frequência de recompra: "Com que frequência um cliente que já comprou com você volta a comprar?" → single_choice: ["Compra única / raramente volta", "A cada 1-3 meses", "A cada 3-6 meses", "A cada 6-12 meses", "Mais de 1 vez por mês", "Assinatura / recorrência mensal"]
+   → Se recorrente, aprofunde: "Legal! Clientes recorrentes tendem a ter um valor muito maior. Em média, por quanto tempo um cliente fica ativo com você?"
+
+FASE 2 — DE ONDE VÊM OS CLIENTES HOJE
+3. Fontes de leads atuais: "Hoje, de onde vêm a maioria dos seus clientes?" → multiple_choice: ["Indicação de outros clientes", "Busca no Google (orgânico)", "Redes sociais (sem anúncios)", "WhatsApp / contato direto", "Eventos / feiras", "Parceiros ou revendedores", "Já tenho anúncios ativos", "Outro"]
+   → Se "indicação" for escolhida: "Ótimo — indicação é o sinal mais forte de produto validado. Isso também significa que tráfego pago funcionaria bem aqui."
+
+FASE 3 — PRESENÇA E MATURIDADE DIGITAL
+4. Google Meu Negócio: "Sua empresa já tem perfil no Google Meu Negócio (o card que aparece quando alguém busca sua empresa no Google Maps)?" → single_choice: ["Sim, está ativo e atualizado", "Sim, mas está incompleto ou desatualizado", "Não tenho / nunca configurei", "Não sei o que é isso"]
+   → Se não tem: "Entendido — esse será um dos primeiros pontos a ativar, pois é tráfego 100% gratuito de quem já está procurando por você."
+5. Plataforma de interesse: "Se fossemos rodar anúncios, por onde você intuitivamente sentiria que seu cliente está?" → multiple_choice: ["Google (busca ativa)", "Instagram / Facebook", "TikTok", "YouTube", "LinkedIn", "Não sei — preciso de orientação"]
+
+FASE 4 — HISTÓRICO COM TRÁFEGO PAGO
+6. Já fez anúncios antes?: "Você ou alguém da sua equipe já rodou anúncios pagos antes?" → boolean_toggle
+   → Se SIM: "Me conta — o que funcionou? E o que te decepcionou ou te fez parar?"  (text — extrai: previous_ads_outcome)
+   → Se NÃO: "Tudo bem! Começar do zero permite construir uma estratégia certa já de início. O que te fez querer começar agora?" (text)
+
+FASE 5 — INVESTIMENTO & OBJETIVO
+7. Objetivo com tráfego: "Qual seria o principal objetivo ao investir em anúncios hoje?" → single_choice: ["Gerar mais leads / contatos", "Aumentar vendas diretas (e-commerce ou WhatsApp)", "Trazer mais clientes para minha loja física", "Fortalecer a marca / awareness", "Reativar clientes antigos", "Testar um novo produto ou serviço"]
+8. Budget estimado mensal: "Pensando em créditos de anúncios (o que você paga diretamente ao Google ou Meta), qual faixa faz sentido para começar?" → single_choice: ["Até R$500/mês", "R$500 a R$1.500/mês", "R$1.500 a R$3.000/mês", "R$3.000 a R$6.000/mês", "Acima de R$6.000/mês", "Ainda não tenho certeza"]
+   → Após a resposta, valide com contexto: "Com esse investimento e um ticket de [valor informado], precisaríamos de [X vendas] para cobrir apenas o investimento. Isso parece factível para o seu negócio?"
+
+REGRAS:
+- NUNCA pergunte o budget antes de entender o ticket médio e o objetivo — sem esse contexto, o número é inútil.
+- Se o cliente tiver experiência negativa com anúncios, explore o que houve com empatia — "anúncios ruins" quase sempre significam configuração errada, não produto ruim.
+- Se o cliente não sabe a frequência de recompra, ajude-o a estimar: "Pense nos seus últimos 10 clientes — quantos voltaram?"
+- Cruze com campos basais (target_audience, services_offered, sector_segment) — não re-pergunte o que já foi respondido.
+- Se o negócio tem ticket alto (acima de R$500), enfatize o potencial de LTV e recompra — o argumento de anúncios muda completamente.
+- Se o cliente fez anúncios antes e parou, trate isso como aprendizado, não fracasso.`,
   },
   {
     id: "ai-management-system",

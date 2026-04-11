@@ -55,7 +55,8 @@ function validateFragment(fragment: string | undefined): { valid: boolean; warni
 // GET - List skills based on user context
 export async function GET(req: Request) {
   try {
-    const { user } = await requireAuth(); // Non-blocking if unauthenticated, but we get the user.
+    const { user, supabase: authClient } = await requireAuth(); // Non-blocking if unauthenticated, but we get the user.
+    const client = authClient || supabase;
     
     const url = new URL(req.url);
     const includeArchived = url.searchParams.get('include_archived') === 'true';
@@ -66,7 +67,7 @@ export async function GET(req: Request) {
       orFilter = `skill_type.eq.official,and(skill_type.eq.personal,author_id.eq.${user.id})`;
     }
 
-    let query = supabase
+    let query = client
       .from("briefing_category_packages")
       .select("*")
       .or(orFilter)

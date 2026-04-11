@@ -84,10 +84,11 @@ interface GenerateLinkModalProps {
   templateId: string;
   templateName: string;
   existingSession?: { id: string; edit_passphrase?: string | null; access_password?: string | null };
+  triggerLabel?: string;
   children?: React.ReactElement;
 }
 
-export function GenerateLinkModal({ templateId, templateName, existingSession, children }: GenerateLinkModalProps) {
+export function GenerateLinkModal({ templateId, templateName, existingSession, triggerLabel, children }: GenerateLinkModalProps) {
   const router = useRouter();
   const { t, language } = useDashboardLanguage();
   const [open, setOpen] = useState(false);
@@ -356,18 +357,22 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {children ? (
-        <DialogTrigger render={children} />
-      ) : (
-        <DialogTrigger
-          render={
-            <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill">
-              <Share2 className="w-4 h-4 mr-2" />
-              {t('modal.generateLinkBtn')}
+      <DialogTrigger
+        render={
+          children ? (
+            children
+          ) : (
+            <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill cursor-pointer">
+              {triggerLabel ? (
+                <Wand2 className="w-4 h-4 mr-2" />
+              ) : (
+                <Share2 className="w-4 h-4 mr-2" />
+              )}
+              {triggerLabel || t('modal.generateLinkBtn')}
             </Button>
-          }
-        />
-      )}
+          )
+        }
+      />
 
       <DialogContent
         className="!max-w-none sm:!max-w-none w-[calc(100vw-1.5rem)] sm:w-[min(720px,calc(100vw-3rem))] bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] p-0 gap-0 overflow-hidden"
@@ -630,60 +635,101 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, c
               </div>
 
               {/* ── 6. Security & Passwords ──────── */}
-              <div className="space-y-3 pt-3 border-t border-[var(--bd)]">
-                <label className="text-[11px] font-bold tracking-[0.1em] uppercase text-[var(--text3)] flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-md bg-[var(--bg2)] flex items-center justify-center text-[11px] font-bold text-[var(--text)]">6</span>
-                  {lt('modal.securityPasswords')}
-                  <span className="text-[var(--text3)] lowercase font-medium">{t('modal.optional')}</span>
-                </label>
+              <div className="mt-8 overflow-hidden rounded-2xl border border-[var(--bd-strong)] focus-within:border-[var(--orange)]/50 transition-colors bg-[var(--bg)] shadow-sm">
+                {/* Header */}
+                <div className="bg-[var(--bg2)] border-b border-[var(--bd-strong)] p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[var(--orange)]/10 flex items-center justify-center shrink-0 border border-[var(--orange)]/20">
+                      <ShieldCheck className="w-6 h-6 text-[var(--orange)]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-[var(--text)] tracking-tight">
+                        {lt('modal.securityPasswords')}
+                      </h3>
+                      <p className="text-[13px] font-medium text-[var(--text2)] mt-1">
+                        Configure as senhas de acesso e do documento (opcional).
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {editPassphrase || accessPassword ? (
+                    <div className="bg-[var(--orange)]/10 border border-[var(--orange)]/20 text-[var(--orange)] text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0 select-none">
+                      <Lock className="w-3.5 h-3.5" />
+                      PROTEGIDO
+                    </div>
+                  ) : (
+                    <div className="bg-[var(--text3)]/10 border border-[var(--text3)]/20 text-[var(--text3)] text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0 select-none">
+                      <Lock className="w-3.5 h-3.5" />
+                      ABERTO
+                    </div>
+                  )}
+                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-5 flex flex-col gap-6">
                   {/* Access Password */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)] block">
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-bold text-[var(--text)] uppercase tracking-wider block flex flex-col gap-0.5">
                       {t('modal.accessPasswordLabel')}
+                      <span className="text-[10px] font-normal text-[var(--text3)] normal-case tracking-normal">
+                        {t('modal.accessPasswordClientDesc')}
+                      </span>
                     </label>
-                    <div className="relative">
-                      <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
+                    <div className="relative group">
+                      <ShieldCheck className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors pointer-events-none ${accessPassword ? 'text-[var(--orange)]' : 'text-zinc-400 dark:text-zinc-500'}`} />
                       <Input
                         value={accessPassword}
                         onChange={(e) => setAccessPassword(e.target.value)}
-                        className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
+                        className={`bg-[var(--bg2)] border-2 h-14 text-base sm:text-lg rounded-xl pl-12 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 transition-all font-bold shadow-none ${
+                          accessPassword 
+                            ? 'border-[var(--orange)]/40 focus-visible:border-[var(--orange)] focus-visible:ring-0 text-[var(--text)] shadow-[0_0_15px_rgba(255,96,41,0.05)]' 
+                            : 'border-[var(--bd-strong)] focus-visible:border-[var(--orange)]/50 focus-visible:ring-0 text-[var(--text)]'
+                        }`}
                         placeholder="Ex: senha123"
                       />
                     </div>
-                    <p className="text-[10px] text-[var(--text3)] leading-snug">
-                      {t('modal.accessPasswordClientDesc')}
-                    </p>
                   </div>
 
                   {/* Document Password */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text3)] block">
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row items-baseline sm:items-center justify-between gap-2">
+                      <label className="text-[11px] font-bold text-[var(--text)] uppercase tracking-wider block flex flex-col gap-0.5">
                         {t('modal.documentPassword')}
+                        <span className="text-[10px] font-normal text-[var(--text3)] normal-case tracking-normal">
+                          {t('modal.documentPasswordDesc')}
+                        </span>
                       </label>
                       <button
                         type="button"
                         onClick={generateCoolPassphrase}
-                        className="text-[var(--actext)] hover:underline text-[10px] font-bold tracking-wider flex items-center gap-1 transition-colors"
+                        className="text-[var(--orange)] hover:opacity-80 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors"
                       >
-                        <Wand2 className="w-2.5 h-2.5" />
+                        <Wand2 className="w-3.5 h-3.5" />
                         {t('modal.generateAnother')}
                       </button>
                     </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text3)] pointer-events-none" />
+                    <div className="relative group">
+                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors pointer-events-none ${editPassphrase ? 'text-[var(--orange)]' : 'text-zinc-400 dark:text-zinc-500'}`} />
                       <Input
                         value={editPassphrase}
                         onChange={(e) => setEditPassphrase(e.target.value)}
-                        className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-10 font-mono text-sm rounded-full pl-9 pr-3 placeholder:text-[var(--text3)]"
+                        className={`bg-[var(--bg2)] border-2 h-14 font-mono text-base sm:text-lg rounded-xl pl-12 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 transition-all font-bold tracking-widest shadow-none ${
+                          editPassphrase 
+                            ? 'border-[var(--orange)]/40 focus-visible:border-[var(--orange)] focus-visible:ring-0 text-[var(--text)] shadow-[0_0_15px_rgba(255,96,41,0.05)]' 
+                            : 'border-[var(--bd-strong)] focus-visible:border-[var(--orange)]/50 focus-visible:ring-0 text-[var(--text)]'
+                        }`}
                         placeholder={t('modal.passphrasePlaceholder')}
                       />
+                      {editPassphrase && (
+                        <button
+                          type="button"
+                          onClick={() => setEditPassphrase('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                          title="Remover senha"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
-                    <p className="text-[10px] text-[var(--text3)] leading-snug">
-                      {t('modal.documentPasswordDesc')}
-                    </p>
                   </div>
                 </div>
               </div>

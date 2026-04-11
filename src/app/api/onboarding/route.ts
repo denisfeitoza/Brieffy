@@ -41,7 +41,9 @@ export async function POST(req: Request) {
     // BUG-04 FIX: Count only 'user' role messages to determine step number.
     // This prevents depth_questions (assistant-only) from skewing the count
     // and causing premature or delayed termination of the onboarding session.
-    const userMessages = history ? history.filter((m: { role: string }) => m.role === 'user') : [];
+    // BUG-04 & ZERO-TRUST FIX: Count only 'user' role messages that contain actual content.
+    // This prevents malicious empty arrays or phantom data from forcing 'isFinished'.
+    const userMessages = history ? history.filter((m: { role: string, content?: string }) => m.role === 'user' && m.content && m.content.trim().length > 0) : [];
     const step = userMessages.length;
     const isFinished = step >= 8;
 

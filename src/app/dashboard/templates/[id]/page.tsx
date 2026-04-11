@@ -37,10 +37,10 @@ export default async function TemplateDetailsPage({ params }: { params: Promise<
           </div>
           <h3 className="text-xl font-bold text-[var(--text)] mb-2">{template.name}</h3>
           <p className="text-[var(--text3)] max-w-sm mb-8">
-            Nenhuma sessão de atendimento foi criada para este briefing ainda. Gere um link para iniciar.
+            Este rascunho de briefing está salvo. Continue a configuração para escolher a IA e gerar o link.
           </p>
           <div className="flex items-center gap-3">
-            <GenerateLinkModal templateId={template.id} templateName={template.name} />
+            <GenerateLinkModal templateId={template.id} templateName={template.name} triggerLabel="Continuar Configuração" />
             <DeleteTemplateButton 
               templateId={template.id} 
               templateName={template.name} 

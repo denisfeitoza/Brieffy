@@ -87,6 +87,7 @@ async function TemplatesList() {
                   <GenerateLinkModal 
                     templateId={template.id} 
                     templateName={template.name} 
+                    triggerLabel={activeSession ? undefined : "Continuar Configuração"}
                     existingSession={activeSession ? {
                       id: activeSession.id,
                       edit_passphrase: activeSession.edit_passphrase,

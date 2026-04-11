@@ -16,12 +16,16 @@ export async function DELETE(
 
   const { data: session } = await supabase
     .from('briefing_sessions')
-    .select('user_id')
+    .select('user_id, status')
     .eq('id', id)
     .single();
 
   if (!session || session.user_id !== user.id) {
     return NextResponse.json({ error: 'Session not found or unauthorized' }, { status: 404 });
+  }
+
+  if (session.status === 'finished') {
+    return NextResponse.json({ error: 'Sessões finalizadas não podem ser deletadas, apenas arquivadas.' }, { status: 403 });
   }
 
   // Delete interactions first (FK constraint)

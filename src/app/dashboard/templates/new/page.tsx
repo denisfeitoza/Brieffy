@@ -273,32 +273,35 @@ export default function NewBriefingWizard() {
     setIsTransitioning(true);
     
     try {
-      // 1. Save template
-      const templateRes = await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          category: 'Geral',
-          objectives: [],
-          core_fields: [],
-          briefing_purpose: purpose.trim(),
-          depth_signals: depthSignals,
-        }),
-      });
-      
-      if (!templateRes.ok) {
-        const errData = await templateRes.json();
-        throw new Error(errData.error || 'Falha ao salvar briefing');
+      // 1. Save template as Draft
+      let templateId = createdTemplateId;
+      if (!templateId) {
+        const templateRes = await fetch('/api/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            category: 'Geral',
+            objectives: [],
+            core_fields: [],
+            briefing_purpose: purpose.trim(),
+            depth_signals: depthSignals,
+          }),
+        });
+        
+        if (!templateRes.ok) {
+          const errData = await templateRes.json();
+          throw new Error(errData.error || 'Falha ao salvar briefing');
+        }
+        
+        const templateData = await templateRes.json();
+        templateId = templateData.data?.id;
+        
+        if (!templateId) throw new Error('Template criado mas sem ID');
+        
+        // Store template ID for step 2
+        setCreatedTemplateId(templateId);
       }
-      
-      const templateData = await templateRes.json();
-      const templateId = templateData.data?.id;
-      
-      if (!templateId) throw new Error('Template criado mas sem ID');
-      
-      // Store template ID for step 2
-      setCreatedTemplateId(templateId);
       
       // 2. Ask AI to suggest packages
       const suggestRes = await fetch('/api/briefing/suggest-packages', {
@@ -340,18 +343,46 @@ export default function NewBriefingWizard() {
     );
   };
   
-  // ── Generate Session + Link ─────
   const handleGenerateLink = async () => {
-    if (!createdTemplateId || selectedSlugs.length === 0) return;
+    if (selectedSlugs.length === 0) return;
     setIsGenerating(true);
     setError(null);
     
     try {
+      // 1. Ensure template is saved (should already be saved in step 1, but fallback just in case)
+      let finalTemplateId = createdTemplateId;
+      if (!finalTemplateId) {
+        const templateRes = await fetch('/api/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            category: 'Geral',
+            objectives: [],
+            core_fields: [],
+            briefing_purpose: purpose.trim(),
+            depth_signals: depthSignals,
+          }),
+        });
+        
+        if (!templateRes.ok) {
+          const errData = await templateRes.json();
+          throw new Error(errData.error || 'Falha ao salvar briefing');
+        }
+        
+        const templateData = await templateRes.json();
+        finalTemplateId = templateData.data?.id;
+        
+        if (!finalTemplateId) throw new Error('Template criado mas sem ID');
+        
+        setCreatedTemplateId(finalTemplateId);
+      }
+
       const res = await fetch('/api/sessions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          templateId: createdTemplateId,
+          templateId: finalTemplateId,
           sessionName: name.trim(),
           initialContext: initialContext.trim() || undefined,
           selectedPackages: selectedSlugs,
@@ -813,46 +844,70 @@ export default function NewBriefingWizard() {
               </div>
               
               {/* ── Password Security Section ────── */}
-              <div className="pt-8 border-t border-zinc-100 dark:border-white/5 space-y-6">
-                <div>
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <Lock className="w-5 h-5 text-brieffy-orange" />
-                    Segurança e Acesso
-                  </h3>
-                  <p className="text-sm font-medium text-zinc-500 mt-1">
-                    Defina uma senha se desejar proteger o briefing. Deixe em branco para acesso direto.
-                  </p>
+              <div className="mt-8 overflow-hidden rounded-2xl border-2 border-brieffy-border focus-within:border-brieffy-orange/50 transition-colors bg-background shadow-sm">
+                {/* Header */}
+                <div className="bg-brieffy-surface border-b border-brieffy-border p-5 sm:p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-brieffy-orange/10 flex items-center justify-center shrink-0 border border-brieffy-orange/20">
+                      <ShieldCheck className="w-6 h-6 text-brieffy-orange" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-foreground tracking-tight">
+                        Segurança e Acesso
+                      </h3>
+                      <p className="text-[13px] font-medium text-brieffy-text2 mt-1">
+                        Proteja este briefing gerando uma senha de acesso.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {editPassphrase ? (
+                    <div className="bg-brieffy-orange/10 border border-brieffy-orange/20 text-brieffy-orange text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0 select-none">
+                      <Lock className="w-3.5 h-3.5" />
+                      Protegido
+                    </div>
+                  ) : (
+                    <div className="bg-brieffy-text3/10 border border-brieffy-text3/20 text-brieffy-text3 text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0 select-none">
+                      <Lock className="w-3.5 h-3.5" />
+                      Aberto
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-4">
-                  {/* Passphrase (The primary password field) */}
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="label-caps-accent">
+                <div className="p-5 sm:p-6">
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row items-baseline sm:items-center justify-between gap-2">
+                      <label className="label-caps-accent flex items-center gap-2">
                         Senha do Documento
+                        {!editPassphrase && <span className="text-xs font-normal text-brieffy-text3 normal-case tracking-normal">(Opcional)</span>}
                       </label>
                       <button
                         type="button"
                         onClick={() => setEditPassphrase(generatePassphrase())}
-                        className="text-brieffy-orange hover:text-brieffy-orange/80 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+                        className="text-brieffy-orange hover:text-brieffy-orange/80 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors"
                       >
-                        <Wand2 className="w-4 h-4" />
+                        <Wand2 className="w-3.5 h-3.5" />
                         Sortear Nova
                       </button>
                     </div>
                     <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-brieffy-orange transition-colors pointer-events-none" />
+                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors pointer-events-none ${editPassphrase ? 'text-brieffy-orange' : 'text-zinc-400 dark:text-zinc-500'}`} />
                       <Input
                         value={editPassphrase}
                         onChange={e => setEditPassphrase(e.target.value)}
-                        className="bg-white dark:bg-black/40 border-zinc-200 dark:border-white/10 focus-visible:ring-brieffy-orange/40 h-13 font-mono text-base rounded-xl pl-12 placeholder:text-zinc-400 dark:placeholder:text-zinc-700 transition-all font-bold tracking-widest"
-                        placeholder="Vazio = Sem Senha"
+                        className={`bg-brieffy-surface border-2 h-14 font-mono text-base sm:text-lg rounded-xl pl-12 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 transition-all font-bold tracking-widest shadow-none ${
+                          editPassphrase 
+                            ? 'border-brieffy-orange/40 focus-visible:border-brieffy-orange focus-visible:ring-0 text-foreground shadow-[0_0_15px_rgba(255,96,41,0.05)]' 
+                            : 'border-brieffy-border focus-visible:border-brieffy-orange/50 focus-visible:ring-0 text-foreground'
+                        }`}
+                        placeholder="Acesso sem senha..."
                       />
                       {editPassphrase && (
                         <button
                           type="button"
                           onClick={() => setEditPassphrase('')}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                          title="Remover senha"
                         >
                           <X className="w-4 h-4" />
                         </button>
