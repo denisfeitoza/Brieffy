@@ -131,11 +131,33 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        initialDepthSignals={session.depth_signals || []}
     >
       <ForceLightMode />
-      <main className="h-screen w-full bg-[var(--bg)] font-inter relative">
+      <main className="h-screen w-full bg-[var(--bg)] font-inter relative overflow-hidden">
         <TypeformWizard 
           hasAccessPassword={hasAccessPassword}
           accessSessionId={session.id}
         />
+        <a 
+          href="https://brieffy.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-3 right-4 z-50 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-all duration-300 pointer-events-auto"
+        >
+          <span className="text-[9px] uppercase tracking-widest text-[var(--text3)] font-semibold">Powered by</span>
+          <div className="flex items-center gap-1">
+            <div 
+              className="w-4 h-4 rounded border-none flex items-center justify-center relative overflow-hidden"
+              style={{ background: "linear-gradient(135deg, #ff6029, #ffcfbc)" }}
+            >
+              <span className="text-white text-[9px] font-black z-10 relative">B</span>
+            </div>
+            <span 
+              className="text-xs font-bold text-[var(--text)] tracking-tight" 
+              style={{ fontFamily: '"Outfit", sans-serif' }}
+            >
+              Brief<span className="text-[var(--orange)]">fy</span>
+            </span>
+          </div>
+        </a>
       </main>
     </BriefingProvider>
   );
