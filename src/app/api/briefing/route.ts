@@ -12,6 +12,7 @@ import {
   buildBehaviorRules,
   buildOutputFormat,
   buildCorePersona,
+  buildBlockEvaluationModule,
   BriefingPhase
 } from '@/lib/ai/promptDictionary';
 // BUG-05 FIX: Do NOT create Supabase client at module level.
@@ -102,7 +103,9 @@ const SECTION_PIPELINE = [
 ];
 
 const BASE_MIN_QUESTIONS = 25;
-const ABSOLUTE_MAX_QUESTIONS = 40; // Just as a global fail-safe cap
+const BLOCK_SIZE = 10;
+const TARGET_FINISH = 40;
+const ABSOLUTE_MAX_QUESTIONS = 45; // Hard limit — force finish at 45
 const MIN_MEANINGFUL_VALUE_LENGTH = 3;
 
 /**
@@ -332,7 +335,7 @@ export async function POST(req: Request) {
       backendEngagement === 'low'       ? minQuestions + 5 :
       backendEngagement === 'medium'    ? minQuestions + 10 :
                                           minQuestions + 15;
-    const dynamicAbsoluteMax = Math.max(ABSOLUTE_MAX_QUESTIONS, minQuestions + 20);
+    const dynamicAbsoluteMax = Math.min(ABSOLUTE_MAX_QUESTIONS, Math.max(minQuestions + 10, TARGET_FINISH));
     const effectiveMax = Math.min(maxQForEngagement, dynamicAbsoluteMax);
     const forceFinish = userExhausted || questionCount >= effectiveMax;
     if (forceFinish) {
@@ -401,18 +404,41 @@ export async function POST(req: Request) {
       previousSignalsList
     });
 
+    // blockNumber = the block the NEXT question belongs to (1-indexed)
+    // At Q10: next question is Q11 → block 2. At Q20 → block 3. At Q0 → block 1.
+    const blockNumber = Math.floor(questionCount / BLOCK_SIZE) + 1;
+    const isCheckpoint = questionCount > 0 && questionCount % BLOCK_SIZE === 0;
+    // The completed block is the previous one (used for evaluation)
+    const completedBlock = isCheckpoint ? blockNumber - 1 : 0;
+
     const BEHAVIOR_RULES = buildBehaviorRules({
       generateMore,
       basalThreshold: perfConfig.basalThreshold,
       backendEngagement,
       selectedPackages,
       minQuestions,
-      questionCount
+      questionCount,
+      blockNumber
     });
+
+    // Block evaluation module — injected at checkpoints to recalibrate AI strategy
+    const BLOCK_EVAL_MODULE = (() => {
+      if (!isCheckpoint) return '';
+      const collected = getCollectedBasalFields(currentState || {}, basalFields);
+      const missing = basalFields.filter((f: string) => !collected.includes(f));
+      return buildBlockEvaluationModule({
+        blockNumber: completedBlock,
+        questionCount,
+        collectedFields: collected,
+        missingFields: missing,
+        basalCoverage: currentBasalCoverage,
+        selectedPackages: selectedPackages || [],
+      });
+    })();
 
     const OUTPUT_FORMAT = buildOutputFormat(backendEngagement);
 
-    const systemPrompt = [
+    const systemPromptParts = [
       CORE_PERSONA,
       INTENT_MODULE,
       EXTRACTION_MODULE,
@@ -424,7 +450,9 @@ export async function POST(req: Request) {
       `<PreviousQuestions>\n${history.filter((m: { role: string }) => m.role === 'assistant').map((m: { content: string }, i: number) => `${i + 1}. ${m.content.split('\n')[0].slice(0, 100)}`).join('\n')}\n</PreviousQuestions>`,
       `<CurrentState>${JSON.stringify(currentState)}</CurrentState>`,
       OUTPUT_FORMAT,
-    ].join('\n\n');
+    ];
+    if (BLOCK_EVAL_MODULE) systemPromptParts.push(BLOCK_EVAL_MODULE);
+    const systemPrompt = systemPromptParts.join('\n\n');
 
 
     // ================================================================
@@ -588,6 +616,18 @@ export async function POST(req: Request) {
             }
           }
 
+          // ZERO-TRUST LOGIC BOMBER: Protect against "Phantom Data Wipes"
+          // If the AI hallucinates { target_audience: null, name: "" }, it could wipe existing DB data.
+          if (parsed.updates && typeof parsed.updates === 'object') {
+            for (const key of Object.keys(parsed.updates)) {
+              const val = parsed.updates[key];
+              // Block nulls, undefined, empty strings, or empty arrays from overwriting valid state
+              if (val === null || val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) {
+                delete parsed.updates[key];
+              }
+            }
+          }
+
           // ================================================================
           // DEDUPE GUARD — Check if new question is too similar to a previous one
           // ================================================================
@@ -682,6 +722,15 @@ export async function POST(req: Request) {
             parsed.nextQuestion = { text: fallbackText, questionType: "text", options: [] };
           }
 
+          // Inject checkpoint metadata for frontend milestone screens
+          if (isCheckpoint && !parsed.isFinished) {
+            parsed.checkpoint = {
+              reached: true,
+              block: completedBlock,
+              questionCount,
+            };
+          }
+
           return NextResponse.json(parsed);
         } catch (e) {
           console.error("Falha ao fazer parse do JSON do LLM:", content);
@@ -723,6 +772,7 @@ export async function POST(req: Request) {
       },
     };
     const fallbackLang = langMap2[chosenLanguage || 'pt'] || langMap2['pt'];
+    const _fallbackCollected = getCollectedBasalFields(currentState || {}, basalFields);
 
     return NextResponse.json({
       intent: { mode: 'CREATE', confidence: 0.5, target_fields: [] },
@@ -730,8 +780,8 @@ export async function POST(req: Request) {
       inferences: { extracted: [] },
       basalCoverage: calculateQualityBasalCoverage(currentState || {}, basalFields),
       currentSection: "company",
-      basalFieldsCollected: getCollectedBasalFields(currentState || {}, basalFields),
-      basalFieldsMissing: basalFields.filter((f: string) => !getCollectedBasalFields(currentState || {}, basalFields).includes(f)),
+      basalFieldsCollected: _fallbackCollected,
+      basalFieldsMissing: basalFields.filter((f: string) => !_fallbackCollected.includes(f)),
       nextQuestion: {
         text: fallbackLang.fallbackQ,
         questionType: "text",

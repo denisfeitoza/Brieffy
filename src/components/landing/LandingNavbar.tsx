@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { type Language } from "@/i18n/landingTranslations";
-import { ModeToggle } from "@/components/ui/mode-toggle";
+
 
 export function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -116,10 +116,6 @@ export function LandingNavbar() {
               </div>
               
               <div className="w-[1px] h-6 bg-black/10 mx-2"></div>
-              
-              <ModeToggle />
-              
-              <div className="w-[1px] h-6 bg-black/10 mx-2"></div>
 
               <Link
                 href="/dashboard/login"
@@ -151,7 +147,7 @@ export function LandingNavbar() {
 
             {/* Mobile Burger & Lang */}
             <div className="md:hidden flex items-center gap-4">
-              <ModeToggle />
+
               <div className="flex items-center gap-2 bg-black/5 border border-black/10 rounded-full px-2 py-1 backdrop-blur-md">
                 {(['pt', 'en', 'es'] as Language[]).map((lang) => (
                   <button

@@ -27,7 +27,7 @@ const translations: Record<string, Record<string, string>> = {
     limitReachedDesc: 'Você atingiu o limite de respostas para o seu plano atual. Você pode apagar um briefing que ainda não teve respostas para liberar espaço, ou adquirir mais briefings.',
     buyMore: 'Comprar Mais Briefings',
     buyMoreShort: 'Comprar mais',
-    quotaAvailable: 'Briefings Disponíveis',
+    quotaUsed: 'Briefings Utilizados',
     quotaReached: 'Você atingiu o limite. Adquira mais pacotes para continuar criando briefings.',
     quotaNear: 'Você está perto do limite. Adquira mais pacotes para continuar criando briefings.',
     quotaOk: 'Você tem briefings sobrando. Use-os para gerar novos documentos estratégicos!',
@@ -44,7 +44,7 @@ const translations: Record<string, Record<string, string>> = {
     limitReachedDesc: 'You have reached the response limit for your current plan. You can delete a briefing with no responses to free up space, or purchase more briefings.',
     buyMore: 'Buy More Briefings',
     buyMoreShort: 'Buy more',
-    quotaAvailable: 'Available Briefings',
+    quotaUsed: 'Briefings Used',
     quotaReached: 'You\'ve reached the limit. Purchase more packages to continue creating briefings.',
     quotaNear: 'You\'re near the limit. Purchase more packages to keep creating briefings.',
     quotaOk: 'You have briefings to spare. Use them to generate new strategic documents!',
@@ -61,7 +61,7 @@ const translations: Record<string, Record<string, string>> = {
     limitReachedDesc: 'Has alcanzado el límite de respuestas de tu plan actual. Puedes eliminar un briefing sin respuestas para liberar espacio, o adquirir más briefings.',
     buyMore: 'Comprar Más Briefings',
     buyMoreShort: 'Comprar más',
-    quotaAvailable: 'Briefings Disponibles',
+    quotaUsed: 'Briefings Utilizados',
     quotaReached: 'Has alcanzado el límite. Adquiere más paquetes para continuar creando briefings.',
     quotaNear: 'Estás cerca del límite. Adquiere más paquetes para seguir creando briefings.',
     quotaOk: '¡Tienes briefings de sobra! Úsalos para generar nuevos documentos estratégicos.',
@@ -156,8 +156,8 @@ export function LimitReachedButton() {
 export function QuotaBanner({ used, max }: { used: number; max: number }) {
   const t = useT();
 
-  const available = Math.max(0, max - used);
-  const isNearLimit = available <= 1;
+  const remaining = Math.max(0, max - used);
+  const isNearLimit = remaining <= 1;
   const isLimitReached = used >= max && max > 0;
 
   if (max <= 0) return null;
@@ -166,7 +166,7 @@ export function QuotaBanner({ used, max }: { used: number; max: number }) {
     <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${isLimitReached ? 'bg-red-500/10 border-red-500/20' : isNearLimit ? 'bg-[var(--orange)]/10 border-[var(--orange)]/20' : 'bg-[var(--acbg)] border-[var(--acbd)]'}`}>
       <div>
         <h4 className={`text-sm font-bold ${isLimitReached ? 'text-red-500' : isNearLimit ? 'text-[var(--orange)]' : 'text-[var(--actext)]'}`}>
-          {t('quotaAvailable')}: {available} / {max}
+          {t('quotaUsed')}: {used} / {max}
         </h4>
         <p className="text-xs text-[var(--text2)] mt-0.5">
           {isLimitReached

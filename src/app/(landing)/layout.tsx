@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ForceLightMode } from "@/components/ui/force-light-mode";
 
 export const metadata: Metadata = {
   title: "Brieffy | Briefings Inteligentes com IA",
@@ -26,5 +27,10 @@ export default function LandingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      <ForceLightMode />
+      {children}
+    </>
+  );
 }

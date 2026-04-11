@@ -160,4 +160,7 @@ export type BriefingContextType = {
   detectedSignals: BriefingSignal[];
   // Consultant Persona
   engagementLevel: 'high' | 'medium' | 'low';
+  // Milestone checkpoints
+  pendingCheckpoint: { block: number } | null;
+  dismissCheckpoint: () => void;
 };

@@ -273,9 +273,9 @@ export default function ProfilePage() {
                   {usedBriefings} / {maxBriefings} {t('profile.briefingsUsed') || 'Briefings (Used/Total)'}
                 </p>
                 <p className="text-xs text-[var(--text2)] font-medium mt-0.5">
-                  {language === 'pt' && availableBriefings > 0 && `Você tem ${availableBriefings} briefings disponíveis`}
-                  {language === 'en' && availableBriefings > 0 && `You have ${availableBriefings} briefings available`}
-                  {language === 'es' && availableBriefings > 0 && `Tienes ${availableBriefings} briefings disponibles`}
+                  {language === 'pt' && availableBriefings > 0 && `Você utilizou ${usedBriefings} de ${maxBriefings} briefings`}
+                  {language === 'en' && availableBriefings > 0 && `You've used ${usedBriefings} of ${maxBriefings} briefings`}
+                  {language === 'es' && availableBriefings > 0 && `Has utilizado ${usedBriefings} de ${maxBriefings} briefings`}
                   
                   {language === 'pt' && availableBriefings === 0 && 'Você atingiu o limite de briefings do seu plano'}
                   {language === 'en' && availableBriefings === 0 && 'You have reached your briefing limit'}

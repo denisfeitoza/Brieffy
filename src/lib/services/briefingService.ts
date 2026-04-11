@@ -176,6 +176,7 @@ export async function resetSession(sessionId: string) {
       session_quality_score: null,
       engagement_summary: null,
       data_completeness: null,
+      company_info: null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', sessionId);

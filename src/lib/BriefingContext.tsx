@@ -207,6 +207,7 @@ export function BriefingProvider({
   
   const [assets, setAssets] = useState<FinalAssets | null>(null);
   const [documentError, setDocumentError] = useState<string | null>(null);
+  const [pendingCheckpoint, setPendingCheckpoint] = useState<{ block: number } | null>(null);
   const [basalInfo, setBasalInfo] = useState<BasalCoverageInfo>({
     basalCoverage: savedBasalCoverage || 0,
     currentSection: 'company',
@@ -690,6 +691,12 @@ export function BriefingProvider({
         }
       } else {
         if (data.engagement_level) setEngagementLevel(data.engagement_level);
+
+        // Checkpoint detection — show milestone screen while AI re-evaluates
+        if (data.checkpoint?.reached) {
+          setPendingCheckpoint({ block: data.checkpoint.block });
+        }
+
         const questionsToAdd: Omit<Message, 'id'>[] = [];
 
         if (data.active_listening?.depth_question) {
@@ -906,12 +913,14 @@ export function BriefingProvider({
     isOwner,
     detectedSignals,
     engagementLevel,
+    pendingCheckpoint,
+    dismissCheckpoint: () => setPendingCheckpoint(null),
   }), [
     sessionId, briefingState, updateBriefingState, messages, currentStepIndex,
     goBack, goNext, addMessage, isLoading, isGeneratingMore,
     isFinished, isFinalTextStep, isUploadStep, assets, basalInfo, chosenLanguage,
     generatedDocument, isGeneratingDocument, documentError, editToken,
-    editPassphrase, detectedSignals, engagementLevel,
+    editPassphrase, detectedSignals, engagementLevel, pendingCheckpoint,
     resetBriefing,
     submitAnswer, generateMoreOptions, generateDocument,
     selectedPackages, selectedPackageDetails, branding, isOnboarding, isOwner,

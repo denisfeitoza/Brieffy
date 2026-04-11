@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, memo, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AILoadingSplash } from "./AILoadingSplash";
 import { ClientThankYouScreen } from "./ClientThankYouScreen";
+import { MilestoneScreen } from "./MilestoneScreen";
 import { Button } from "@/components/ui/button";
 
 import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut, FastForward, X } from "lucide-react";
@@ -232,6 +233,8 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     isOwner,
     detectedSignals,
     engagementLevel,
+    pendingCheckpoint,
+    dismissCheckpoint,
   } = useBriefing();
 
   const [inputText, setInputText] = useState("");
@@ -240,6 +243,13 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   const [accessUnlocked, setAccessUnlocked] = useState(!hasAccessPassword);
   const [dismissedSkipHint, setDismissedSkipHint] = useState(false);
   const [showForceFinishModal, setShowForceFinishModal] = useState(false);
+
+  // Auto-dismiss milestone after progress bar completes (~2.5s)
+  useEffect(() => {
+    if (!pendingCheckpoint) return;
+    const timer = setTimeout(() => dismissCheckpoint(), 2800);
+    return () => clearTimeout(timer);
+  }, [pendingCheckpoint, dismissCheckpoint]);
   
   const mainRef = useRef<HTMLElement>(null);
   const [prevStep, setPrevStep] = useState(currentStepIndex);
@@ -604,6 +614,18 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
           {/* Insights Panel */}
           <InsightsPanel signals={detectedSignals} isOwner={isOwner} />
+
+          {/* Milestone Checkpoint Overlay */}
+          <AnimatePresence>
+            {pendingCheckpoint && (
+              <MilestoneScreen
+                key={`milestone-${pendingCheckpoint.block}`}
+                block={pendingCheckpoint.block}
+                language={chosenLanguage}
+                brandColor={activeColor}
+              />
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>
