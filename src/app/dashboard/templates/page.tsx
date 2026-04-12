@@ -5,6 +5,8 @@ import { GenerateLinkModal } from '@/components/dashboard/GenerateLinkModal';
 import { TemplatesPageHeader, TemplatesEmptyState, LimitReachedButton, QuotaBanner } from '@/components/dashboard/TemplatesI18n';
 import { Suspense } from 'react';
 import { DeleteTemplateButton } from '@/components/dashboard/DeleteTemplateButton';
+import { Button } from '@/components/ui/button';
+import { Wand2 } from 'lucide-react';
 import { getUserQuota } from '@/lib/services/briefingService';
 
 export const dynamic = 'force-dynamic';
@@ -83,16 +85,22 @@ async function TemplatesList() {
               <div className="pt-4 border-t border-[var(--bd)] flex items-center justify-between">
                 {isLimitReached && !activeSession ? (
                   <LimitReachedButton />
+                ) : !activeSession ? (
+                  <Link href={`/dashboard/templates/new?templateId=${template.id}`}>
+                    <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill cursor-pointer">
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Continuar Configuração
+                    </Button>
+                  </Link>
                 ) : (
                   <GenerateLinkModal 
                     templateId={template.id} 
                     templateName={template.name} 
-                    triggerLabel={activeSession ? undefined : "Continuar Configuração"}
-                    existingSession={activeSession ? {
+                    existingSession={{
                       id: activeSession.id,
                       edit_passphrase: activeSession.edit_passphrase,
                       access_password: activeSession.access_password
-                    } : undefined}
+                    }}
                   />
                 )}
                 <DeleteTemplateButton 

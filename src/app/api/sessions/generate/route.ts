@@ -24,7 +24,8 @@ export async function POST(req: Request) {
       editPassphrase, 
       accessPassword,
       briefingPurpose,
-      depthSignals
+      depthSignals,
+      maxQuestions
     } = await req.json();
 
     if (!templateId || !sessionName) {
@@ -88,12 +89,13 @@ export async function POST(req: Request) {
       .insert([{
         template_id: templateId,
         session_name: sessionName.trim(),
-        initial_context: initialContext?.trim() || null,
-        selected_packages: selectedPackages || [],
+        initial_context: initialContext?.trim() ? initialContext.trim().substring(0, 30000) : null,
+        selected_packages: Array.isArray(selectedPackages) ? selectedPackages.slice(0, 50) : [],
         edit_passphrase: editPassphrase?.trim() || null,
         access_password: accessPassword?.trim() || null,
-        briefing_purpose: briefingPurpose?.trim() || null,
+        briefing_purpose: briefingPurpose?.trim() ? briefingPurpose.trim().substring(0, 30000) : null,
         depth_signals: depthSignals || [],
+        max_questions: (!isNaN(Number(maxQuestions)) && Number(maxQuestions) > 0 && Number(maxQuestions) <= 100) ? Number(maxQuestions) : 25,
         status: 'pending',
         user_id: user.id,
       }])

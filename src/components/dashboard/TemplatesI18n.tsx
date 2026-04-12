@@ -79,16 +79,16 @@ export function TemplatesPageHeader() {
   return (
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div>
-        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[var(--text)]">
+        <h2 suppressHydrationWarning className="text-2xl md:text-3xl font-extrabold tracking-tight text-[var(--text)]">
           {t('title')}
         </h2>
-        <p className="text-[var(--text2)] mt-2 font-medium max-w-xl text-sm md:text-base">
+        <p suppressHydrationWarning className="text-[var(--text2)] mt-2 font-medium max-w-xl text-sm md:text-base">
           {t('subtitle')}
         </p>
       </div>
       <div className="flex items-center gap-3">
         <Link href="/dashboard/templates/new">
-          <Button className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl h-11 px-6 transition-all hover:shadow-lg">
+          <Button suppressHydrationWarning className="bg-[var(--orange)] hover:bg-[#e8552a] text-black font-semibold rounded-xl h-11 px-6 transition-all hover:shadow-lg">
             <Plus className="w-4 h-4 mr-2" />
             {t('newBriefing')}
           </Button>
@@ -106,10 +106,10 @@ export function TemplatesEmptyState() {
       <div className="w-16 h-16 bg-[var(--bg)] rounded-full flex items-center justify-center mb-6 shadow-sm border border-[var(--bd)]">
         <Sparkles className="w-8 h-8 text-[var(--orange)]" />
       </div>
-      <h3 className="text-xl font-bold text-[var(--text)] mb-2">{t('noneTitle')}</h3>
-      <p className="text-[var(--text2)] max-w-sm mb-8">{t('noneDesc')}</p>
+      <h3 suppressHydrationWarning className="text-xl font-bold text-[var(--text)] mb-2">{t('noneTitle')}</h3>
+      <p suppressHydrationWarning className="text-[var(--text2)] max-w-sm mb-8">{t('noneDesc')}</p>
       <Link href="/dashboard/templates/new">
-        <Button className="bg-[var(--text)] hover:opacity-90 text-[var(--bg)] font-semibold rounded-xl h-11 px-6">
+        <Button suppressHydrationWarning className="bg-[var(--text)] hover:opacity-90 text-[var(--bg)] font-semibold rounded-xl h-11 px-6">
           <Plus className="w-4 h-4 mr-2" />
           {t('createFirst')}
         </Button>
@@ -123,26 +123,26 @@ export function LimitReachedButton() {
 
   return (
     <Dialog>
-      <DialogTrigger className="flex items-center gap-2 px-3 h-10 text-xs font-medium rounded-full hover:bg-[var(--acbg)] text-[var(--actext)] hover:text-black transition-colors btn-pill">
+      <DialogTrigger suppressHydrationWarning className="flex items-center gap-2 px-3 h-10 text-xs font-medium rounded-full hover:bg-[var(--acbg)] text-[var(--actext)] hover:text-black transition-colors btn-pill">
         <Share2 className="w-4 h-4" />
         {t('generateLink')}
       </DialogTrigger>
       <DialogContent className="!max-w-none sm:!max-w-none w-[calc(100vw-1.5rem)] sm:w-[min(440px,calc(100vw-3rem))] bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] p-0 gap-0 overflow-hidden">
         <div className="px-5 py-5 sm:px-6 sm:py-6 space-y-4">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <DialogTitle suppressHydrationWarning className="flex items-center gap-2 text-lg font-bold">
               <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
                 <AlertCircle className="w-4 h-4 text-red-500" />
               </div>
               {t('limitReached')}
             </DialogTitle>
-            <DialogDescription className="text-[var(--text2)] pt-2 leading-relaxed text-sm">
+            <DialogDescription suppressHydrationWarning className="text-[var(--text2)] pt-2 leading-relaxed text-sm">
               {t('limitReachedDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="pt-3 border-t border-[var(--bd)]">
             <Link href="/dashboard/packages" className="w-full block">
-              <Button className="w-full bg-[var(--orange)] text-black font-bold hover:opacity-90 rounded-full h-11">
+              <Button suppressHydrationWarning className="w-full bg-[var(--orange)] text-black font-bold hover:opacity-90 rounded-full h-11">
                 {t('buyMore')}
               </Button>
             </Link>
@@ -165,10 +165,10 @@ export function QuotaBanner({ used, max }: { used: number; max: number }) {
   return (
     <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border ${isLimitReached ? 'bg-red-500/10 border-red-500/20' : isNearLimit ? 'bg-[var(--orange)]/10 border-[var(--orange)]/20' : 'bg-[var(--acbg)] border-[var(--acbd)]'}`}>
       <div>
-        <h4 className={`text-sm font-bold ${isLimitReached ? 'text-red-500' : isNearLimit ? 'text-[var(--orange)]' : 'text-[var(--actext)]'}`}>
+        <h4 suppressHydrationWarning className={`text-sm font-bold ${isLimitReached ? 'text-red-500' : isNearLimit ? 'text-[var(--orange)]' : 'text-[var(--actext)]'}`}>
           {t('quotaUsed')}: {used} / {max}
         </h4>
-        <p className="text-xs text-[var(--text2)] mt-0.5">
+        <p suppressHydrationWarning className="text-xs text-[var(--text2)] mt-0.5">
           {isLimitReached
             ? t('quotaReached')
             : isNearLimit
@@ -178,6 +178,7 @@ export function QuotaBanner({ used, max }: { used: number; max: number }) {
       </div>
       <Link href="/dashboard/packages" className="mt-3 sm:mt-0 shrink-0">
         <Button 
+          suppressHydrationWarning
           size="sm"
           className={`rounded-xl font-semibold shadow-sm transition-transform hover:scale-105 h-9 px-4 ${
             isLimitReached 

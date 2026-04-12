@@ -4,15 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 import {
-  INTENT_MODULE,
   EXTRACTION_MODULE,
   CONSULTANT_RULES,
   PHASE_MODULES,
-  buildActiveListeningModule,
   buildBehaviorRules,
   buildOutputFormat,
   buildCorePersona,
-  buildBlockEvaluationModule,
+  compileSystemPrompt,
   BriefingPhase
 } from '@/lib/ai/promptDictionary';
 // BUG-05 FIX: Do NOT create Supabase client at module level.
@@ -59,9 +57,6 @@ Cada pacote adiciona perguntas únicas para sua área. REGRAS CRÍTICAS DE DEDUP
 2. Use seu julgamento para MESCLAR tópicos sobrepostos em perguntas mais ricas e combinadas.
 3. Quando um tipo específico é sugerido num pacote, você deve usá-lo apenas se estiver listado em <AllowedFormats>.
 4. As perguntas de cada pacote devem ser distribuídas pelas seções relevantes, não agrupadas juntas.
-5. NUNCA numere as perguntas (ex: "pergunta 1:", "1."). O chat já tem o fluxo visual.
-6. Faça a pergunta DIRETAMENTE ou com uma ponte muito natural. NUNCA adicione justificativas robóticas na própria pergunta (ex: evite dizer "Entender a história ajuda a posicionar. Então...").
-7. Mantenha o tom de uma conversa fluida e humana.
 
 ${fragments}
 ═══ FIM DOS PACOTES DE SKILL ═══`;
@@ -80,9 +75,6 @@ const UNIVERSAL_BASAL_FIELDS = [
   "sector_segment",
   "company_age",
   "services_offered",
-  "owner_relationship",
-  "brand_name_meaning",
-  "keywords",
   "mission_vision_values",
   "target_audience_demographics",
   "competitors",
@@ -104,7 +96,6 @@ const SECTION_PIPELINE = [
 
 const BASE_MIN_QUESTIONS = 25;
 const BLOCK_SIZE = 10;
-const TARGET_FINISH = 40;
 const ABSOLUTE_MAX_QUESTIONS = 45; // Hard limit — force finish at 45
 const MIN_MEANINGFUL_VALUE_LENGTH = 3;
 
@@ -190,6 +181,63 @@ function getCollectedBasalFields(
   });
 }
 
+// ════════════════════════════════════════════════════════════════
+// ZERO-TRUST SANITIZER — Prevent phantom data wipes from LLM
+// ════════════════════════════════════════════════════════════════
+function sanitizeUpdates(updates: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!updates || typeof updates !== 'object') return {};
+  const clean: Record<string, unknown> = {};
+  for (const key of Object.keys(updates)) {
+    const val = updates[key];
+    // Block nulls, undefined, empty strings, or empty arrays from overwriting valid state
+    if (val === null || val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) {
+      continue;
+    }
+    clean[key] = val;
+  }
+  return clean;
+}
+
+// ════════════════════════════════════════════════════════════════
+// SMART FALLBACK — Generate fallback question targeting missing fields
+// ════════════════════════════════════════════════════════════════
+function buildSmartFallback(
+  currentState: Record<string, unknown>,
+  basalFields: string[],
+  chosenLanguage: string
+): { text: string; questionType: string; options: string[] } {
+  const collected = getCollectedBasalFields(currentState || {}, basalFields);
+  const missingFields = basalFields.filter((f: string) => !collected.includes(f));
+  const fallbackLangMap: Record<string, Record<string, string>> = {
+    pt: {
+      target_audience_demographics: "Para quem sua empresa vende? Descreva seu público ideal.",
+      sector_segment: "Em qual segmento ou nicho sua empresa atua?",
+      competitive_differentiator: "O que diferencia sua empresa dos concorrentes?",
+      services_offered: "Quais são seus principais serviços ou produtos?",
+      default: "Pode me contar um pouco mais sobre esse ponto?",
+    },
+    en: {
+      target_audience_demographics: "Who does your company sell to? Describe your ideal customer.",
+      sector_segment: "What industry or niche does your company operate in?",
+      competitive_differentiator: "What sets your company apart from competitors?",
+      services_offered: "What are your main services or products?",
+      default: "Could you tell me a bit more about that?",
+    },
+    es: {
+      target_audience_demographics: "¿A quién le vende su empresa? Describa su cliente ideal.",
+      sector_segment: "¿En qué sector o nicho opera su empresa?",
+      competitive_differentiator: "¿Qué diferencia a su empresa de la competencia?",
+      services_offered: "¿Cuáles son sus principales servicios o productos?",
+      default: "¿Podría contarme un poco más sobre eso?",
+    },
+  };
+  const langFallbacks = fallbackLangMap[chosenLanguage || 'pt'] || fallbackLangMap['pt'];
+  const targetField = missingFields[0];
+  const fallbackText = (targetField && langFallbacks[targetField]) || langFallbacks.default;
+
+  return { text: fallbackText, questionType: "text", options: [] };
+}
+
 export async function POST(req: Request) {
   try {
     // Rate limit: 20 requests per minute for briefing
@@ -202,11 +250,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
-    const { currentState, history, generateMore, activeTemplate, chosenLanguage, selectedPackages, detectedSignals: previousSignals, isResume, briefingPurpose: sessionPurpose, depthSignals: sessionDepthSignals } = body;
+    const body = await req.json() || {};
+    const { currentState, history = [], generateMore, activeTemplate, chosenLanguage, selectedPackages, isResume, briefingPurpose: sessionPurpose, depthSignals: sessionDepthSignals } = body;
 
-    // RESUME SUPPORT: when resuming, use the last real answer from history (not the __RESUME__ token)
+    // RESUME SUPPORT & ZERO-TRUST TRUNCATION: Protect against 10MB payload injections
     let answer = body.answer;
+    if (typeof answer === 'string') answer = answer.slice(0, 3000);
+    else if (Array.isArray(answer)) answer = answer.map((a: unknown) => String(a).slice(0, 200)).slice(0, 20);
     if (isResume && answer === '__RESUME__') {
       const lastUserMsg = [...(history || [])].reverse().find((m: { role: string; content: string }) => m.role === 'user');
       answer = lastUserMsg?.content || 'Continuando de onde parei.';
@@ -259,17 +309,12 @@ export async function POST(req: Request) {
       ? activeTemplate.sections
       : SECTION_PIPELINE;
 
-    const suggestedQuestions = activeTemplate?.suggested_questions?.length
-      ? JSON.stringify(activeTemplate.suggested_questions)
-      : "Nenhuma pergunta sugerida disponível. Use sua criatividade baseada nos campos basais.";
-
     const templateContext = activeTemplate 
       ? `Template: ${activeTemplate.name} (${activeTemplate.category}). Goals: ${activeTemplate.objectives.join(", ")}. Core fields: ${activeTemplate.core_fields.join(", ")}`
       : 'No template. General business interview.';
 
     const briefingPurpose = sessionPurpose || activeTemplate?.briefing_purpose || '';
     const depthSignals = sessionDepthSignals || activeTemplate?.depth_signals || [];
-    const previousSignalsList = Array.isArray(previousSignals) ? previousSignals : [];
     const allPurposes = [briefingPurpose, ...packageData.purposes].filter(Boolean);
     const allDepthSignals = [...depthSignals, ...packageData.depthSignals];
     const mergedPurpose = allPurposes.length > 0 ? allPurposes.join(' | ') : '';
@@ -288,6 +333,12 @@ export async function POST(req: Request) {
     if (agencyBrandColor) {
       extraContextStrings.push(`AGENCY BRAND COLOR: Their agency's primary brand color is ${agencyBrandColor}. Keep this in mind if they prefer visuals aligned with their brand.`);
     }
+    if (mergedPurpose) {
+      extraContextStrings.push(`BRIEFING PURPOSE: ${mergedPurpose}`);
+    }
+    if (mergedDepthSignals.length > 0) {
+      extraContextStrings.push(`DEPTH SIGNALS (topics requiring extra focus): ${mergedDepthSignals.join(', ')}`);
+    }
     const extraContext = extraContextStrings.join('\n\n');
 
     const langMap: Record<string, string> = {
@@ -304,8 +355,9 @@ export async function POST(req: Request) {
     const currentBasalCoverage = calculateQualityBasalCoverage(currentState || {}, basalFields);
     const backendEngagement = calculateEngagement(history || []);
 
-    const packageCount = selectedPackages?.length || 0;
-    const minQuestions = BASE_MIN_QUESTIONS + (packageCount * 3); // Aumenta 3 perguntas por pacote ativo
+    const parsedMax = Number(body.maxQuestions);
+    const userMaxQuestions = (!isNaN(parsedMax) && parsedMax > 0 && parsedMax <= 100) ? parsedMax : 40;
+    const minQuestions = Math.floor(userMaxQuestions * 0.8);
     const userExhausted = isUserExhausted(backendEngagement);
 
     // EXHAUSTED override: user has skipped too many times. Respect their time — finalize ASAP.
@@ -313,8 +365,8 @@ export async function POST(req: Request) {
     const effectiveMinQuestions = userExhausted ? Math.min(questionCount, 8) : minQuestions;
     
     let currentPhase: BriefingPhase = 'discovery';
-    const confirmThreshold = Math.floor(effectiveMinQuestions * 0.3); // ~8
-    const depthThreshold = Math.floor(effectiveMinQuestions * 0.6); // ~15
+    const confirmThreshold = Math.floor(effectiveMinQuestions * 0.3);
+    const depthThreshold = Math.floor(effectiveMinQuestions * 0.6);
     
     if (questionCount >= confirmThreshold && currentBasalCoverage >= 0.2) currentPhase = 'confirm';
     if (questionCount >= depthThreshold && currentBasalCoverage >= 0.4) currentPhase = 'depth';
@@ -323,20 +375,14 @@ export async function POST(req: Request) {
     // ================================================================
     // CIRCUIT BREAKER — Hard limit enforced in code, not just prompt
     // ================================================================
-    // Engagement-aware max caps:
-    //   exhausted → finalize NOW (no extra questions)
-    //   fatigue   → up to 3 more questions max
-    //   low       → up to 5 more
-    //   medium    → up to 10 more
-    //   high      → up to 15 more
     const maxQForEngagement =
       backendEngagement === 'exhausted' ? questionCount :     // stop immediately
       backendEngagement === 'fatigue'   ? Math.min(questionCount + 3, minQuestions + 3) :
       backendEngagement === 'low'       ? minQuestions + 5 :
       backendEngagement === 'medium'    ? minQuestions + 10 :
-                                          minQuestions + 15;
-    const dynamicAbsoluteMax = Math.min(ABSOLUTE_MAX_QUESTIONS, Math.max(minQuestions + 10, TARGET_FINISH));
-    const effectiveMax = Math.min(maxQForEngagement, dynamicAbsoluteMax);
+                                          userMaxQuestions;
+
+    const effectiveMax = Math.min(maxQForEngagement, userMaxQuestions);
     const forceFinish = userExhausted || questionCount >= effectiveMax;
     if (forceFinish) {
       const reason = userExhausted ? `user exhausted (${backendEngagement})` : `${questionCount} questions (limit: ${effectiveMax})`;
@@ -346,7 +392,6 @@ export async function POST(req: Request) {
 
     // ================================================================
     // HISTORY COMPRESSION — Keep recent messages full, summarize older ones
-    // User answers get more space (up to 300 chars) to preserve context
     // ================================================================
     const RECENT_WINDOW = 4;
     let compressedHistory = history;
@@ -366,18 +411,11 @@ export async function POST(req: Request) {
     }
 
     // ================================================================
-    // ALLOWED FORMATS — Build format descriptions
+    // ALLOWED FORMATS — Build format descriptions (compact)
     // ================================================================
     const allowedFormats: string[] = [];
     allowedFormats.push(`  - text: Open-ended names/descriptions.`);
     if (formatConfig.multiple_choice) allowedFormats.push(`  - multiple_choice: Multi-select. EXACTLY 6 options (5 real + 1 "Outro"). Options as string array.`);
-    if (formatConfig.single_choice) {
-      if (formatConfig.font) {
-        allowedFormats.push(`  - single_choice: Exclusive choice. EXACTLY 6 options (5 real + 1 "Outro"). For FONTS: use REAL Google Font names "FontName - TwoWordDescription". 6th = "Nenhuma dessas - Padrao do Sistema".`);
-      } else {
-        allowedFormats.push(`  - single_choice: Exclusive choice. EXACTLY 6 options (5 real + 1 "Outro").`);
-      }
-    }
     if (formatConfig.boolean_toggle) allowedFormats.push(`  - boolean_toggle: Yes/No binary. No "Other" option.`);
     if (formatConfig.card_selector) allowedFormats.push(`  - card_selector: Strategic routes. Options as [{title,description}]. 6 cards (5 real + 1 "Outro" card).`);
     if (formatConfig.slider) allowedFormats.push(`  - slider: 1-10 scale. Send minOption and maxOption.`);
@@ -386,8 +424,17 @@ export async function POST(req: Request) {
     if (formatConfig.file_upload) allowedFormats.push(`  - file_upload: Assets/references. Use ONLY at the end.`);
 
     // ================================================================
-    // PHASE-SPECIFIC MODULES — Only include what's needed for current phase
+    // BUILD SYSTEM PROMPT — Phase-aware prompt compiler
+    // Only injects modules relevant to the current phase
     // ================================================================
+    const blockNumber = Math.floor(questionCount / BLOCK_SIZE) + 1;
+    const isCheckpoint = questionCount > 0 && questionCount % BLOCK_SIZE === 0;
+    const completedBlock = isCheckpoint ? blockNumber - 1 : 0;
+
+    // Checkpoint data for block evaluation (injected into behavior rules)
+    const collected = getCollectedBasalFields(currentState || {}, basalFields);
+    const missing = basalFields.filter((f: string) => !collected.includes(f));
+
     const CORE_PERSONA = buildCorePersona({
       targetLang,
       templateContext,
@@ -398,19 +445,6 @@ export async function POST(req: Request) {
       packageDataPrompt: packageData.prompt
     });
 
-    const ACTIVE_LISTENING_MODULE = buildActiveListeningModule({
-      mergedPurpose,
-      mergedDepthSignals,
-      previousSignalsList
-    });
-
-    // blockNumber = the block the NEXT question belongs to (1-indexed)
-    // At Q10: next question is Q11 → block 2. At Q20 → block 3. At Q0 → block 1.
-    const blockNumber = Math.floor(questionCount / BLOCK_SIZE) + 1;
-    const isCheckpoint = questionCount > 0 && questionCount % BLOCK_SIZE === 0;
-    // The completed block is the previous one (used for evaluation)
-    const completedBlock = isCheckpoint ? blockNumber - 1 : 0;
-
     const BEHAVIOR_RULES = buildBehaviorRules({
       generateMore,
       basalThreshold: perfConfig.basalThreshold,
@@ -418,42 +452,32 @@ export async function POST(req: Request) {
       selectedPackages,
       minQuestions,
       questionCount,
-      blockNumber
+      blockNumber,
+      targetFinish: userMaxQuestions,
+      // Checkpoint data — only injected at block boundaries
+      isCheckpoint,
+      collectedFields: isCheckpoint ? collected : undefined,
+      missingFields: isCheckpoint ? missing : undefined,
+      basalCoverage: isCheckpoint ? currentBasalCoverage : undefined,
     });
 
-    // Block evaluation module — injected at checkpoints to recalibrate AI strategy
-    const BLOCK_EVAL_MODULE = (() => {
-      if (!isCheckpoint) return '';
-      const collected = getCollectedBasalFields(currentState || {}, basalFields);
-      const missing = basalFields.filter((f: string) => !collected.includes(f));
-      return buildBlockEvaluationModule({
-        blockNumber: completedBlock,
-        questionCount,
-        collectedFields: collected,
-        missingFields: missing,
-        basalCoverage: currentBasalCoverage,
-        selectedPackages: selectedPackages || [],
-      });
-    })();
+    // PreviousQuestions — limited to last 8 for anti-repetition (saves ~2000 tokens on long sessions)
+    const assistantMessages = history.filter((m: { role: string }) => m.role === 'assistant');
+    const recentQuestions = assistantMessages.slice(-8);
+    const previousQuestionsBlock = `<PreviousQuestions>\n${recentQuestions.map((m: { content: string }, i: number) => `${i + 1}. ${m.content.split('\n')[0].slice(0, 100)}`).join('\n')}\n</PreviousQuestions>`;
 
-    const OUTPUT_FORMAT = buildOutputFormat(backendEngagement);
+    // CurrentState — compact format: only collected/missing field names + key values
+    const stateCompact = `<CurrentState collected="${collected.join(',')}" missing="${missing.join(',')}" coverage="${Math.round(currentBasalCoverage * 100)}%">${JSON.stringify(currentState)}</CurrentState>`;
 
-    const systemPromptParts = [
-      CORE_PERSONA,
-      INTENT_MODULE,
-      EXTRACTION_MODULE,
-      ACTIVE_LISTENING_MODULE,
-      PHASE_MODULES[currentPhase](forceFinish),
-      CONSULTANT_RULES,
-      BEHAVIOR_RULES,
-      `<AllowedFormats>\n${allowedFormats.join('\n')}\n</AllowedFormats>`,
-      `<PreviousQuestions>\n${history.filter((m: { role: string }) => m.role === 'assistant').map((m: { content: string }, i: number) => `${i + 1}. ${m.content.split('\n')[0].slice(0, 100)}`).join('\n')}\n</PreviousQuestions>`,
-      `<CurrentState>${JSON.stringify(currentState)}</CurrentState>`,
-      OUTPUT_FORMAT,
-    ];
-    if (BLOCK_EVAL_MODULE) systemPromptParts.push(BLOCK_EVAL_MODULE);
-    const systemPrompt = systemPromptParts.join('\n\n');
-
+    const systemPrompt = compileSystemPrompt({
+      phase: currentPhase,
+      forceFinish,
+      corePersona: CORE_PERSONA,
+      behaviorRules: BEHAVIOR_RULES,
+      allowedFormats: `<AllowedFormats>\n${allowedFormats.join('\n')}\n</AllowedFormats>`,
+      previousQuestions: previousQuestionsBlock,
+      currentStateCompact: stateCompact,
+    });
 
     // ================================================================
     // DEDUPE GUARD — Jaccard word-similarity to catch semantic repeats
@@ -467,13 +491,11 @@ export async function POST(req: Request) {
       const union = new Set([...setA, ...setB]);
       return intersection.size / union.size;
     };
-    const previousQuestions = history
-      .filter((m: { role: string }) => m.role === 'assistant')
-      .map((m: { content: string }) => m.content.split('\n')[0]);
+    const previousQuestions = assistantMessages.map((m: { content: string }) => m.content.split('\n')[0]);
 
-    // Chamada para o provider configurado (Groq, OpenRouter, etc.) — WITH RETRY
+    // LLM call — WITH RETRY
     const startTime = Date.now();
-    console.log(`[AI] Using ${llmConfig.provider} / ${llmConfig.model}`);
+    console.log(`[AI] Using ${llmConfig.provider} / ${llmConfig.model} | Phase: ${currentPhase} | Q: ${questionCount} | Coverage: ${Math.round(currentBasalCoverage * 100)}%`);
 
     const llmMessages = [
       { role: "system", content: systemPrompt },
@@ -521,7 +543,6 @@ export async function POST(req: Request) {
 
           if (isRetryable && attempt < MAX_RETRIES - 1) {
             lastError = new Error(`${llmConfig.provider} API falhou: ${res.status}`);
-            // Brief backoff before retry (300ms * attempt)
             await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
             continue;
           }
@@ -559,74 +580,14 @@ export async function POST(req: Request) {
         try {
           const parsed = JSON.parse(content);
 
-          // ================================================================
-          // INTENT-AWARE INFERENCE AUTO-MERGE — v2 (Skills-Inspired)
-          // Respects intent.mode to prevent accidental state overwrites
-          // ================================================================
-          const intentMode = parsed.intent?.mode || 'CREATE';
-          const intentConfidence = parsed.intent?.confidence || 0.9;
-          console.log(`[AI] Intent: ${intentMode} (${Math.round(intentConfidence * 100)}%) | Fields: ${(parsed.intent?.target_fields || []).join(', ') || 'none'}`);
+          // ════════════════════════════════════════════════════════════════
+          // SIMPLIFIED PARSE — No more intent/inference/active_listening
+          // Everything the LLM extracts goes directly into `updates`.
+          // Backend calculates coverage, collected/missing fields.
+          // ════════════════════════════════════════════════════════════════
 
-          // Log diff_summary when available (UPDATE mode)
-          if (parsed.diff_summary && intentMode === 'UPDATE') {
-            console.log(`[AI] Surgical Update — Changed: [${(parsed.diff_summary.changed || []).join(', ')}] | Preserved: [${(parsed.diff_summary.preserved || []).join(', ')}]`);
-          }
-
-          // EXPLORE mode: strip any updates the LLM may have hallucinated
-          if (intentMode === 'EXPLORE') {
-            if (parsed.updates && Object.keys(parsed.updates).length > 0) {
-              console.warn(`[AI] EXPLORE mode but LLM sent updates — stripping:`, Object.keys(parsed.updates));
-              parsed.updates = {};
-            }
-          }
-
-          if (parsed.inferences?.extracted?.length) {
-            // Determine confidence threshold based on intent mode
-            const confidenceThreshold = intentMode === 'UPDATE' ? 0.85 : 0.7;
-            
-            const highConfidence = parsed.inferences.extracted.filter(
-              (inf: { confidence: number; field: string; value: string }) => inf.confidence >= confidenceThreshold && inf.field && inf.value
-            );
-
-            if (highConfidence.length > 0) {
-              if (!parsed.updates) parsed.updates = {};
-              for (const inf of highConfidence) {
-                // In UPDATE mode: only merge if the field is in target_fields OR is a cross-field impact
-                const targetFields = parsed.intent?.target_fields || [];
-                const isTargetField = targetFields.includes(inf.field);
-                const isCrossField = inf.source === 'cross_field_impact';
-                
-                if (intentMode === 'UPDATE' && !isTargetField && !isCrossField) {
-                  continue; // Skip: not related to this update
-                }
-                
-                if (!parsed.updates[inf.field] && !currentState[inf.field]) {
-                  parsed.updates[inf.field] = inf.value;
-                }
-              }
-              console.log(`[AI] Auto-merged ${highConfidence.length} inferences (threshold: ${confidenceThreshold}):`,
-                highConfidence.map((i: { confidence: number; field: string; value: string }) => `${i.field}=${i.value} (${Math.round(i.confidence * 100)}%)`).join(', ')
-              );
-            }
-
-            if (parsed.inferences.depth_decision) {
-              console.log(`[AI] Depth decision: ${parsed.inferences.depth_decision}` +
-                (parsed.inferences.skipped_topics?.length ? ` | Skipped: ${parsed.inferences.skipped_topics.join(', ')}` : '')
-              );
-            }
-          }
-
-          // ZERO-TRUST LOGIC BOMBER: Protect against "Phantom Data Wipes"
-          // If the AI hallucinates { target_audience: null, name: "" }, it could wipe existing DB data.
-          if (parsed.updates && typeof parsed.updates === 'object') {
-            for (const key of Object.keys(parsed.updates)) {
-              const val = parsed.updates[key];
-              // Block nulls, undefined, empty strings, or empty arrays from overwriting valid state
-              if (val === null || val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) {
-                delete parsed.updates[key];
-              }
-            }
-          }
+          // ZERO-TRUST: Sanitize updates
+          parsed.updates = sanitizeUpdates(parsed.updates);
 
           // ================================================================
           // DEDUPE GUARD — Check if new question is too similar to a previous one
@@ -637,7 +598,6 @@ export async function POST(req: Request) {
             
             if (isDuplicate && attempt < MAX_RETRIES - 1) {
               console.warn(`[Briefing] Dedupe guard: "${newQ}" is too similar to a previous question. Retrying (attempt ${attempt + 1}).`);
-              // Inject a dedupe instruction into the user message for the retry
               llmMessages[llmMessages.length - 1] = {
                 role: "user",
                 content: `${typeof answer === 'string' ? answer : JSON.stringify(answer)}\n\n[SYSTEM: The question you generated ("${newQ}") is too similar to a question already asked. Generate a COMPLETELY DIFFERENT question about a DIFFERENT topic.]`
@@ -649,21 +609,83 @@ export async function POST(req: Request) {
           }
 
           // ================================================================
-          // CIRCUIT BREAKER ENFORCEMENT — Force finish if limit reached
+          // CIRCUIT BREAKER ENFORCEMENT & DOCUMENT GENERATION
           // ================================================================
           if (forceFinish && !parsed.isFinished) {
             console.warn(`[Briefing] Circuit breaker override: forcing isFinished=true (${questionCount} questions).`);
             parsed.isFinished = true;
+          }
+
+          if (parsed.isFinished) {
             if (!parsed.assets) {
               parsed.assets = {
-                score: { clareza_marca: 5, clareza_dono: 5, publico: 5, maturidade: 5 },
-                insights: ["Briefing finalizado automaticamente pelo limite de perguntas."]
+                score: { clareza_marca: 8, clareza_dono: 8, publico: 8, maturidade: 8 },
+                insights: ["Briefing finalizado com sucesso."]
               };
             }
-            const collected = getCollectedBasalFields(currentState || {}, basalFields);
-            parsed.basalFieldsCollected = collected;
-            parsed.basalFieldsMissing = basalFields.filter((f: string) => !collected.includes(f));
             parsed.session_quality_score = parsed.session_quality_score || Math.round(currentBasalCoverage * 100);
+
+            // ════════════════════════════════════════════════════════════════
+            // FINAL DOCUMENT GENERATOR: Transforms mapped data back into the Dossiê
+            // ════════════════════════════════════════════════════════════════
+            try {
+              console.log("[AI] Generating final Markdown Document (Dossiê Estratégico)...");
+              const fullState = { ...currentState, ...parsed.updates };
+              const docSystemPrompt = `Você é um Consultor Estratégico e Copywriter de Elite.
+Com base nos dados extraídos (JSON), no contexto inicial da empresa e no histórico completo da transcrição (anexos e nuances), escreva um Dossiê Estratégico completo em formato Markdown nativo.
+O usuário NÃO deve ver o JSON. Você deve compilar todas essas fontes de informação num relatório humano, riquíssimo em detalhes e maravilhosamente formatado.
+Dê atenção especial a qualquer "Anexo" ou link mencionado no histórico ou contexto inicial, utilizando essas informações para enriquecer o documento.
+
+ESTRUTURA OBRIGATÓRIA (use headings H1, H2, H3, bullet points e bold):
+# Dossiê Estratégico: ${fullState.company_name || 'Projeto'}
+
+## 1. Visão Geral do Negócio
+(Descreva a missão, o resumo da empresa e o que ela faz)
+
+## 2. Diferenciais e Posicionamento
+(O que torna a marca única e como ela se posiciona no mercado)
+
+## 3. O Público-Alvo
+(Detalhe o cliente ideal e as demografias)
+
+## 4. Personalidade, Tom e Voz
+(Como a marca fala e se comporta profissionalmente)
+
+## 5. Requisitos Técnicos & Insights Adicionais
+(Qualquer restrição, direcionamento de design, anexos ou detalhe técnico extraído)
+
+IMPORTANTE: Seja detalhista (500 a 1500 palavras). Transforme as informações brutas (JSON + Histórico) numa obra-prima de estratégia. NUNCA envolva sua resposta em blocos de código markdown ou texto extra. Apenas retorne o próprio Markdown puro.`;
+
+              const docRes = await fetch(llmConfig.baseUrl, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${llmConfig.apiKey}`,
+                  ...llmConfig.headers,
+                },
+                body: JSON.stringify({
+                  model: llmConfig.model,
+                  temperature: 0.3,
+                  max_tokens: 3000, // large context for full document
+                  messages: [
+                    { role: "system", content: docSystemPrompt },
+                    { role: "user", content: `DADOS EXTRAÍDOS (JSON):\n${JSON.stringify(fullState, null, 2)}\n\nCONTEXTO INICIAL (Preparação):\n${body.initialContext || 'Nenhum contexto inicial fornecido.'}\n\nHISTÓRICO COMPLETO DA SESSÃO (Transcrição e Anexos):\n${JSON.stringify(history, null, 2)}` }
+                  ],
+                }),
+              });
+
+              if (docRes.ok) {
+                const docData = await docRes.json();
+                const mdContent = docData.choices?.[0]?.message?.content;
+                if (mdContent) {
+                  parsed.assets.document = mdContent.trim();
+                  console.log("[AI] Final document generated successfully.");
+                }
+              } else {
+                console.error("[Briefing] Error from LLM during document generation", await docRes.text());
+              }
+            } catch (err) {
+              console.error("[Briefing] Error executing final document generation:", err);
+            }
           }
 
           // Safety auto-fill for UI components
@@ -688,38 +710,7 @@ export async function POST(req: Request) {
             }
           } else if (!parsed.isFinished) {
             console.warn("[Briefing] AI returned null nextQuestion without isFinished=true. Generating smart fallback.");
-            
-            // Build a smart fallback question targeting the most critical missing field
-            const collected = getCollectedBasalFields(currentState || {}, basalFields);
-            const missingFields = basalFields.filter((f: string) => !collected.includes(f));
-            const fallbackLangMap: Record<string, Record<string, string>> = {
-              pt: {
-                publico_alvo: "Para quem sua empresa vende? Descreva seu público ideal.",
-                segmento: "Em qual segmento ou nicho sua empresa atua?",
-                diferencial: "O que diferencia sua empresa dos concorrentes?",
-                objetivos: "Quais são seus principais objetivos com esse projeto?",
-                default: "Pode me contar um pouco mais sobre esse ponto?",
-              },
-              en: {
-                publico_alvo: "Who does your company sell to? Describe your ideal customer.",
-                segmento: "What industry or niche does your company operate in?",
-                diferencial: "What sets your company apart from competitors?",
-                objetivos: "What are your main goals with this project?",
-                default: "Could you tell me a bit more about that?",
-              },
-              es: {
-                publico_alvo: "¿A quién le vende su empresa? Describa su cliente ideal.",
-                segmento: "¿En qué sector o nicho opera su empresa?",
-                diferencial: "¿Qué diferencia a su empresa de la competencia?",
-                objetivos: "¿Cuáles son sus principales objetivos con este proyecto?",
-                default: "¿Podría contarme un poco más sobre eso?",
-              },
-            };
-            const langFallbacks = fallbackLangMap[chosenLanguage || 'pt'] || fallbackLangMap['pt'];
-            const targetField = missingFields[0];
-            const fallbackText = (targetField && langFallbacks[targetField]) || langFallbacks.default;
-            
-            parsed.nextQuestion = { text: fallbackText, questionType: "text", options: [] };
+            parsed.nextQuestion = buildSmartFallback(currentState, basalFields, chosenLanguage);
           }
 
           // Inject checkpoint metadata for frontend milestone screens
@@ -730,6 +721,12 @@ export async function POST(req: Request) {
               questionCount,
             };
           }
+
+          // Inject backend-calculated fields for frontend compatibility
+          parsed.basalCoverage = currentBasalCoverage;
+          parsed.basalFieldsCollected = collected;
+          parsed.basalFieldsMissing = missing;
+          parsed.engagement_level = backendEngagement;
 
           return NextResponse.json(parsed);
         } catch (e) {
@@ -751,9 +748,6 @@ export async function POST(req: Request) {
 
     // ================================================================
     // ALL RETRIES EXHAUSTED — Return graceful fallback instead of 500
-    // This prevents the frontend from creating an error-message loop
-    // where the error message itself becomes a "question" in the
-    // conversation history, polluting context for subsequent AI calls.
     // ================================================================
     console.error("[Briefing] All retries exhausted. Returning graceful fallback.", lastError);
 
@@ -772,16 +766,12 @@ export async function POST(req: Request) {
       },
     };
     const fallbackLang = langMap2[chosenLanguage || 'pt'] || langMap2['pt'];
-    const _fallbackCollected = getCollectedBasalFields(currentState || {}, basalFields);
 
     return NextResponse.json({
-      intent: { mode: 'CREATE', confidence: 0.5, target_fields: [] },
       updates: {},
-      inferences: { extracted: [] },
-      basalCoverage: calculateQualityBasalCoverage(currentState || {}, basalFields),
-      currentSection: "company",
-      basalFieldsCollected: _fallbackCollected,
-      basalFieldsMissing: basalFields.filter((f: string) => !_fallbackCollected.includes(f)),
+      basalCoverage: currentBasalCoverage,
+      basalFieldsCollected: collected,
+      basalFieldsMissing: missing,
       nextQuestion: {
         text: fallbackLang.fallbackQ,
         questionType: "text",
@@ -792,7 +782,6 @@ export async function POST(req: Request) {
       assets: null,
       micro_feedback: fallbackLang.errorFeedback,
       engagement_level: backendEngagement,
-      active_listening: { signals: [], depth_question: null },
       session_quality_score: null,
     });
 
@@ -813,7 +802,6 @@ function mockEngine(answer: string, state: Record<string, unknown>, history: { r
     return {
        updates: {},
        basalCoverage: 0,
-       currentSection: "company",
        basalFieldsCollected: [],
        basalFieldsMissing: UNIVERSAL_BASAL_FIELDS,
        nextQuestion: {
@@ -826,44 +814,33 @@ function mockEngine(answer: string, state: Record<string, unknown>, history: { r
     };
   }
 
-  // Lógica simples (Fake AI) — agora seguindo o pipeline de seções
   const step = history?.length || 0;
 
-  // ═══ DISCOVERY-FIRST MOCK ═══
-  // Steps 1-3: Open text questions (Discovery)
-  // Steps 4-6: Confirmation with structured inputs
-  // Step 7+: Finalization
-
   if (step <= 1) {
-    // DISCOVERY Q1: About the business
     updates.company_name = answer || "Tech Startup";
     nextQuestion = {
       text: "Vamos começar com uma conversa aberta. Me conte sobre o seu negócio — o que vocês fazem, como começou, qual o momento atual.",
       questionType: "text",
     };
   } else if (step === 2) {
-    // DISCOVERY Q2: Challenge / Motivation
     updates.services_offered = answer;
     nextQuestion = {
       text: "O que te trouxe até aqui? Qual desafio ou oportunidade motivou você a buscar esse projeto?",
       questionType: "text",
     };
   } else if (step === 3) {
-    // DISCOVERY Q3: Vision
-    updates.target_audience = answer;
+    updates.target_audience_demographics = answer;
     nextQuestion = {
       text: "Como você imagina o resultado ideal? Se tudo der certo, como será daqui a alguns meses?",
       questionType: "text",
     };
   } else if (step === 4) {
-    // CONFIRMATION Q1: Confirm audience
     updates.competitors = answer;
     nextQuestion = {
       text: "Pelo que você descreveu, seu público principal parece ser empresas. Isso está correto?",
       questionType: "boolean_toggle",
     };
   } else if (step === 5) {
-    // CONFIRMATION Q2: Brand personality
     updates.competitive_differentiator = answer;
     nextQuestion = {
       text: "Qual dessas personalidades mais se aproxima da sua marca?",
@@ -879,48 +856,37 @@ function mockEngine(answer: string, state: Record<string, unknown>, history: { r
       allowMoreOptions: false,
     };
   } else if (step === 6) {
-    // CONFIRMATION Q3: Tone of voice
     updates.brand_personality = answer;
     nextQuestion = {
       text: "Como sua marca se comunica com seus clientes?",
-      questionType: "single_choice",
+      questionType: "multiple_choice",
       options: ["Formal e Técnica", "Informal e Próxima", "Inspiracional", "Direta e Objetiva", "Educativa", "Outro"],
     };
   } else {
-    // Finalização
     updates.tone_of_voice = answer;
     isFinished = true;
     assets = {
-      slogans: ["Tech For Tomorrow", "Simplifying Business", "Innovate Your Way"],
-      cores: [
-        { name: "Primary", hex: "#000000" },
-        { name: "Accent", hex: "#3b82f6" },
-        { name: "Background", hex: "#ffffff" }
-      ],
-      score: {
-        clareza_marca: 8,
-        clareza_dono: 7,
-        publico: 9,
-        maturidade: 6
-      },
+      score: { clareza_marca: 8, clareza_dono: 7, publico: 9, maturidade: 6 },
       insights: [
         "Público B2B bem direcionado, mas falta criar um MVP sólido.",
         "A empresa foca muito em vendas, branding ficou em segundo plano."
-      ]
+      ],
+      document: "# Dossiê Estratégico Mock\n\n## 1. Visão Geral do Negócio\nEste é um documento de teste preenchido pelo mockEngine porque a API Key não foi fornecida."
     };
   }
 
-  const collected = Object.keys({ ...state, ...updates }).filter(k => UNIVERSAL_BASAL_FIELDS.includes(k) && (state[k] || updates[k]));
-  const missing = UNIVERSAL_BASAL_FIELDS.filter(f => !collected.includes(f));
+  const collectedMock = Object.keys({ ...state, ...updates }).filter(k => UNIVERSAL_BASAL_FIELDS.includes(k) && (state[k] || updates[k]));
+  const missingMock = UNIVERSAL_BASAL_FIELDS.filter(f => !collectedMock.includes(f));
 
   return { 
     updates, 
     nextQuestion, 
     isFinished, 
     assets,
-    basalCoverage: collected.length / UNIVERSAL_BASAL_FIELDS.length,
-    currentSection: step <= 2 ? "company" : step <= 4 ? "market" : step <= 6 ? "identity" : "visual",
-    basalFieldsCollected: collected,
-    basalFieldsMissing: missing
+    basalCoverage: collectedMock.length / UNIVERSAL_BASAL_FIELDS.length,
+    basalFieldsCollected: collectedMock,
+    basalFieldsMissing: missingMock,
+    engagement_level: 'high',
+    session_quality_score: isFinished ? 75 : null,
   };
 }

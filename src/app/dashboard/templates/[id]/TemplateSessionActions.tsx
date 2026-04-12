@@ -82,20 +82,6 @@ export function TemplateSessionActions({ session }: { session: SessionData }) {
         </Button>
       </Link>
 
-      {/* Doc link (if finished) */}
-      {session.edit_token && session.status === 'finished' && (
-        <Link href={`/doc/${session.edit_token}`} target="_blank">
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-white/10 text-zinc-300 hover:bg-white/5 rounded-xl text-xs gap-1.5 h-8"
-          >
-            <FileText className="w-3 h-3" />
-            <span className="hidden sm:inline">Doc</span>
-          </Button>
-        </Link>
-      )}
-
       {/* More Actions */}
       <DropdownMenu>
         <DropdownMenuTrigger

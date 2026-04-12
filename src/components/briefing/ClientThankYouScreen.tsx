@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BrandedLogo } from "@/components/briefing/BrandedLogo";
 import { Button } from "@/components/ui/button";
+import { Copy, Check } from "lucide-react";
 
 interface Message {
   content: string;
@@ -44,6 +45,19 @@ export function ClientThankYouScreen({
   messages,
 }: ClientThankYouScreenProps) {
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = () => {
+    const textToCopy = messages
+      .filter(m => m.userAnswer)
+      .map((m, i) => `Pergunta ${i + 1}:\n${m.content}\n\nResposta:\n${Array.isArray(m.userAnswer) ? m.userAnswer.join(', ') : m.userAnswer}`)
+      .join('\n\n-----------------\n\n');
+    
+    navigator.clipboard.writeText(textToCopy);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg)] text-[var(--text)]">
@@ -206,9 +220,20 @@ export function ClientThankYouScreen({
                     <path d="M1 1L13 13" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-                <h2 className="text-2xl font-semibold mb-6 text-gray-800" style={{ fontFamily: '"Outfit", sans-serif' }}>
-                  {t.reviewAnswers}
-                </h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-800" style={{ fontFamily: '"Outfit", sans-serif' }}>
+                    {t.reviewAnswers}
+                  </h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 text-gray-600 mr-8"
+                    onClick={handleCopy}
+                  >
+                    {isCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    <span className="text-xs">{isCopied ? 'Copiado!' : 'Copiar'}</span>
+                  </Button>
+                </div>
                 <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar text-left text-sm">
                   {messages.filter(m => m.userAnswer).map((m, i) => (
                     <div key={i} className="pb-4 border-b border-gray-100 last:border-0">

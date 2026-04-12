@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, ArrowLeft, ArrowRight, Loader2, Target, Plus, X, CheckCircle2, Copy, Lock, Wand2, Link2, Package, Share2, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, ChevronDown, ShieldCheck, RefreshCw, Square, Mic, MousePointerClick
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useAudioRecorder } from "@/components/briefing/inputs/shared/useAudioRecorder";
+import { useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
 
 // ─── Icon + Color Maps ──────────────────────────────────────────
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -117,8 +118,20 @@ function StepProgress({ current }: { current: 1 | 2 | 3 }) {
 // ═══════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
-export default function NewBriefingWizard() {
+export default function NewBriefingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-brieffy-orange" /></div>}>
+      <NewBriefingWizardContent />
+    </Suspense>
+  );
+}
+
+function NewBriefingWizardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchTemplateId = searchParams.get('templateId');
+
+  const { t } = useDashboardLanguage();
   
   // ── Wizard Step ─────────────────
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -128,19 +141,7 @@ export default function NewBriefingWizard() {
   const [purpose, setPurpose] = useState('');
   const [newSignal, setNewSignal] = useState('');
   const [depthSignals, setDepthSignals] = useState<string[]>([]);
-  const [showContext, setShowContext] = useState(true);
   const [showSignals, setShowSignals] = useState(false);
-  const [initialContext, setInitialContext] = useState('');
-
-  const {
-    isRecording: isRecordingContext,
-    isTranscribing: isTranscribingContext,
-    startRecording: startRecordingContext,
-    stopRecording: stopRecordingContext
-  } = useAudioRecorder({
-    voiceLanguage: 'pt',
-    onTranscript: (t) => setInitialContext(prev => prev + (prev ? ' ' : '') + t),
-  });
 
   const {
     isRecording: isRecordingPurpose,
@@ -154,6 +155,33 @@ export default function NewBriefingWizard() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
+  const processExtractedText = async (text: string, fileName: string, source: "Text" | "AI") => {
+    if (text.length > 2000) {
+      setIsSummarizing(true);
+      try {
+        const sumRes = await fetch('/api/briefing/summarize-document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, fileName })
+        });
+        if (sumRes.ok) {
+          const sumData = await sumRes.json();
+          if (sumData.summary) {
+            setPurpose(prev => prev + (prev ? '\n\n' : '') + `[Resumo Executivo (${fileName})]:\n${sumData.summary}`);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao resumir", err);
+      } finally {
+        setIsSummarizing(false);
+      }
+    }
+    // Fallback or if not too long
+    setPurpose(prev => prev + (prev ? '\n\n' : '') + `[${source === "AI" ? "Documento Extraído via IA" : "Documento Anexado"}: ${fileName}]\n${text.substring(0, 5000)}`);
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,7 +196,7 @@ export default function NewBriefingWizard() {
     try {
       if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.json') || file.name.endsWith('.csv')) {
         const text = await file.text();
-        setInitialContext(prev => prev + (prev ? '\n\n' : '') + `[Documento Extraído: ${file.name}]\n${text.substring(0, 5000)}`);
+        await processExtractedText(text, file.name, "Text");
       } else {
         // Para Imagens, PDFs e Planilhas, sobe pro Supabase e aciona a AI vision
         const supabase = createClient();
@@ -194,7 +222,7 @@ export default function NewBriefingWizard() {
         const analysis = await res.json();
         
         if (analysis.text) {
-          setInitialContext(prev => prev + (prev ? '\n\n' : '') + `[Documento Extraído via IA (${file.name})]:\n${analysis.text}`);
+          await processExtractedText(analysis.text, file.name, "AI");
         }
       }
     } catch (err) {
@@ -212,6 +240,16 @@ export default function NewBriefingWizard() {
   const [aiSuggestedSlugs, setAiSuggestedSlugs] = useState<string[]>([]);
   const [aiReasoning, setAiReasoning] = useState('');
   const [editPassphrase, setEditPassphrase] = useState(() => generatePassphrase());
+  const [maxQuestions, setMaxQuestions] = useState<number>(25);
+  const [manualMaxQuestions, setManualMaxQuestions] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (manualMaxQuestions) return;
+    const count = selectedSlugs.length;
+    if (count <= 4) setMaxQuestions(25);
+    else if (count <= 7) setMaxQuestions(30);
+    else setMaxQuestions(40);
+  }, [selectedSlugs, manualMaxQuestions]);
   
   // ── Step 3: Done ────────────────
   const [generatedLink, setGeneratedLink] = useState('');
@@ -223,6 +261,40 @@ export default function NewBriefingWizard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdTemplateId, setCreatedTemplateId] = useState<string | null>(null);
+
+  // ── Fetch draft if templateId is in URL ──
+  useEffect(() => {
+    if (searchTemplateId) {
+      const fetchDraft = async () => {
+        setIsTransitioning(true);
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from('briefing_templates')
+            .select('*')
+            .eq('id', searchTemplateId)
+            .single();
+
+          if (error) throw error;
+          if (data) {
+            setCreatedTemplateId(searchTemplateId); // Set ONLY if valid
+            if (data.name) setName(data.name);
+            if (data.briefing_purpose) setPurpose(data.briefing_purpose);
+            if (data.depth_signals && Array.isArray(data.depth_signals)) {
+              setDepthSignals(data.depth_signals);
+            }
+          }
+        } catch (err) {
+          console.error("Erro ao carregar template:", err);
+          setError("Erro ao carregar o briefing draft. Inicie um novo.");
+        } finally {
+          setIsTransitioning(false);
+        }
+      };
+      fetchDraft();
+    }
+  }, [searchTemplateId]);
+
   
   // ── Fetch packages on mount ─────
   useEffect(() => {
@@ -262,11 +334,11 @@ export default function NewBriefingWizard() {
   // ── Step 1 → 2 Transition ──────
   const handleContinueToPackages = async () => {
     if (!name.trim()) {
-      setError('O nome do briefing é obrigatório.');
+      setError(t('wizard.errorName'));
       return;
     }
     if (!purpose.trim()) {
-      setError('O propósito é obrigatório. Descreva o que a IA precisa descobrir.');
+      setError(t('wizard.errorChallenge'));
       return;
     }
     setError(null);
@@ -276,6 +348,7 @@ export default function NewBriefingWizard() {
       // 1. Save template as Draft
       let templateId = createdTemplateId;
       if (!templateId) {
+        // Create new
         const templateRes = await fetch('/api/templates', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -299,35 +372,65 @@ export default function NewBriefingWizard() {
         
         if (!templateId) throw new Error('Template criado mas sem ID');
         
-        // Store template ID for step 2
         setCreatedTemplateId(templateId);
+      } else {
+        // Update existing draft
+        const templateRes = await fetch(`/api/templates/${templateId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            category: 'Geral',
+            objectives: [],
+            core_fields: [],
+            briefing_purpose: purpose.trim(),
+            depth_signals: depthSignals,
+          }),
+        });
+        
+        if (!templateRes.ok) {
+          const errData = await templateRes.json();
+          throw new Error(errData.error || 'Falha ao atualizar briefing');
+        }
       }
       
-      // 2. Ask AI to suggest packages
-      const suggestRes = await fetch('/api/briefing/suggest-packages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          briefingPurpose: purpose.trim(),
-          initialContext: initialContext.trim() || undefined,
-          depthSignals: depthSignals.length > 0 ? depthSignals : undefined,
-        }),
-      });
+      // 2. Ask AI to suggest packages (Non-blocking fallback)
+      let aiSlugs: string[] = [];
+      let aiReasoningStr = '';
       
-      const suggestData = await suggestRes.json();
+      try {
+        const suggestRes = await fetch('/api/briefing/suggest-packages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            briefingPurpose: purpose.trim(),
+            initialContext: undefined,
+            depthSignals: depthSignals.length > 0 ? depthSignals : undefined,
+          }),
+        });
+        
+        if (suggestRes.ok) {
+          const suggestData = await suggestRes.json();
+          aiSlugs = suggestData.suggested_slugs || [];
+          aiReasoningStr = suggestData.reasoning || '';
+        } else {
+          console.error("AI suggestion failed with status:", suggestRes.status);
+        }
+      } catch (aiErr) {
+        console.error("AI Suggestion Service Error:", aiErr);
+      }
       
       // Pre-select: AI suggestions + defaults
       const defaultSlugs = packages
         .filter(p => p.is_default_enabled)
         .map(p => p.slug);
-      const aiSlugs = suggestData.suggested_slugs || [];
       const merged = [...new Set([...defaultSlugs, ...aiSlugs])];
       
       setAiSuggestedSlugs(aiSlugs);
-      setAiReasoning(suggestData.reasoning || '');
+      setAiReasoning(aiReasoningStr);
       setSelectedSlugs(merged);
       
-  // Advance to step 2
+      // Advance to step 2
       setStep(2);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado');
@@ -384,11 +487,12 @@ export default function NewBriefingWizard() {
         body: JSON.stringify({
           templateId: finalTemplateId,
           sessionName: name.trim(),
-          initialContext: initialContext.trim() || undefined,
+          initialContext: undefined,
           selectedPackages: selectedSlugs,
           editPassphrase: editPassphrase.trim() || undefined,
           briefingPurpose: purpose.trim(),
           depthSignals: depthSignals,
+          maxQuestions: maxQuestions,
         }),
       });
 
@@ -436,15 +540,6 @@ export default function NewBriefingWizard() {
     return acc;
   }, {} as Record<string, CategoryPackage[]>);
   
-  const totalQuestions = selectedSlugs.reduce((sum, slug) => {
-    const pkg = packages.find(p => p.slug === slug);
-    return pkg?.max_questions ? sum + pkg.max_questions : sum;
-  }, 0);
-  
-  const hasUnlimited = selectedSlugs.some(slug =>
-    packages.find(p => p.slug === slug)?.max_questions === null
-  );
-  
   // ── Transition variants ─────────
   const pageVariants = {
     enter: { opacity: 0, x: 40 },
@@ -462,16 +557,16 @@ export default function NewBriefingWizard() {
           className="inline-flex items-center text-sm font-bold label-caps text-brieffy-text3 hover:text-foreground transition-colors w-fit"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
-          Voltar
+          {t('wizard.back')}
         </Link>
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-              Criar <span className="text-brieffy-orange">Briefing</span>
+              {t('wizard.titlePrefix')}<span className="text-brieffy-orange">{t('wizard.titleOrange')}</span>
             </h1>
             <p className="text-brieffy-text2 mt-1 text-sm font-medium">
-              Configure o que a IA deve explorar e gere o link para seu cliente.
+              {t('wizard.subtitle')}
             </p>
           </div>
           <StepProgress current={step} />
@@ -511,17 +606,17 @@ export default function NewBriefingWizard() {
               {/* ── Name ──────────────────────── */}
               <div className="space-y-2.5">
                 <label className="label-caps-accent">
-                  Nome do Briefing <span className="text-brieffy-orange">*</span>
+                  {t('wizard.name')} <span className="text-brieffy-orange">*</span>
                 </label>
                 <Input
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="Ex: Rebrand Acme Corp 2026"
+                  placeholder={t('wizard.namePlaceholder')}
                   className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 h-12 text-sm rounded-xl placeholder:text-brieffy-text3 transition-all font-medium shadow-none"
                 />
               </div>
               
-              {/* ── Purpose ───────────────────── */}
+              {/* ── Master Input: The Challenge ── */}
               <div className="space-y-2.5">
                 <div className="flex items-start gap-2.5 justify-between">
                   <div className="flex items-start gap-2.5">
@@ -530,56 +625,16 @@ export default function NewBriefingWizard() {
                     </div>
                     <div>
                       <label className="label-caps !text-foreground">
-                        O que você precisa descobrir? <span className="text-brieffy-orange">*</span>
+                        {t('wizard.challenge')} <span className="text-brieffy-orange">*</span>
                       </label>
                       <p className="text-xs text-brieffy-text3 mt-0.5 font-medium">
-                        A IA vai usar isso como bússola para guiar toda a conversa.
+                        {t('wizard.challengeDesc')}
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => isRecordingPurpose ? stopRecordingPurpose() : startRecordingPurpose()}
-                      disabled={isTranscribingPurpose}
-                      className={`h-8 px-3 rounded-lg border focus-visible:ring-0 ${isRecordingPurpose ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-background hover:bg-[var(--surface2)] text-brieffy-text3 border-brieffy-border'}`}
-                    >
-                      {isTranscribingPurpose ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : isRecordingPurpose ? (
-                        <Square className="w-4 h-4" />
-                      ) : (
-                        <Mic className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
                 </div>
-                <Textarea
-                  value={purpose}
-                  onChange={e => setPurpose(e.target.value)}
-                  placeholder="Ex: Entender a identidade atual da marca, o público-alvo e os planos de crescimento para redesenhar o posicionamento visual."
-                  className={`bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm leading-relaxed transition-all font-medium shadow-none ${isRecordingPurpose ? 'border-[var(--brand)] ring-2 ring-[var(--brand)]/20 animate-pulse' : ''}`}
-                  disabled={isRecordingPurpose || isTranscribingPurpose}
-                />
-              </div>
-
-              {/* ── Context (Fixed) ───────────── */}
-              <div className="space-y-2.5">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-background border border-brieffy-border flex items-center justify-center shrink-0 mt-0.5">
-                    <Brain className="w-4 h-4 text-brieffy-text3" />
-                  </div>
-                  <div>
-                    <label className="label-caps !text-foreground">
-                      Contexto Prévio <span className="text-brieffy-text3 font-normal">(recomendado)</span>
-                    </label>
-                    <p className="text-xs text-brieffy-text3 mt-0.5 font-medium">
-                      O que você já sabe sobre esse cliente? A IA adaptará as perguntas.
-                    </p>
-                  </div>
-                </div>
-                  <div className="relative">
+                
+                <div className="relative">
                   <input
                     type="file"
                     accept=".txt,.md,.csv,.json,.pdf,.png,.jpg,.jpeg,.xlsx"
@@ -588,114 +643,115 @@ export default function NewBriefingWizard() {
                     className="hidden"
                   />
                   <Textarea
-                    value={initialContext}
-                    onChange={e => setInitialContext(e.target.value)}
-                    placeholder="Ex: Já fizemos o logotipo dele em 2023, agora ele quer expandir para o digital..."
-                    className={`bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[100px] placeholder:text-brieffy-text3 text-sm font-medium transition-all shadow-none pl-3 pr-20 ${isRecordingContext ? 'border-[var(--brand)] ring-2 ring-[var(--brand)]/20 animate-pulse' : ''}`}
-                    disabled={isRecordingContext || isTranscribingContext || isReadingFile}
+                    value={purpose}
+                    onChange={e => setPurpose(e.target.value)}
+                    placeholder={t('wizard.challengePlaceholder')}
+                    maxLength={20000}
+                    className={`bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 rounded-xl resize-y min-h-[140px] placeholder:text-brieffy-text3 text-sm leading-relaxed transition-all font-medium shadow-none pb-12 ${isRecordingPurpose ? 'border-[var(--brand)] ring-2 ring-[var(--brand)]/20 animate-pulse' : ''}`}
+                    disabled={isRecordingPurpose || isTranscribingPurpose || isReadingFile || isSummarizing}
                   />
-                  <div className="absolute right-2 bottom-2 flex items-center gap-1">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isReadingFile || isRecordingContext || isTranscribingContext}
-                      title="Upload (.txt, .md, .csv)"
-                      className="rounded-full h-8 w-8 text-brieffy-text3 hover:text-[var(--brand)] hover:bg-[var(--brand)]/10 transition-colors"
-                    >
-                      {isReadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => isRecordingContext ? stopRecordingContext() : startRecordingContext()}
-                      disabled={isTranscribingContext || isReadingFile}
-                      className={`rounded-full h-8 w-8 transition-colors ${
-                        isRecordingContext 
-                          ? 'bg-red-500 text-white hover:bg-red-600 hover:text-white animate-pulse' 
-                          : 'text-brieffy-text3 hover:text-[var(--brand)] hover:bg-[var(--brand)]/10'
-                      }`}
-                    >
-                      {isTranscribingContext ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[var(--brand)]" />
-                      ) : isRecordingContext ? (
-                        <Square className="w-3.5 h-3.5 fill-current" />
-                      ) : (
-                        <Mic className="w-4 h-4" />
-                      )}
-                    </Button>
+                  
+                  {/* Embedded Input Controls */}
+                  <div className="absolute right-2 bottom-2 left-2 flex items-center justify-between border-t border-brieffy-border/60 pt-2 px-1">
+                    <p className="text-[10px] sm:text-xs text-brieffy-text3 font-medium flex items-center gap-1.5">
+                      <Wand2 className="w-3.5 h-3.5" />
+                      {t('wizard.aiProcess')}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isReadingFile || isSummarizing || isRecordingPurpose || isTranscribingPurpose}
+                        title={t('wizard.attachTitle')}
+                        className="h-8 px-2.5 rounded-lg text-brieffy-text3 hover:text-brieffy-orange hover:bg-brieffy-orange/10 transition-colors gap-1.5"
+                      >
+                        {(isReadingFile || isSummarizing) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+                        <span className="hidden sm:inline text-xs font-semibold">{t('wizard.attach')}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => isRecordingPurpose ? stopRecordingPurpose() : startRecordingPurpose()}
+                        disabled={isTranscribingPurpose || isReadingFile || isSummarizing}
+                        className={`h-8 px-2.5 rounded-lg border transition-colors gap-1.5 ${
+                          isRecordingPurpose 
+                            ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 animate-pulse' 
+                            : 'bg-foreground/5 hover:bg-foreground/10 text-foreground border-transparent'
+                        }`}
+                      >
+                        {isTranscribingPurpose ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-brieffy-orange" />
+                        ) : isRecordingPurpose ? (
+                          <Square className="w-3.5 h-3.5 fill-current" />
+                        ) : (
+                          <Mic className="w-4 h-4" />
+                        )}
+                        <span className="hidden sm:inline text-xs font-semibold">{isRecordingPurpose ? t('wizard.recording') : t('wizard.speak')}</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* ── Sensitive Points (Depth Signals) ── */}
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => setShowSignals(!showSignals)}
-                  className="flex items-center gap-2 label-caps text-brieffy-text3 hover:text-foreground transition-colors w-full group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-background border border-brieffy-border flex items-center justify-center shrink-0 group-hover:border-foreground transition-colors">
-                    <ChevronDown className={`w-4 h-4 text-brieffy-text3 transition-transform duration-300 ${showSignals ? 'rotate-180' : ''}`} />
-                  </div>
-                  Pontos Sensíveis
-                  <span className="text-brieffy-text3 font-normal">(opcional)</span>
-                </button>
-
-                <AnimatePresence>
-                  {showSignals && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                      className="overflow-hidden space-y-4 pt-2"
+              {/* ── Settings Pills ── */}
+              <div className="pt-2 border-t border-brieffy-border/50">
+                <p className="text-xs font-bold text-brieffy-text3 mb-3 uppercase tracking-wider">{t('wizard.sessionSettings')}</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  
+                  {/* Sensitive Points Pill */}
+                  <div className={`flex-1 flex flex-col p-3 rounded-xl border transition-all ${showSignals ? 'bg-brieffy-orange/5 border-brieffy-orange/30' : 'bg-background hover:bg-brieffy-surface border-brieffy-border'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setShowSignals(!showSignals)}
+                      className="flex items-start gap-2.5 text-left w-full"
                     >
-                      <div className="pl-10 space-y-1">
-                        <p className="text-xs text-brieffy-text2 font-medium">
-                          IA explorará com atenção. Digite e separe por vírgula para adicionar.
-                        </p>
-                        <p className="text-xs text-brieffy-text3 font-normal">
-                          Ex: resistência a preço, insatisfação com marca atual, prazos curtos
-                        </p>
+                      <div className="mt-0.5 shrink-0">
+                        {showSignals ? <ShieldCheck className="w-4 h-4 text-brieffy-orange" /> : <Shield className="w-4 h-4 text-brieffy-text3" />}
                       </div>
-                      
-                      {/* Tags */}
-                      {depthSignals.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pl-10">
-                          {depthSignals.map(signal => (
-                            <span
-                              key={signal}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brieffy-orange-light border border-brieffy-orange-border text-brieffy-orange text-[11px] font-bold"
-                            >
-                              {signal}
-                              <button
-                                type="button"
-                                onClick={() => removeSignal(signal)}
-                                className="text-brieffy-orange/60 hover:text-brieffy-orange transition-colors"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
+                      <div className="flex-1">
+                        <span className={`text-sm font-bold block mb-0.5 ${showSignals ? 'text-foreground' : 'text-brieffy-text2'}`}>{t('wizard.sensitivePoints')}</span>
+                        <span className={`text-[11px] leading-tight block ${showSignals ? 'text-foreground/80' : 'text-brieffy-text2/80'}`}>{t('wizard.sensitivePointsDesc')}</span>
+                      </div>
+                    </button>
+                    
+                    <AnimatePresence>
+                      {showSignals && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                          animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
+                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                          className="space-y-3 overflow-hidden"
+                        >
+                          <div className="pl-6">
+                            <Input
+                              value={newSignal}
+                              onChange={handleSignalChange}
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
+                              placeholder={t('wizard.addSensitive')}
+                              className="bg-background h-9 text-xs rounded-lg shadow-none focus-visible:ring-1 focus-visible:ring-brieffy-orange"
+                            />
+                            {depthSignals.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {depthSignals.map(signal => (
+                                  <span key={signal} className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-background border border-brieffy-border text-[10px] font-bold">
+                                    {signal}
+                                    <X className="w-3 h-3 hover:text-red-500 cursor-pointer" onClick={() => removeSignal(signal)} />
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
                       )}
-                      
-                      <div className="pl-10">
-                        <Input
-                          value={newSignal}
-                          onChange={handleSignalChange}
-                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSignal(); } }}
-                          placeholder="Adicionar ponto sensível..."
-                          className="bg-background border-[1.5px] border-brieffy-border focus-visible:border-brieffy-orange focus-visible:ring-0 h-11 rounded-xl text-sm font-medium transition-all shadow-none placeholder:text-brieffy-text3"
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </AnimatePresence>
+                  </div>
+
+                </div>
               </div>
+
             </div>
             
             {/* ── Step 1 CTA ──────────────────── */}
@@ -707,11 +763,11 @@ export default function NewBriefingWizard() {
               {isTransitioning ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  ANALISANDO BRIEFING...
+                  {t('wizard.analyzeProject')}
                 </>
               ) : (
                 <>
-                  AVANÇAR PARA SKILLS
+                  {t('wizard.generateSkills')}
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -736,10 +792,10 @@ export default function NewBriefingWizard() {
               <div className="space-y-1">
                 <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-brieffy-orange" />
-                  Skills da IA
+                  {t('wizard.step2Title')}
                 </h2>
                 <p className="text-sm font-medium text-brieffy-text2">
-                  A IA selecionou as ferramentas ideais. Toque para personalizar.
+                  {t('wizard.step2Subtitle')}
                 </p>
               </div>
               
@@ -761,12 +817,33 @@ export default function NewBriefingWizard() {
               </AnimatePresence>
               
               {/* Stats & Filter Bar */}
-              <div className="flex items-center justify-between pb-2 border-b border-brieffy-border">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-brieffy-border">
                 <div className="flex items-center gap-2">
-                  <span className="label-caps !text-[10px] text-brieffy-text3">Seleção:</span>
+                  <span className="label-caps !text-[10px] text-brieffy-text3">{t('wizard.selection')}</span>
                   <span className="text-[10px] uppercase tracking-widest font-bold text-brieffy-orange bg-brieffy-orange-light px-2 py-0.5 rounded-full border border-brieffy-orange-border">
-                    {selectedSlugs.length} Ativas
+                    {selectedSlugs.length} {t('wizard.active')}
                   </span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <span className="text-[11px] font-bold text-foreground">Limite de Perguntas:</span>
+                  <div className="flex bg-brieffy-surface border border-brieffy-border rounded-xl overflow-hidden p-1">
+                    {[10, 25, 30, 40].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => {
+                          setMaxQuestions(num);
+                          setManualMaxQuestions(true);
+                        }}
+                        className={`text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                          maxQuestions === num
+                            ? 'bg-foreground text-background shadow-sm'
+                            : 'text-brieffy-text3 hover:text-foreground hover:bg-brieffy-border/50'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               
@@ -926,7 +1003,7 @@ export default function NewBriefingWizard() {
                 className="order-2 sm:order-1 h-14 border-zinc-200 dark:border-white/10 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-full font-bold label-caps px-8"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
+                {t('wizard.back')}
               </Button>
               <Button
                 onClick={handleGenerateLink}
@@ -936,12 +1013,12 @@ export default function NewBriefingWizard() {
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    CONSTRUINDO LINK...
+                    {t('wizard.generatingLink')}
                   </>
                 ) : (
                   <>
                     <Link2 className="w-5 h-5" />
-                    CONCLUIR E GERAR ({selectedSlugs.length} SKILLS)
+                    {t('wizard.generateLinkBtn')} ({selectedSlugs.length})
                   </>
                 )}
               </Button>
@@ -971,9 +1048,9 @@ export default function NewBriefingWizard() {
                 </div>
                 
                 <div className="text-center space-y-2">
-                  <h3 className="text-2xl font-black text-foreground tracking-tight">Briefing Criado!</h3>
+                  <h3 className="text-2xl font-black text-foreground tracking-tight">{t('wizard.step3Title')}</h3>
                   <p className="text-sm font-medium text-brieffy-text2 max-w-sm leading-relaxed mx-auto">
-                    Agora é só compartilhar o link {editPassphrase ? 'e a senha' : ''} com seu cliente para começarem.
+                    {t('wizard.step3Subtitle')}
                   </p>
                 </div>
                 
@@ -987,7 +1064,7 @@ export default function NewBriefingWizard() {
                         <Link2 className="w-4 h-4 text-brieffy-text3" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="label-caps !text-xs text-brieffy-text3 mb-0.5">Link do Briefing</p>
+                        <p className="label-caps !text-xs text-brieffy-text3 mb-0.5">{t('wizard.linkBriefing')}</p>
                         <p className="text-sm font-bold text-foreground truncate select-all">{generatedLink}</p>
                       </div>
                     </div>
@@ -1000,7 +1077,7 @@ export default function NewBriefingWizard() {
                       }`}
                     >
                       {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copied ? 'Copiado!' : 'Copiar'}
+                      {copied ? t('modal.copied') : t('wizard.copy')}
                     </Button>
                   </div>
                   
@@ -1012,7 +1089,7 @@ export default function NewBriefingWizard() {
                           <Lock className="w-4 h-4 text-brieffy-orange" />
                         </div>
                         <div>
-                          <p className="label-caps !text-xs text-brieffy-text3 mb-0.5">Senha de Acesso</p>
+                          <p className="label-caps !text-xs text-brieffy-text3 mb-0.5">{t('modal.accessPasswordLabel')}</p>
                           <p className="text-sm font-black text-foreground tracking-widest uppercase">{editPassphrase}</p>
                         </div>
                       </div>
@@ -1030,7 +1107,7 @@ export default function NewBriefingWizard() {
                   }`}
                 >
                   {shared ? <CheckCircle2 className="w-5 h-5" /> : <Share2 className="w-5 h-5 text-brieffy-orange" />}
-                  {shared ? 'MENSAGEM COPIADA!' : 'COPIAR MENSAGEM PARA CLIENTE'}
+                  {shared ? t('wizard.copiedMsg') : t('wizard.copyClientMsg')}
                 </Button>
                 
                 {/* Footer Actions */}
@@ -1040,7 +1117,7 @@ export default function NewBriefingWizard() {
                     onClick={() => router.push(`/dashboard/${sessionId}`)}
                     className="h-14 border-[1.5px] border-brieffy-border text-brieffy-text3 hover:text-foreground hover:bg-brieffy-surface rounded-full font-bold label-caps"
                   >
-                    Gerenciar Briefing
+                    {t('wizard.manageBriefing')}
                   </Button>
                   <Button
                     onClick={() => {
@@ -1060,8 +1137,8 @@ export default function NewBriefingWizard() {
                     }}
                     className="h-14 bg-foreground text-background hover:opacity-90 rounded-full font-bold label-caps flex items-center justify-center gap-2 shadow-none"
                   >
-                    <Plus className="w-4 h-4" />
-                    Novo Briefing
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    {t('wizard.newBriefing')}
                   </Button>
                 </div>
               </div>

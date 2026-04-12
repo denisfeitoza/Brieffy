@@ -138,14 +138,3 @@ export async function markSessionAsFinishedInDb(
     .eq('id', sessionId);
   if (error) console.error("Erro ao fechar sessão no DB:", (error as { message?: string })?.message || JSON.stringify(error));
 }
-
-export async function finalizeDocumentInDb(
-  sessionId: string,
-  docPayload: Record<string, unknown>
-): Promise<void> {
-  const { error } = await supabase.from('briefing_sessions')
-    .update(docPayload)
-    .eq('id', sessionId);
-
-  if (error) console.error("Erro ao salvar documento no DB:", (error as { message?: string })?.message || JSON.stringify(error));
-}

@@ -144,23 +144,14 @@ export type BriefingContextType = {
   submitAnswer: (answer: string | string[] | number) => Promise<void>;
   generateMoreOptions: () => Promise<void>;
   basalInfo: BasalCoverageInfo;
-  chosenLanguage: string; // ISO code from initial language selection (pt, en, es)
-  generatedDocument: string | null;
-  isGeneratingDocument: boolean;
-  documentError: string | null;
-  generateDocument: () => Promise<void>;
+  chosenLanguage: string;
   selectedPackages: string[];
   selectedPackageDetails: PackageDetail[];
   branding: BrandingInfo;
-  editToken: string | null;
-  editPassphrase: string | null;
   isOnboarding?: boolean;
-  isOwner: boolean; // true = agency owner can see InsightsPanel; false = client respondent
-  // Active Listening
-  detectedSignals: BriefingSignal[];
-  // Consultant Persona
+  isOwner: boolean;
   engagementLevel: 'high' | 'medium' | 'low';
-  // Milestone checkpoints
+  maxQuestions: number;
   pendingCheckpoint: { block: number } | null;
   dismissCheckpoint: () => void;
 };

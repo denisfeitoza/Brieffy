@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
-import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail, BriefingSignal, SignalCategory } from "./types";
+import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail } from "./types";
 
 const DEFAULT_BRANDING: BrandingInfo = {
   display_name: 'Brieffy',
@@ -21,7 +21,6 @@ import {
   updateSessionStateInDb,
   updateInteractionSignalInDb,
   markSessionAsFinishedInDb,
-  finalizeDocumentInDb
 } from "@/lib/services/briefingTracker";
 
 const BriefingContext = createContext<BriefingContextType | undefined>(undefined);
@@ -81,16 +80,17 @@ export function BriefingProvider({
   isOwner = false,
   savedInteractions,
   savedState,
-  savedSignals,
+
   savedBasalCoverage,
   savedLanguage,
   savedMessagesSnapshot,
   savedStepIndex,
   initialTimeoutMs,
   initialIsFinished,
-  initialGeneratedDocument,
+
   initialPurpose,
   initialDepthSignals,
+  initialMaxQuestions,
 }: { 
   children: ReactNode;
   activeTemplate?: SerializedTemplate | null;
@@ -106,15 +106,16 @@ export function BriefingProvider({
   initialTimeoutMs?: number;
   savedInteractions?: SavedInteraction[];
   savedState?: Record<string, unknown>;
-  savedSignals?: BriefingSignal[];
+
   savedBasalCoverage?: number;
   savedLanguage?: string;
   savedMessagesSnapshot?: Partial<Message>[];
   savedStepIndex?: number;
   initialIsFinished?: boolean;
-  initialGeneratedDocument?: string | null;
+
   initialPurpose?: string;
   initialDepthSignals?: string[];
+  initialMaxQuestions?: number;
 }) {
   const endpoint = useMemo(() => apiEndpoint || "/api/briefing", [apiEndpoint]);
   const branding = useMemo(() => initialBranding || DEFAULT_BRANDING, [initialBranding]);
@@ -194,8 +195,6 @@ export function BriefingProvider({
 
   const [sessionId, setSessionId] = useState<string | null>(existingSessionId || null);
 
-  const detectedSignalsRef = React.useRef<BriefingSignal[]>(savedSignals || []);
-  const [detectedSignals, setDetectedSignals] = useState<BriefingSignal[]>(savedSignals || []);
   const [engagementLevel, setEngagementLevel] = useState<'high' | 'medium' | 'low'>('high');
 
   const [isLoading, setIsLoading] = useState(false);
@@ -206,7 +205,7 @@ export function BriefingProvider({
   const [isUploadStep, setIsUploadStep] = useState(initialIsFinished || false);
   
   const [assets, setAssets] = useState<FinalAssets | null>(null);
-  const [documentError, setDocumentError] = useState<string | null>(null);
+
   const [pendingCheckpoint, setPendingCheckpoint] = useState<{ block: number } | null>(null);
   const [basalInfo, setBasalInfo] = useState<BasalCoverageInfo>({
     basalCoverage: savedBasalCoverage || 0,
@@ -273,7 +272,6 @@ export function BriefingProvider({
       snapshot,
       stepIndex: newStepIndex,
       state: briefingStateRef.current,
-      signals: detectedSignalsRef.current,
       language: chosenLanguage,
       ts: Date.now(),
     });
@@ -320,7 +318,7 @@ export function BriefingProvider({
           initialContext,
           chosenLanguage,
           selectedPackages,
-          detectedSignals: detectedSignals.map(s => s.summary),
+
           briefingPurpose: initialPurpose,
           depthSignals: initialDepthSignals,
           isResume: true,
@@ -387,23 +385,6 @@ export function BriefingProvider({
       } else {
         const questionsToAdd: Omit<Message, 'id'>[] = [];
 
-        if (data.active_listening?.depth_question) {
-          const dq = data.active_listening.depth_question;
-          const dqText = typeof dq === 'string' ? dq : dq.text;
-          if (dqText && dqText.trim() !== '') {
-            questionsToAdd.push({
-              role: "assistant",
-              content: dqText,
-              type: "question",
-              questionType: dq.questionType || 'text',
-              options: dq.options || [],
-              allowMoreOptions: false,
-              isDepthQuestion: true,
-              depthSignalCategory: dq.signal_category || 'implicit_pain',
-            });
-          }
-        }
-
         if (data.nextQuestion && data.nextQuestion.text && data.nextQuestion.text.trim() !== '') {
           questionsToAdd.push({
             role: "assistant",
@@ -435,7 +416,7 @@ export function BriefingProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [isResume, hasRequestedResumeContinuation, isFinished, existingSessionId, perfSettings.timeoutMs, endpoint, briefingState, activeTemplate, initialContext, chosenLanguage, selectedPackages, detectedSignals, persistSnapshot, currentStepIndex, initialDepthSignals, initialPurpose, isUploadStep, isFinalTextStep]);
+  }, [isResume, hasRequestedResumeContinuation, isFinished, existingSessionId, perfSettings.timeoutMs, endpoint, briefingState, activeTemplate, initialContext, chosenLanguage, selectedPackages, persistSnapshot, currentStepIndex, initialDepthSignals, initialPurpose, isUploadStep, isFinalTextStep]);
 
   useEffect(() => {
     triggerResumeContinuation();
@@ -566,9 +547,10 @@ export function BriefingProvider({
           initialContext,
           chosenLanguage: activeLanguage,
           selectedPackages,
-          detectedSignals: detectedSignals.map(s => s.summary),
+
           briefingPurpose: initialPurpose,
           depthSignals: initialDepthSignals,
+          maxQuestions: initialMaxQuestions,
         }),
       });
 
@@ -578,27 +560,7 @@ export function BriefingProvider({
       
       if (data.updates) updateBriefingState(data.updates);
 
-      let newSignals: BriefingSignal[] = [];
-      if (data.active_listening?.signals?.length) {
-        newSignals = data.active_listening.signals.map((s: { 
-          category: SignalCategory; 
-          summary: string; 
-          relevance_score: number; 
-        }) => ({
-          id: crypto.randomUUID(),
-          category: s.category,
-          summary: s.summary,
-          source_answer: typeof answer === 'string' ? answer : JSON.stringify(answer),
-          relevance_score: s.relevance_score,
-          step_index: currentStepIndex,
-          timestamp: Date.now(),
-        }));
-        setDetectedSignals(prev => {
-          const merged = [...prev, ...newSignals];
-          detectedSignalsRef.current = merged;
-          return merged;
-        });
-      }
+
 
       if (data.basalCoverage !== undefined) {
         setBasalInfo({
@@ -619,14 +581,12 @@ export function BriefingProvider({
           company_info: mergedState,
           chosen_language: activeLanguage,
           basal_coverage: data.basalCoverage,
-          detected_signals: detectedSignalsRef.current,
           session_name: mergedState.company_name || undefined
         }).catch(() => {});
 
-        if (interactionId && (data.inferences || newSignals.length > 0)) {
+        if (interactionId && data.inferences) {
           updateInteractionSignalInDb(interactionId, {
             inferences: data.inferences,
-            detected_signal: newSignals[0]?.summary
           }).catch(() => {});
         }
       }
@@ -679,7 +639,6 @@ export function BriefingProvider({
             status: 'finished', 
             company_info: briefingStateRef.current,
             final_assets: data.assets,
-            detected_signals: detectedSignalsRef.current,
             session_quality_score: data.session_quality_score,
             engagement_summary: data.engagement_summary || { overall: engagementLevel, by_area: {} },
           }).catch(() => {});
@@ -698,22 +657,6 @@ export function BriefingProvider({
         }
 
         const questionsToAdd: Omit<Message, 'id'>[] = [];
-
-        if (data.active_listening?.depth_question) {
-          const dq = data.active_listening.depth_question;
-          const dqText = typeof dq === 'string' ? dq : dq.text;
-          if (dqText && dqText.trim() !== '') {
-            questionsToAdd.push({
-              role: "assistant",
-              content: dqText,
-              type: "question",
-              questionType: dq.questionType || 'text',
-              options: dq.options || [],
-              allowMoreOptions: false,
-              isDepthQuestion: true,
-            });
-          }
-        }
 
         if (data.nextQuestion && data.nextQuestion.text && data.nextQuestion.text.trim() !== '') {
           questionsToAdd.push({
@@ -749,7 +692,7 @@ export function BriefingProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [existingSessionId, sessionId, currentStepIndex, chosenLanguage, messages, briefingState, activeTemplate, initialContext, selectedPackages, detectedSignals, engagementLevel, perfSettings.timeoutMs, endpoint, isOnboarding, updateBriefingState, persistSnapshot, ensureSession, initialDepthSignals, initialPurpose, isFinished, isUploadStep, isFinalTextStep]);
+  }, [existingSessionId, sessionId, currentStepIndex, chosenLanguage, messages, briefingState, activeTemplate, initialContext, selectedPackages, engagementLevel, perfSettings.timeoutMs, endpoint, isOnboarding, updateBriefingState, persistSnapshot, ensureSession, initialDepthSignals, initialPurpose, isFinished, isUploadStep, isFinalTextStep]);
 
   const generateMoreOptions = useCallback(async () => {
     setIsGeneratingMore(true);
@@ -771,7 +714,7 @@ export function BriefingProvider({
           selectedPackages,
           activeTemplate,
           sessionId,
-          detectedSignals: detectedSignals.map(s => s.summary),
+
           briefingPurpose: initialPurpose,
           depthSignals: initialDepthSignals,
         }),
@@ -793,7 +736,7 @@ export function BriefingProvider({
     } finally {
       setIsGeneratingMore(false);
     }
-  }, [messages, currentStepIndex, briefingState, chosenLanguage, selectedPackages, activeTemplate, sessionId, detectedSignals, endpoint, persistSnapshot, initialDepthSignals, initialPurpose]);
+  }, [messages, currentStepIndex, briefingState, chosenLanguage, selectedPackages, activeTemplate, sessionId, endpoint, persistSnapshot, initialDepthSignals, initialPurpose]);
 
   const resetBriefing = useCallback(async () => {
     if (!sessionId) return;
@@ -808,7 +751,7 @@ export function BriefingProvider({
       setIsFinished(false);
       setIsFinalTextStep(false);
       setIsUploadStep(false);
-      setGeneratedDocument(null);
+
       persistSnapshot(initialMsgs, 0, sessionId);
     } catch (err) {
       console.error(err);
@@ -817,62 +760,7 @@ export function BriefingProvider({
     }
   }, [sessionId, buildRestoredMessages, initialBase, persistSnapshot]);
 
-  const [generatedDocument, setGeneratedDocument] = useState<string | null>(initialGeneratedDocument || null);
-  const [isGeneratingDocument, setIsGeneratingDocument] = useState(false);
-  const [editToken, setEditToken] = useState<string | null>(null);
-  const [editPassphrase, setEditPassphrase] = useState<string | null>(initialPassphrase || null);
 
-  const generateDocument = useCallback(async () => {
-    setIsGeneratingDocument(true);
-    setDocumentError(null);
-    try {
-      const fullHistory = messages.map(m => ({
-        role: m.role,
-        content: m.content + (m.userAnswer ? `\n\nRespondi: ${m.userAnswer}` : "")
-      }));
-
-      const res = await fetch("/api/briefing/document", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: fullHistory, briefingState, assets, activeTemplate, chosenLanguage, detectedSignals }),
-      });
-
-      if (!res.ok) throw new Error("Document generation failed");
-      const data = await res.json();
-      setGeneratedDocument(data.document);
-
-      const newToken = crypto.randomUUID();
-      let currentPassphrase = editPassphrase;
-      if (!currentPassphrase) {
-        const words = ["aurora","cristal","nebula","prisma","zenith","cosmos","atlas","vortex","pulsar","fenix"];
-        currentPassphrase = words[Math.floor(Math.random() * words.length)];
-        setEditPassphrase(currentPassphrase);
-      }
-      setEditToken(newToken);
-
-      if (sessionId) {
-        await finalizeDocumentInDb(sessionId, {
-          final_assets: { ...assets, document: data.document },
-          document_content: data.document,
-          edit_token: newToken,
-          edit_passphrase: currentPassphrase,
-          detected_signals: detectedSignalsRef.current,
-          updated_at: new Date().toISOString()
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      setDocumentError("Falha ao gerar o documento.");
-    } finally {
-      setIsGeneratingDocument(false);
-    }
-  }, [messages, briefingState, assets, activeTemplate, chosenLanguage, detectedSignals, editPassphrase, sessionId]);
-
-  useEffect(() => {
-    if (isFinished && !generatedDocument && !isGeneratingDocument && !documentError) {
-      generateDocument();
-    }
-  }, [isFinished, generatedDocument, isGeneratingDocument, documentError, generateDocument]);
 
   const contextValue = useMemo(() => ({
     sessionId,
@@ -900,29 +788,22 @@ export function BriefingProvider({
     generateMoreOptions,
     basalInfo,
     chosenLanguage,
-    generatedDocument,
-    isGeneratingDocument,
-    documentError,
-    generateDocument,
     selectedPackages,
     selectedPackageDetails,
     branding,
-    editToken,
-    editPassphrase,
     isOnboarding,
     isOwner,
-    detectedSignals,
     engagementLevel,
+    maxQuestions: initialMaxQuestions || 45,
     pendingCheckpoint,
     dismissCheckpoint: () => setPendingCheckpoint(null),
   }), [
     sessionId, briefingState, updateBriefingState, messages, currentStepIndex,
     goBack, goNext, addMessage, isLoading, isGeneratingMore,
     isFinished, isFinalTextStep, isUploadStep, assets, basalInfo, chosenLanguage,
-    generatedDocument, isGeneratingDocument, documentError, editToken,
-    editPassphrase, detectedSignals, engagementLevel, pendingCheckpoint,
+    engagementLevel, pendingCheckpoint,
     resetBriefing,
-    submitAnswer, generateMoreOptions, generateDocument,
+    submitAnswer, generateMoreOptions,
     selectedPackages, selectedPackageDetails, branding, isOnboarding, isOwner,
   ]);
 

@@ -2,8 +2,8 @@ import { getTemplateById, getSessionsByTemplate } from '@/lib/services/briefingS
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles } from 'lucide-react';
-import { GenerateLinkModal } from '@/components/dashboard/GenerateLinkModal';
+import { ArrowLeft, Sparkles, Wand2 } from 'lucide-react';
+
 import { DeleteTemplateButton } from '@/components/dashboard/DeleteTemplateButton';
 
 export const dynamic = 'force-dynamic';
@@ -40,7 +40,12 @@ export default async function TemplateDetailsPage({ params }: { params: Promise<
             Este rascunho de briefing está salvo. Continue a configuração para escolher a IA e gerar o link.
           </p>
           <div className="flex items-center gap-3">
-            <GenerateLinkModal templateId={template.id} templateName={template.name} triggerLabel="Continuar Configuração" />
+            <Link href={`/dashboard/templates/new?templateId=${template.id}`}>
+              <Button className="bg-[var(--actext)] text-black hover:bg-[var(--actext)]/90 flex items-center gap-2 rounded-full px-5">
+                <Wand2 className="w-4 h-4" />
+                Continuar Configuração
+              </Button>
+            </Link>
             <DeleteTemplateButton 
               templateId={template.id} 
               templateName={template.name} 

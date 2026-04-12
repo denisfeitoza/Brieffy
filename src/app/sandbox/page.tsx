@@ -22,7 +22,7 @@ const mockQuestions: Message[] = [
     id: "q_single",
     role: "assistant",
     content: "Seu principal foco de negócio atualmente é B2B ou B2C?",
-    questionType: "single_choice",
+    questionType: "multiple_choice",
     options: ["B2B (Empresas)", "B2C (Consumidor Final)", "Ambos"],
     allowMoreOptions: true,
   },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Package, Plus, Pencil, Trash2, Save, X, GripVertical, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Sparkles, Globe, Lock, MousePointerClick } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, Save, X, GripVertical, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users, TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, Sparkles, Globe, Lock, MousePointerClick, Clapperboard, Film, Layout, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,16 +14,18 @@ import { createClient } from '@/lib/supabase/client';
 const ICON_OPTIONS = [
   'Package', 'Brain', 'Palette', 'Cpu', 'Megaphone', 'Headphones', 
   'DollarSign', 'Users', 'TrendingUp', 'Truck', 'Lightbulb', 
-  'Shield', 'Server', 'ShoppingCart', 'Video', 'MousePointerClick'
+  'Shield', 'Server', 'ShoppingCart', 'Video', 'MousePointerClick',
+  'Clapperboard', 'Film', 'Layout', 'GraduationCap'
 ];
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Package, Brain, Palette, Cpu, Megaphone, Headphones, DollarSign, Users,
   TrendingUp, Truck, Lightbulb, Shield, Server, ShoppingCart, Video, MousePointerClick,
+  Clapperboard, Film, Layout, GraduationCap,
 };
 
 const DEPT_OPTIONS = [
-  'branding', 'technology', 'marketing', 'operations', 'finance',
+  'branding', 'design', 'technology', 'marketing', 'operations', 'finance',
   'people', 'commercial', 'product', 'legal', 'digital', 'content', 'general'
 ];
 

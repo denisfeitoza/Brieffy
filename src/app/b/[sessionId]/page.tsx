@@ -68,10 +68,6 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     ? (session.company_info as Record<string, unknown>)
     : undefined;
 
-  const savedSignals = isInProgress && Array.isArray(session.detected_signals)
-    ? session.detected_signals
-    : undefined;
-
   const savedBasalCoverage = isInProgress && typeof session.basal_coverage === 'number'
     ? session.basal_coverage
     : undefined;
@@ -116,19 +112,17 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        selectedPackages={selectedPackages}
        selectedPackageDetails={selectedPackageDetails}
        branding={branding}
-       initialPassphrase={session.edit_passphrase}
        savedInteractions={savedInteractions.length > 0 ? savedInteractions : undefined}
        savedState={savedState}
-       savedSignals={savedSignals}
        savedBasalCoverage={savedBasalCoverage}
        savedLanguage={savedLanguage}
        savedMessagesSnapshot={savedMessagesSnapshot}
        savedStepIndex={savedStepIndex}
        initialTimeoutMs={perfConfig.timeoutMs}
        initialIsFinished={session.status === 'finished'}
-       initialGeneratedDocument={session.final_assets?.document || null}
        initialPurpose={session.briefing_purpose || ''}
        initialDepthSignals={session.depth_signals || []}
+       initialMaxQuestions={session.max_questions || 25}
     >
       <ForceLightMode />
       <main className="h-screen w-full bg-[var(--bg)] font-inter relative overflow-hidden">

@@ -12,7 +12,6 @@ import { ArrowRight, ArrowLeft, RefreshCw, Lock, Copy, Sparkles, LogOut, FastFor
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { DynamicInput } from "./DynamicInput";
-import { InsightsPanel } from "./InsightsPanel";
 import { BrandedLogo } from "./BrandedLogo";
 import { AIThinkingAnimation } from "./AIThinkingAnimation";
 import { PingMonitor } from "./PingMonitor";
@@ -220,21 +219,16 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
     isGeneratingMore,
     generateMoreOptions,
     isUploadStep,
+    isFinished,
     chosenLanguage,
-    generatedDocument,
-    isGeneratingDocument,
-    documentError,
-    generateDocument,
     branding,
-    editToken,
-    editPassphrase,
     selectedPackageDetails,
     basalInfo,
     isOwner,
-    detectedSignals,
     engagementLevel,
     pendingCheckpoint,
     dismissCheckpoint,
+    maxQuestions,
   } = useBriefing();
 
   const [inputText, setInputText] = useState("");
@@ -261,7 +255,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   }
 
   const activeMessage = messages[currentStepIndex];
-  const isFinished = !!generatedDocument;
+
   const isDiscoveryPhase = currentStepIndex === 0;
 
   const t = (I18N[chosenLanguage] || I18N.pt);
@@ -300,15 +294,22 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
   const displayProgress = useMemo(() => {
     if (isFinished || isUploadStep) return 100;
+    
+    // Smooth nonlinear progress scaling based on max questions
+    // Creates a sense of continuous progression that slows down slightly at the end
     const rawPct = (basalInfo.basalCoverage || 0) * 100;
     const skillCount = selectedPackageDetails?.length || 0;
     const skillDilution = 1 / (1 + skillCount * 0.22);
     const dilutedBasal = rawPct * skillDilution;
-    const stepsFloor = Math.min(currentStepIndex * 4, 92);
-    const combined = Math.max(dilutedBasal, stepsFloor);
+    
+    // Dynamic progress based on user's selected question limit
+    const targetSteps = Math.max(maxQuestions, 1);
+    const stepPercentage = (currentStepIndex / targetSteps) * 92;
+    
+    const combined = Math.max(dilutedBasal, stepPercentage);
     const capped = Math.min(Math.round(combined), 95);
     return Math.max(capped, 3);
-  }, [isFinished, isUploadStep, basalInfo.basalCoverage, selectedPackageDetails?.length, currentStepIndex]);
+  }, [isFinished, isUploadStep, basalInfo.basalCoverage, selectedPackageDetails?.length, currentStepIndex, maxQuestions]);
 
   const handleSend = useCallback((text?: string) => {
     const val = text !== undefined ? text : inputText;
@@ -404,21 +405,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
             {/* Input Area */}
             <div className="w-full mt-6 sm:mt-auto shrink-0 flex flex-col justify-end">
-              {documentError ? (
-                <div className="flex flex-col items-center justify-center p-6 bg-red-50/50 border border-red-100 rounded-3xl w-full mx-auto max-w-xl text-center">
-                  <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
-                    <X className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-red-900 font-semibold text-lg mb-2">Ops, tivemos um problema!</h3>
-                  <p className="text-red-600/80 font-medium mb-6 text-sm">{documentError}</p>
-                  <Button 
-                    onClick={() => generateDocument()} 
-                    className="bg-[var(--orange)] hover:bg-[var(--orange-dark)] text-white rounded-full px-8 h-12 shadow-sm font-medium transition-all hover:scale-105 active:scale-95"
-                  >
-                    Tentar Novamente
-                  </Button>
-                </div>
-              ) : isLoading || isGeneratingDocument ? (
+              {isLoading ? (
                 <div className="pb-16 md:pb-32 w-full">
                   <AIThinkingAnimation 
                     language={chosenLanguage} 
@@ -629,8 +616,6 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
             )}
           </AnimatePresence>
 
-          {/* Insights Panel */}
-          <InsightsPanel signals={detectedSignals} isOwner={isOwner} />
 
           {/* Milestone Checkpoint Overlay */}
           <AnimatePresence>

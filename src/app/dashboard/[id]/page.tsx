@@ -9,10 +9,10 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Suspense } from 'react';
-import CollectedBriefingData from '@/components/dashboard/CollectedBriefingData';
+import { CopyHistoryButton } from '@/components/dashboard/CopyHistoryButton';
 
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { GenerateDocumentAction } from '@/components/dashboard/GenerateDocumentAction';
+import { GenerateDossierFallback } from '@/components/dashboard/GenerateDossierFallback';
 import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
 
 import { EditBriefingModal } from '@/components/dashboard/EditBriefingModal';
@@ -213,196 +213,73 @@ async function SessionContent({ id }: { id: string }) {
             }}
           />
 
-          {/* ── SHEET: MAIS OPÇÕES E METADADOS ──────────────────────── */}
+          {/* ── SHEET: HISTÓRICO DE RESPOSTAS ──────────────────────── */}
           <Sheet>
-            <SheetTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)]" title="Relatório">
-              Relatório
+            <SheetTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)]" title="Histórico">
+              Histórico
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:w-[540px] overflow-y-auto !max-w-full bg-[var(--bg)] border-l border-[var(--bd)] p-0 z-[100]">
-              <SheetHeader className="p-6 border-b border-[var(--bd)] sticky top-0 bg-[var(--bg)] z-50">
-                <SheetTitle className="text-xl">Relatório</SheetTitle>
-                <SheetDescription>
-                  Dados técnicos da coleta, métricas e transcrição do briefing.
-                </SheetDescription>
+            <SheetContent side="right" className="w-full sm:w-[540px] flex flex-col bg-[var(--bg)] border-l border-[var(--bd)] p-0 z-[100]">
+              <SheetHeader className="p-6 pb-4 border-b border-[var(--bd)] shrink-0 bg-[var(--bg)] flex flex-row items-center justify-between">
+                <div>
+                  <SheetTitle className="text-xl">Histórico</SheetTitle>
+                  <SheetDescription>
+                    Transcrição completa das respostas.
+                  </SheetDescription>
+                </div>
+                {interactions.length > 0 && <CopyHistoryButton historyText={interactions.map(i => `P: ${i.question_text || 'Sistema'}\nR: ${i.user_answer || 'Sem resposta'}`).join('\n\n')} />}
               </SheetHeader>
 
-              <div className="relative z-0 isolate p-6 space-y-8">
-                {/* ── INSIGHTS (engagement, data quality, signals) ────────── */}
-                {(engagementSummary?.by_area || (detectedSignals && detectedSignals.length > 0)) && (
-                  <section className="space-y-4">
-                    <h3 className="text-sm font-semibold text-[var(--text3)] uppercase tracking-wider flex items-center gap-2 px-1">
-                      <Brain className="w-4 h-4 text-[var(--text2)]" />
-                      Métricas da Sessão
-                    </h3>
-
-                    {qualityScore !== null && (
-                       <div className="flex items-center gap-3 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl px-4 py-3">
-                         <BarChart3 className="w-5 h-5 text-[var(--orange)]" />
-                         <div>
-                           <p className="text-[11px] text-[var(--text3)] uppercase tracking-wider font-semibold">Quality Score (IA)</p>
-                           <p className="text-lg font-bold text-[var(--text)]">{qualityScore}</p>
-                         </div>
-                       </div>
-                    )}
-
-                    {engagementSummary?.by_area && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {Object.entries(engagementSummary.by_area).map(([area, level]) => {
-                          const ec = engagementColor(level);
-                          return (
-                            <div key={area} className={`flex flex-col gap-1 p-3 rounded-xl ${ec.bg} ${ec.border} border`}>
-                              <span className="text-[10px] font-medium text-[var(--text3)]">{areaLabel(area)}</span>
-                              <span className={`text-xs font-bold ${ec.text}`}>{ec.label}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-
-
-                    {detectedSignals && detectedSignals.length > 0 && (
-                      <div className="space-y-2 pt-2">
-                        <p className="text-[10px] font-bold text-[var(--text2)] uppercase tracking-wider flex items-center gap-1.5">
-                          <Brain className="w-3.5 h-3.5" /> Sinais Detectados ({detectedSignals.length})
-                        </p>
-                        <div className="grid grid-cols-1 gap-2">
-                          {detectedSignals.map((signal: Record<string, unknown>, i: number) => {
-                            const cat = signal.category ? String(signal.category) : null;
-                            const summary = signal.summary ? String(signal.summary) : null;
-                            const sourceAnswer = signal.source_answer ? String(signal.source_answer) : null;
-                            const displayText = summary || sourceAnswer || '';
-                            const stepIndex = typeof signal.step_index === 'number' ? signal.step_index : null;
-
-                            let questionLabel = stepIndex !== null ? `Passo ${stepIndex}` : null;
-                            if (stepIndex !== null) {
-                              const match = interactions.find((int, idx) => Number(int.step_order) === stepIndex || idx === stepIndex || idx + 1 === stepIndex);
-                              if (match?.question_text) {
-                                questionLabel = String(match.question_text);
-                              }
-                            }
-
-                            if (!displayText) return null;
-
-                            return (
-                              <div key={i} className="p-3 rounded-xl border border-[var(--bd)] bg-[var(--bg)]">
-                                <div className="flex items-start justify-between gap-3 mb-2">
-                                  {cat && (
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text2)] shrink-0 mt-0.5">
-                                      {cat.replace(/_/g, ' ')}
-                                    </span>
-                                  )}
-                                  {questionLabel && (
-                                    <span className="text-[10px] font-medium text-[var(--text3)] text-right line-clamp-2" title={questionLabel}>
-                                      {questionLabel}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-[var(--text)] leading-relaxed">{displayText}</p>
-                              </div>
-                            );
-                          })}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-[var(--bg)] isolate z-0">
+                {interactions.length === 0 ? (
+                  <p className="text-sm text-[var(--text3)] italic text-center py-10">Nenhum histórico disponível ainda.</p>
+                ) : (
+                  interactions.map((interaction, idx) => {
+                    const inputType = interaction.question_type || 'text';
+                    const isDepthQ = interaction.is_depth_question;
+                    return (
+                      <div key={interaction.id} className="relative isolate z-0">
+                        {idx !== interactions.length - 1 && (
+                          <div className="absolute left-4 top-12 bottom-[-20px] w-px bg-gradient-to-b from-[var(--bd-strong)] to-transparent pointer-events-none" />
+                        )}
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="text-[9px] font-mono text-[var(--text3)]">{String(idx + 1).padStart(2, '0')}</span>
+                          {isDepthQ && <span className="text-[8px] font-bold uppercase tracking-wider text-[var(--orange)] bg-orange-50 px-1 py-0.5 rounded leading-none">Deep</span>}
                         </div>
-                      </div>
-                    )}
-                  </section>
-                )}
 
-                {/* ── DADOS COLETADOS (Brutos) ───────────────────────── */}
-                <section className="space-y-4">
-                  <h3 className="text-sm font-semibold text-[var(--text3)] uppercase tracking-wider flex items-center gap-2 px-1 border-t border-[var(--bd)] pt-6">
-                    <Activity className="w-4 h-4 text-[var(--text2)]" />
-                    Variáveis Coletadas
-                  </h3>
-                  <div className="bg-[var(--bg)] border border-[var(--bd)] rounded-xl overflow-hidden p-1">
-                    <CollectedBriefingData
-                      companyInfo={companyInfo}
-                      lang="pt"
-                      sessionStatus={session.status}
-                    />
-                  </div>
-                </section>
-
-                {/* ── TRANSCRIÇÃO ─────────────────────────────────────────── */}
-                {interactions.length > 0 && (
-                  <details className="group bg-[var(--bg)] border border-[var(--bd)] rounded-xl overflow-hidden mt-6">
-                    <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[var(--bg2)] transition-colors select-none">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-[var(--text3)]" />
-                        <span className="text-sm font-medium text-[var(--text)]">Histórico do Chat</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-medium bg-[var(--bg2)] text-[var(--text3)] px-2 py-0.5 rounded-full border border-[var(--bd)]">{interactions.length} msgs</span>
-                        <ChevronDown className="w-4 h-4 text-[var(--text3)] group-open:rotate-180 transition-transform" />
-                      </div>
-                    </summary>
-                    <div className="relative isolate z-0 p-4 bg-[var(--bg2)] border-t border-[var(--bd)] space-y-5 max-h-[60vh] overflow-y-auto">
-                      {interactions.map((interaction, idx) => {
-                        const inputType = interaction.question_type || 'text';
-                        const isDepthQ = interaction.is_depth_question;
-                        return (
-                          <div key={interaction.id} className="relative isolate z-0">
-                            {idx !== interactions.length - 1 && (
-                              <div className="absolute left-4 top-12 bottom-[-20px] z-0 w-px bg-gradient-to-b from-[var(--bd-strong)] to-transparent pointer-events-none" />
-                            )}
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <span className="text-[9px] font-mono text-[var(--text3)]">{String(idx + 1).padStart(2, '0')}</span>
-                              {isDepthQ && <span className="text-[8px] font-bold uppercase tracking-wider text-[var(--orange)] bg-orange-50 px-1 py-0.5 rounded leading-none">Deep</span>}
-                            </div>
-
-                            {/* AI */}
-                            <div className="relative z-[1] flex gap-2.5 mb-2">
-                              <div className={`relative mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full border ${isDepthQ ? 'bg-orange-50 border-orange-200' : 'bg-[var(--bg)] border-[var(--bd-strong)]'}`}>
-                                {isDepthQ ? <Brain className={`w-3.5 h-3.5 ${isDepthQ ? 'text-[var(--orange)]' : 'text-[var(--text)]'}`} /> : <MessageSquare className="w-3.5 h-3.5 text-[var(--text2)]" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className={`inline-block px-3.5 py-2.5 rounded-2xl rounded-tl-sm border text-[12px] max-w-full font-medium ${isDepthQ ? 'bg-[var(--bg)] border-orange-100 text-[var(--text)]' : 'bg-[var(--bg)] border-[var(--bd)] text-[var(--text)]'}`}>
-                                  {interaction.question_text || 'Mensagem do sistema'}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* User */}
-                            <div className="relative z-[1] flex gap-2.5 flex-row-reverse">
-                              <div className="relative mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-[var(--text)] border border-[var(--bd-strong)]">
-                                <span className="text-[var(--bg)] text-[9px] font-bold font-mono">
-                                  {companyName ? companyName.slice(0, 3).toUpperCase() : 'USR'}
-                                </span>
-                              </div>
-                              <div className="flex-1 flex flex-col items-end min-w-0">
-                                <div className="inline-block px-3.5 py-2.5 rounded-2xl rounded-tr-sm bg-[var(--bg2)] border border-[var(--bd)] text-[var(--text)] max-w-full">
-                                  {renderTranscriptAnswer(interaction.user_answer, inputType)}
-                                </div>
-                              </div>
+                        {/* AI */}
+                        <div className="relative z-[1] flex gap-2.5 mb-2">
+                          <div className={`relative mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full border ${isDepthQ ? 'bg-orange-50 border-orange-200' : 'bg-[var(--bg)] border-[var(--bd-strong)]'}`}>
+                            {isDepthQ ? <Brain className={`w-3.5 h-3.5 ${isDepthQ ? 'text-[var(--orange)]' : 'text-[var(--text)]'}`} /> : <MessageSquare className="w-3.5 h-3.5 text-[var(--text2)]" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`inline-block px-3.5 py-2.5 rounded-2xl rounded-tl-sm border text-[12px] max-w-full font-medium ${isDepthQ ? 'bg-[var(--bg)] border-orange-100 text-[var(--text)]' : 'bg-[var(--bg)] border-[var(--bd)] text-[var(--text)]'}`}>
+                              {interaction.question_text || 'Mensagem do sistema'}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </details>
-                )}
+                        </div>
 
-
-                {/* ── JSON RAW (collapsible) ──────────────────────────────── */}
-                {companyInfo && Object.keys(companyInfo).length > 0 && (
-                  <details className="group bg-[var(--bg)] border border-[var(--bd)] rounded-xl overflow-hidden mt-6">
-                    <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[var(--bg2)] transition-colors select-none">
-                      <div className="flex items-center gap-2">
-                        <Code className="w-4 h-4 text-[var(--text3)]" />
-                        <span className="text-sm font-medium text-[var(--text)]">JSON Raw</span>
+                        {/* User */}
+                        <div className="relative z-[1] flex gap-2.5 flex-row-reverse">
+                          <div className="relative mt-0.5 shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-[var(--text)] border border-[var(--bd-strong)]">
+                            <span className="text-[var(--bg)] text-[9px] font-bold font-mono">
+                              {companyName ? companyName.slice(0, 3).toUpperCase() : 'USR'}
+                            </span>
+                          </div>
+                          <div className="flex-1 flex flex-col items-end min-w-0">
+                            <div className="inline-block px-3.5 py-2.5 rounded-2xl rounded-tr-sm bg-[var(--bg2)] border border-[var(--bd)] text-[var(--text)] max-w-full">
+                              {renderTranscriptAnswer(interaction.user_answer, inputType)}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <ChevronDown className="w-4 h-4 text-[var(--text3)] group-open:rotate-180 transition-transform" />
-                    </summary>
-                    <div className="border-t border-[var(--bd)] overflow-x-auto p-4 bg-[var(--bg2)] max-h-[60vh]">
-                      <pre className="text-[11px] font-mono text-[var(--text2)] leading-relaxed">
-                        {JSON.stringify(companyInfo, null, 2)}
-                      </pre>
-                    </div>
-                  </details>
+                    );
+                  })
                 )}
 
                 {/* ── ZONA DE PERIGO ────────────────────────────────────── */}
-                <SessionResetAction sessionId={session.id} />
+                <div className="pt-8 mt-12 border-t border-[var(--bd)]">
+                  <SessionResetAction sessionId={session.id} />
+                </div>
               </div>
             </SheetContent>
           </Sheet>
@@ -471,62 +348,15 @@ async function SessionContent({ id }: { id: string }) {
               finalAssets={session.final_assets as Record<string, unknown>}
             />
           </div>
+        ) : session.status === 'finished' ? (
+          <GenerateDossierFallback sessionId={session.id} />
         ) : (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] text-[var(--text3)] p-6 text-center animate-in fade-in zoom-in duration-500">
-            {session.status === 'finished' ? (
-              <div className="relative mb-8 mt-4">
-                <div className="absolute inset-0 bg-[var(--orange)] blur-3xl opacity-20 rounded-full animate-pulse z-0 scale-150"></div>
-                <div className="relative z-10 w-24 h-24 bg-gradient-to-tr from-orange-100 to-orange-50 rounded-full flex items-center justify-center border-[3px] border-white shadow-xl overflow-hidden">
-                  <div className="absolute inset-0 border-2 border-[var(--orange)] border-dashed rounded-full animate-[spin_8s_linear_infinite] opacity-30"></div>
-                  <div className="absolute inset-2 border-2 border-[var(--orange)] border-dotted rounded-full animate-[spin_12s_linear_infinite_reverse] opacity-40"></div>
-                  <Brain className="w-10 h-10 text-[var(--orange)] animate-pulse" strokeWidth={1.5} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--orange)]/10 to-transparent"></div>
-                  <div className="absolute -top-2 -right-2 animate-bounce flex delay-100">
-                    <Sparkles className="w-5 h-5 text-[var(--orange)] opacity-80" />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="w-20 h-20 bg-[var(--bg2)] rounded-full flex items-center justify-center mb-6 shadow-sm border border-[var(--bd)] transition-all duration-300 hover:scale-105">
-                <FileText className="w-10 h-10 text-[var(--text3)] opacity-60" />
-              </div>
-            )}
-            
-            <h3 className="text-2xl font-black text-[var(--text)] mb-3 tracking-tight">
-              {session.status === 'finished' ? 'Gerando sua Estratégia...' : 'Diagnóstico em Processamento'}
-            </h3>
-            
-            <p className="max-w-md mx-auto mb-8 text-[15px] leading-relaxed text-[var(--text2)]">
-              {session.status === 'finished' 
-                ? "Nossa inteligência artificial está analisando cada detalhe do seu briefing para construir um diagnóstico profundo e um plano de ação estratégico. Isso leva apenas alguns instantes."
-                : "Este briefing ainda não foi finalizado. O diagnóstico ficará disponível assim que a sessão for concluída."}
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-[var(--text3)] p-6 text-center bg-[var(--bg2)] md:rounded-b-[2rem]">
+            <FileText className="w-12 h-12 mb-4 opacity-30 text-[var(--text3)]" />
+            <h3 className="text-xl font-bold text-[var(--text)] mb-2">Briefing em Andamento</h3>
+            <p className="max-w-md mx-auto text-sm leading-relaxed text-[var(--text2)]">
+              O documento final será gerado automaticamente aqui assim que o cliente concluir a etapa de perguntas e respostas.
             </p>
-            
-            {session.status === 'finished' && (
-              <div className="flex flex-col items-center gap-4 w-full">
-                <div className="flex items-center gap-2 text-sm font-medium text-[var(--orange)] bg-orange-50/50 px-5 py-2.5 rounded-full border border-orange-100/50 mb-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processando dados
-                  <span className="flex gap-1 ml-1">
-                    <span className="w-1 h-1 bg-[var(--orange)] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span className="w-1 h-1 bg-[var(--orange)] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-1 h-1 bg-[var(--orange)] rounded-full animate-bounce"></span>
-                  </span>
-                </div>
-                
-                <div className="w-full max-w-[280px] pt-4 border-t border-[var(--bd)] mt-2">
-                  <p className="text-[11px] uppercase tracking-wider font-bold text-[var(--text3)] mb-3">Está demorando muito ou travou?</p>
-                  <GenerateDocumentAction sessionId={session.id} delayMs={0} />
-                </div>
-              </div>
-            )}
-            
-            {session.status !== 'finished' && (
-              <div className="flex items-center gap-2 text-sm font-medium text-[var(--text)] bg-[var(--bg2)] px-5 py-2.5 rounded-full border border-[var(--bd)] shadow-sm">
-                <Clock className="w-4 h-4 animate-pulse text-[var(--orange)]" />
-                Aguardando finalização do briefing
-              </div>
-            )}
           </div>
         )}
       </div>

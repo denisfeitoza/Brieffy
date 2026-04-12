@@ -164,6 +164,49 @@ const pt: TranslationDict = {
   'dashboard.openFull': 'Abrir Completo',
   'dashboard.untitled': 'Briefing sem título',
   'dashboard.noContent': 'Nenhum conteúdo disponível.',
+
+  // ─── Briefing Wizard ────────────────────────────────────
+  'wizard.back': 'Voltar',
+  'wizard.titlePrefix': 'Criar ',
+  'wizard.titleOrange': 'Briefing',
+  'wizard.subtitle': 'Configure o que a IA deve explorar e gere o link para seu cliente.',
+  'wizard.name': 'Nome do Briefing',
+  'wizard.namePlaceholder': 'Ex: Rebrand Acme Corp 2026',
+  'wizard.challenge': 'O Desafio Principal',
+  'wizard.challengeDesc': 'Descreva o que precisamos fazer e o contexto do cliente tudo em um só lugar.',
+  'wizard.challengePlaceholder': 'Ex: Queremos refazer o logotipo da Acme. É uma empresa de 10 anos focada em B2B e o novo design precisa ser mais clean...',
+  'wizard.aiProcess': 'A IA processa áudio e PDF.',
+  'wizard.attach': 'Anexar',
+  'wizard.attachTitle': 'Anexar arquivos (PDF/TXT/IMG)',
+  'wizard.recording': 'Gravando',
+  'wizard.speak': 'Falar',
+  'wizard.sessionSettings': 'Ajustes da Sessão',
+  'wizard.sensitivePoints': 'Pontos Sensíveis',
+  'wizard.sensitivePointsDesc': 'Alerte a IA sobre tabus ou frentes que o cliente possui resistência (ex: preços, prazos).',
+  'wizard.addSensitive': 'Digite e Enter (ex: orçamento apertado)',
+  'wizard.errorName': 'O nome do briefing é obrigatório.',
+  'wizard.errorChallenge': 'O desafio principal é obrigatório. Descreva o que a IA precisa descobrir.',
+  'wizard.analyzeProject': 'ANALISANDO PROJETO...',
+  'wizard.generateSkills': 'GERAR SKILLS SUGERIDAS',
+  'wizard.optional': '(opcional)',
+  
+  // Step 2
+  'wizard.step2Title': 'Skills da IA',
+  'wizard.step2Subtitle': 'A IA selecionou as ferramentas ideais. Toque para personalizar.',
+  'wizard.selection': 'Seleção:',
+  'wizard.active': 'Ativas',
+  'wizard.generateLinkBtn': 'CONCLUIR E GERAR',
+  'wizard.generatingLink': 'CONSTRUINDO LINK...',
+
+  // Step 3
+  'wizard.step3Title': 'Briefing Criado!',
+  'wizard.step3Subtitle': 'Agora é só compartilhar o link e a senha com seu cliente para começarem.',
+  'wizard.linkBriefing': 'Link do Briefing',
+  'wizard.copy': 'Copiar',
+  'wizard.copiedMsg': 'MENSAGEM COPIADA!',
+  'wizard.copyClientMsg': 'COPIAR MENSAGEM PARA CLIENTE',
+  'wizard.manageBriefing': 'Gerenciar Briefing',
+  'wizard.newBriefing': 'Novo Briefing',
 };
 
 const en: TranslationDict = {
@@ -321,8 +364,50 @@ const en: TranslationDict = {
   'dashboard.link': 'Link',
   'dashboard.export': 'Export',
   'dashboard.openFull': 'Open Full',
-  'dashboard.untitled': 'Untitled Briefing',
   'dashboard.noContent': 'No document content available.',
+
+  // ─── Briefing Wizard ────────────────────────────────────
+  'wizard.back': 'Back',
+  'wizard.titlePrefix': 'Create ',
+  'wizard.titleOrange': 'Briefing',
+  'wizard.subtitle': 'Configure what the AI should explore and generate the link for your client.',
+  'wizard.name': 'Briefing Name',
+  'wizard.namePlaceholder': 'E.g.: Acme Corp Rebrand 2026',
+  'wizard.challenge': 'The Main Challenge',
+  'wizard.challengeDesc': 'Describe what needs to be done and the client context all in one place.',
+  'wizard.challengePlaceholder': 'E.g.: We want to redesign the Acme logo. It is a 10-year-old B2B company and the new design needs to be cleaner...',
+  'wizard.aiProcess': 'AI processes audio and PDF.',
+  'wizard.attach': 'Attach',
+  'wizard.attachTitle': 'Attach files (PDF/TXT/IMG)',
+  'wizard.recording': 'Recording',
+  'wizard.speak': 'Speak',
+  'wizard.sessionSettings': 'Session Settings',
+  'wizard.sensitivePoints': 'Sensitive Points',
+  'wizard.sensitivePointsDesc': 'Alert the AI about taboos or areas where the client has resistance (e.g., pricing, deadlines).',
+  'wizard.addSensitive': 'Type and Enter (e.g., tight budget)',
+  'wizard.errorName': 'The briefing name is required.',
+  'wizard.errorChallenge': 'The main challenge is required. Describe what the AI needs to discover.',
+  'wizard.analyzeProject': 'ANALYZING PROJECT...',
+  'wizard.generateSkills': 'GENERATE SUGGESTED SKILLS',
+  'wizard.optional': '(optional)',
+  
+  // Step 2
+  'wizard.step2Title': 'AI Skills',
+  'wizard.step2Subtitle': 'The AI selected the ideal tools. Tap to customize.',
+  'wizard.selection': 'Selection:',
+  'wizard.active': 'Active',
+  'wizard.generateLinkBtn': 'FINISH & GENERATE',
+  'wizard.generatingLink': 'BUILDING LINK...',
+
+  // Step 3
+  'wizard.step3Title': 'Briefing Created!',
+  'wizard.step3Subtitle': 'Now just share the link and password with your client to get started.',
+  'wizard.linkBriefing': 'Briefing Link',
+  'wizard.copy': 'Copy',
+  'wizard.copiedMsg': 'MESSAGE COPIED!',
+  'wizard.copyClientMsg': 'COPY MESSAGE TO CLIENT',
+  'wizard.manageBriefing': 'Manage Briefing',
+  'wizard.newBriefing': 'New Briefing',
 };
 
 const es: TranslationDict = {
@@ -482,6 +567,49 @@ const es: TranslationDict = {
   'dashboard.openFull': 'Abrir Completo',
   'dashboard.untitled': 'Briefing sin título',
   'dashboard.noContent': 'No hay contenido disponible.',
+
+  // ─── Briefing Wizard ────────────────────────────────────
+  'wizard.back': 'Volver',
+  'wizard.titlePrefix': 'Crear ',
+  'wizard.titleOrange': 'Briefing',
+  'wizard.subtitle': 'Configura lo que la IA debe explorar y genera el enlace para tu cliente.',
+  'wizard.name': 'Nombre del Briefing',
+  'wizard.namePlaceholder': 'Ej: Rebrand Acme Corp 2026',
+  'wizard.challenge': 'El Desafío Principal',
+  'wizard.challengeDesc': 'Describe lo que se debe hacer y el contexto del cliente en un solo lugar.',
+  'wizard.challengePlaceholder': 'Ej: Queremos rediseñar el logo de Acme. Es una empresa B2B con 10 años y el nuevo diseño debe ser más limpio...',
+  'wizard.aiProcess': 'La IA procesa audio y PDF.',
+  'wizard.attach': 'Adjuntar',
+  'wizard.attachTitle': 'Adjuntar archivos (PDF/TXT/IMG)',
+  'wizard.recording': 'Grabando',
+  'wizard.speak': 'Hablar',
+  'wizard.sessionSettings': 'Ajustes de Sesión',
+  'wizard.sensitivePoints': 'Puntos Sensibles',
+  'wizard.sensitivePointsDesc': 'Alerta a la IA sobre tabúes o áreas donde el cliente tiene resistencia (ej., precios, plazos).',
+  'wizard.addSensitive': 'Escribe y Enter (ej., presupuesto ajustado)',
+  'wizard.errorName': 'El nombre del briefing es obligatorio.',
+  'wizard.errorChallenge': 'El desafío principal es obligatorio. Describe lo que la IA necesita descubrir.',
+  'wizard.analyzeProject': 'ANALIZANDO PROYECTO...',
+  'wizard.generateSkills': 'GENERAR SKILLS SUGERIDAS',
+  'wizard.optional': '(opcional)',
+  
+  // Step 2
+  'wizard.step2Title': 'Skills de IA',
+  'wizard.step2Subtitle': 'La IA seleccionó las herramientas ideales. Toca para personalizar.',
+  'wizard.selection': 'Selección:',
+  'wizard.active': 'Activas',
+  'wizard.generateLinkBtn': 'CONCLUIR Y GENERAR',
+  'wizard.generatingLink': 'CONSTRUYENDO ENLACE...',
+
+  // Step 3
+  'wizard.step3Title': '¡Briefing Creado!',
+  'wizard.step3Subtitle': 'Ahora solo comparte el enlace y la contraseña con tu cliente para comenzar.',
+  'wizard.linkBriefing': 'Enlace del Briefing',
+  'wizard.copy': 'Copiar',
+  'wizard.copiedMsg': '¡MENSAJE COPIADO!',
+  'wizard.copyClientMsg': 'COPIAR MENSAJE PARA CLIENTE',
+  'wizard.manageBriefing': 'Gestionar Briefing',
+  'wizard.newBriefing': 'Nuevo Briefing',
 };
 
 export const dashboardTranslations: Record<DashboardLanguage, TranslationDict> = { pt, en, es };
