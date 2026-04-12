@@ -1125,8 +1125,6 @@ function NewBriefingWizardContent() {
                       setName('');
                       setPurpose('');
                       setDepthSignals([]);
-                      setInitialContext('');
-                      setShowContext(false);
                       setSelectedSlugs([]);
                       setAiSuggestedSlugs([]);
                       setAiReasoning('');
