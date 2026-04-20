@@ -5,7 +5,7 @@ import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 export async function POST(req: Request) {
   try {
     const ip = getRequestIP(req);
-    const rl = checkRateLimit(`template_create:${ip}`, { maxRequests: 10, windowMs: 60_000 });
+    const rl = await checkRateLimit(`template_create:${ip}`, { maxRequests: 10, windowMs: 60_000 });
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Você atingiu o limite de criação. Tente novamente em alguns instantes." },

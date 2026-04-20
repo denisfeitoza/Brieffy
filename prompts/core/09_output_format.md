@@ -1,129 +1,135 @@
-# 📤 Core Prompt — Output Format (Schema JSON de Saída)
+# Core Prompt — Output Format (JSON Schema)
 
-**Arquivo fonte:** `src/lib/ai/promptDictionary.ts` → `buildOutputFormat()`  
-**Injetado em:** Toda chamada ao `/api/briefing`  
-**Posição no prompt:** #8 (penúltimo bloco, antes do BlockEvaluation)
+> ⚠️ **SOURCE OF TRUTH:** `src/lib/ai/promptDictionary.ts` → `buildOutputFormat()`
+> This document is a human-readable mirror. If you change the schema, change it
+> in TypeScript first — and then update this file so newcomers and prompt-tuners
+> see the same contract.
 
----
-
-## Descrição
-
-Define o **schema JSON obrigatório** de cada resposta da IA. A IA deve retornar **exclusivamente** JSON válido neste formato. O servidor faz `JSON.parse()` e retorna ao frontend.
+**Injected in:** Every call to `/api/briefing`
+**Position in compiled prompt:** last block, after `<CurrentState>`
 
 ---
 
-## Schema Completo
+## Compiled `<FormatoSaida>` block (current)
 
 ```xml
 <FormatoSaida>
-Retorne APENAS JSON válido com estes campos:
+Retorne APENAS JSON válido:
 {
-  "intent": {
-    "mode": "CREATE | UPDATE | EXPLORE",
-    "confidence": 0.95,
-    "target_fields": []
-  },
   "updates": {},
-  "inferences": {
-    "extracted": [
-      { "field": "", "value": "", "confidence": 0 }
-    ]
-  },
-  "basalCoverage": 0,
-  "currentSection": "",
-  "basalFieldsCollected": [],
-  "basalFieldsMissing": [],
-  "nextQuestion": {
-    "text": "",
-    "questionType": "",
-    "options": [],
-    "allowMoreOptions": false
-  },
+  "nextQuestion": {"text": "", "questionType": "", "options": [], "allowMoreOptions": false},
   "isFinished": false,
   "assets": null,
   "micro_feedback": null,
-  "engagement_level": "{backendEngagement}",
-  "active_listening": {
-    "signals": [],
-    "depth_question": { "text": "", "questionType": "text" }
-  },
   "session_quality_score": null
 }
-
-Campos obrigatórios: intent, updates, nextQuestion (ou isFinished=true), 
-basalCoverage, basalFieldsCollected, basalFieldsMissing.
+updates: campos coletados/inferidos com confiança ≥0.7. Coloque TUDO aqui (sem campo separado de inferences).
+nextQuestion: obrigatório se isFinished=false. questionType deve estar em <AllowedFormats>.
+nextQuestion.text: TEXTO PURO. PROIBIDO Markdown — sem **negrito**, sem _itálico_, sem listas (- / *), sem # cabeçalhos, sem `código`, sem links [x](y). Apenas frase corrida. O frontend renderiza como <p>, então caracteres de Markdown aparecem literais para o cliente.
+options[].label: também TEXTO PURO. Sem markdown, sem aspas decorativas.
+isFinished: true quando briefing completo. Inclua session_quality_score (0-100).
+micro_feedback: feedback curto (texto puro, sem markdown) ou null. Null em skips.
+assets: null até isFinished=true. Então: {score:{clareza_marca,clareza_dono,publico,maturidade}, insights:[]}. Apenas assets.document pode conter Markdown.
 </FormatoSaida>
 ```
 
 ---
 
-## Campos Obrigatórios vs Opcionais
+## Why we simplified the old schema
 
-| Campo | Obrigatório | Quando preencher |
+Earlier versions exposed `intent`, `inferences.extracted`, `basalCoverage`,
+`basalFieldsCollected`, `basalFieldsMissing`, `engagement_level`,
+`active_listening`, `currentSection` — but every one of those was either:
+
+- recomputed server-side (so trusting the LLM was wasteful and risky), or
+- never read by any consumer (dead bytes burning tokens).
+
+The current 6-field schema cuts ~40% of the average JSON payload while keeping
+the same downstream behavior. Server-side computation lives in
+`src/app/api/briefing/route.ts` (basal coverage, engagement, phase detection,
+quality score fallback).
+
+---
+
+## Required vs optional fields
+
+| Field | Required | When to fill |
 |---|---|---|
-| `intent` | ✅ Sempre | Sempre |
-| `updates` | ✅ Sempre | Pode ser `{}` |
-| `inferences.extracted` | ✅ Sempre | Pode ser `[]` |
-| `basalCoverage` | ✅ Sempre | Float 0-1 |
-| `basalFieldsCollected` | ✅ Sempre | Array de strings |
-| `basalFieldsMissing` | ✅ Sempre | Array de strings |
-| `nextQuestion` | ✅ Ou `isFinished=true` | Quando a conversa continua |
-| `isFinished` | ✅ Sempre | `true` ao finalizar |
-| `assets` | Condicional | Apenas quando `isFinished=true` |
-| `micro_feedback` | Opcional | Max 1 a cada 3-4 perguntas. null no skip |
-| `active_listening.signals` | Opcional | Pode ser `[]` |
-| `session_quality_score` | Condicional | Obrigatório quando `isFinished=true` |
+| `updates` | yes | Always (may be `{}`). Only confidence ≥ 0.7. |
+| `nextQuestion` | yes if `isFinished=false` | Pull from `<AllowedFormats>` |
+| `isFinished` | yes | `true` to end the briefing |
+| `assets` | conditional | Only when `isFinished=true` |
+| `micro_feedback` | optional | Max 1 every 3-4 questions. `null` on skips. |
+| `session_quality_score` | conditional | Required when `isFinished=true` |
 
 ---
 
-## Tipos de `questionType` permitidos
+## Allowed `questionType` values
 
-Configuráveis pelo admin em `app_settings` (DB). Cada formato pode ser ativado/desativado.
+Configurable per-tenant via `app_settings`. Defaults:
 
-| Tipo | Default | Descrição |
+| Type | Default | Notes |
 |---|---|---|
-| `text` | ✅ Sempre ativo | Campo aberto livre |
-| `single_choice` | ✅ Ativo | Escolha exclusiva. Exatamente 6 opções (5 reais + "Outro") |
-| `multiple_choice` | ✅ Ativo | Multi-seleção. Exatamente 6 opções (5 reais + "Outro") |
-| `boolean_toggle` | ✅ Ativo | Sim/Não. Sem opção "Outro" |
-| `card_selector` | ✅ Ativo | Cards descritivos. Options: `[{title, description}]`. 6 cards |
-| `slider` | ❌ Inativo | Escala 1-10. Requer `minOption` e `maxOption` |
-| `multi_slider` | ❌ Inativo | Múltiplas dimensões. Options: `[{label, min, max, minLabel, maxLabel}]` |
-| `color_picker` | ✅ Ativo | Seletor de paleta. APENAS para coleta de cores |
-| `file_upload` | ✅ Ativo | Upload de assets/referências. APENAS no final |
-| `font` | ❌ Inativo | Seleção de fontes Google. Nomes reais no formato "FontName - Description" |
+| `text` | always on | Free-form input |
+| `single_choice` | on | 6 options (5 + "Outro") |
+| `multiple_choice` | on | 6 options (5 + "Outro") |
+| `boolean_toggle` | on | Yes/No only |
+| `card_selector` | on | `[{title, description}]`, 6 cards |
+| `slider` | off | Requires `minOption`/`maxOption` |
+| `multi_slider` | off | `[{label, min, max, minLabel, maxLabel}]` |
+| `color_picker` | on | Color collection only |
+| `file_upload` | on | End of session only |
+| `font` | off | "FontName - Description" |
 
 ---
 
-## Validações Server-side do Output
+## Server-side validations applied after parse
 
-Após o parse do JSON, o servidor aplica:
-
-1. **Formato desativado**: Se `questionType` não está em `formatConfig`, força fallback para `text`
-2. **multi_slider sem options válidas**: Injeta opções padrão de `Formalidade/Ousadia/Comunicação`
-3. **nextQuestion null sem isFinished**: Gera fallback inteligente apontando para o campo basal mais prioritário faltante
-4. **isFinished sem assets**: Injeta assets mínimos com score calculado da cobertura atual
-5. **updates com valores nulos/vazios**: Remove do objeto antes de retornar (Zero-Trust Guard)
+1. Disabled `questionType` → forced fallback to `text`.
+2. `multi_slider` without valid options → defaults injected.
+3. `nextQuestion=null` without `isFinished=true` → smart fallback to next missing basal field.
+4. `isFinished=true` without `assets` → minimal `assets` injected with computed score.
+5. `updates` values that are null/empty/whitespace → stripped (Zero-Trust Guard).
+6. `nextQuestion.text` containing Markdown noise → currently relied on the rule above; consider an HTML/MD stripper if drift is observed.
 
 ---
 
-## Assets (quando `isFinished=true`)
+## Sampling parameters (sibling of the schema)
+
+The same route also configures sampling on every request — kept here so
+prompt tuners see the full picture:
+
+| Param | Default | Override key (`app_settings`) |
+|---|---|---|
+| `temperature` | 0.35 | `ai_llm_temperature` |
+| `max_tokens` | 2500 | `ai_llm_max_tokens` |
+| `top_p` | 0.9 | `ai_llm_top_p` |
+| `presence_penalty` | 0.4 | `ai_llm_presence_penalty` |
+| `frequency_penalty` | 0.3 | `ai_llm_frequency_penalty` |
+
+Defaults defined in `src/lib/aiConfig.ts` → `getLLMConfig()`.
+
+---
+
+## Assets payload (when `isFinished=true`)
 
 ```json
 {
   "assets": {
     "score": {
-      "clareza_marca": 0-10,
-      "clareza_dono": 0-10,
-      "publico": 0-10,
-      "maturidade": 0-10
+      "clareza_marca": 0,
+      "clareza_dono": 0,
+      "publico": 0,
+      "maturidade": 0
     },
-    "insights": ["insight 1", "insight 2", "..."],
-    "slogans": ["opcional"],
-    "cores": [
-      { "name": "Primary", "hex": "#000000" }
-    ]
+    "insights": ["insight 1", "insight 2"],
+    "document": "<markdown gerado pelo dossier writer pass>"
   },
-  "session_quality_score": 0-100
+  "session_quality_score": 0
 }
 ```
+
+`assets.document` is the only field allowed to contain Markdown — it is
+generated by a separate "dossier writer" LLM call (see
+`src/app/api/briefing/route.ts` and `src/app/api/briefing/generate-dossier/route.ts`)
+and rendered through `react-markdown`/`DOMPurify` on the client.

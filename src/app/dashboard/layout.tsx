@@ -212,13 +212,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           <ModeToggle />
           <button
             onClick={cycleLang}
-            className="w-8 h-8 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] flex items-center justify-center text-sm"
+            className="min-w-11 min-h-11 md:w-8 md:h-8 md:min-w-0 md:min-h-0 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] flex items-center justify-center text-sm"
           >
             {LANG_FLAGS[language]}
           </button>
           <button
             onClick={handleLogout}
-            className="w-8 h-8 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] flex items-center justify-center text-sm text-[var(--text3)] hover:text-red-500 transition-colors"
+            className="min-w-11 min-h-11 md:w-8 md:h-8 md:min-w-0 md:min-h-0 rounded-lg bg-[var(--bg2)] border border-[var(--bd)] flex items-center justify-center text-sm text-[var(--text3)] hover:text-red-500 transition-colors"
             title="Logout"
           >
             <LogOut className="w-4 h-4" />

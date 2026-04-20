@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     // 1. IP-based Rate Limiting
     const ip = getRequestIP(req);
-    const rl = checkRateLimit(`generate_session:${ip}`, { maxRequests: 10, windowMs: 60_000 });
+    const rl = await checkRateLimit(`generate_session:${ip}`, { maxRequests: 10, windowMs: 60_000 });
     
     if (!rl.allowed) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Sua sessão expirou. Faça login novamente." }, { status: 401 });
     }
 
-    // 2. Fetch Quota to Verify Access
+    // 2. Fetch Quota to Verify Access (block check stays here so we fail fast)
     const { data: quota, error: quotaError } = await supabaseSession
       .from('briefing_quotas')
       .select('max_briefings, is_blocked')
@@ -54,60 +54,70 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Sua conta está bloqueada. Contate o suporte." }, { status: 403 });
     }
 
-    const { count: sessionCount } = await supabaseSession
-      .from('briefing_sessions')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .not('template_id', 'is', null);
+    // 2.1 CRITICAL: Verify the templateId actually belongs to the caller before
+    // creating a session under it (prevents IDOR / cross-tenant template hijacking).
+    const { data: template, error: templateOwnershipError } = await supabaseSession
+      .from('briefing_templates')
+      .select('id, user_id')
+      .eq('id', templateId)
+      .maybeSingle();
 
-    const usedBriefings = sessionCount || 0;
-
-    if (quota && quota.max_briefings !== -1 && usedBriefings >= quota.max_briefings) {
-      return NextResponse.json({ error: `Você atingiu seu limite de ${quota.max_briefings} briefings. Faça upgrade para continuar.` }, { status: 403 });
+    if (templateOwnershipError) {
+      console.error("Template ownership query error:", templateOwnershipError);
+      return NextResponse.json({ error: "Erro ao validar template." }, { status: 500 });
     }
 
-    // 3. Create Session with Service Role (so we can lock down general INSERT later)
+    if (!template || (template.user_id && template.user_id !== user.id)) {
+      return NextResponse.json({ error: "Template não encontrado ou acesso negado." }, { status: 403 });
+    }
+
+    // 3. Atomic quota check + insert via Postgres RPC.
+    // The previous count() + insert() pattern allowed two concurrent requests
+    // to both read e.g. usedBriefings=2 / max=3 and both insert, leaving the
+    // user with 4 briefings on a 3-briefing plan.
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    
-    // Check for duplicate name
-    const { data: existingSession, error: existingError } = await supabaseAdmin
-      .from('briefing_sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('session_name', sessionName.trim())
-      .maybeSingle();
 
-    if (existingSession) {
-      return NextResponse.json({ error: "Você já possui uma sessão com este nome. Escolha um nome diferente." }, { status: 400 });
-    }
+    const safeMaxQuestions = (!isNaN(Number(maxQuestions)) && Number(maxQuestions) > 0 && Number(maxQuestions) <= 100)
+      ? Number(maxQuestions)
+      : 25;
 
-    const { data, error } = await supabaseAdmin
-      .from('briefing_sessions')
-      .insert([{
-        template_id: templateId,
-        session_name: sessionName.trim(),
-        initial_context: initialContext?.trim() ? initialContext.trim().substring(0, 30000) : null,
-        selected_packages: Array.isArray(selectedPackages) ? selectedPackages.slice(0, 50) : [],
-        edit_passphrase: editPassphrase?.trim() || null,
-        access_password: accessPassword?.trim() || null,
-        briefing_purpose: briefingPurpose?.trim() ? briefingPurpose.trim().substring(0, 30000) : null,
-        depth_signals: depthSignals || [],
-        max_questions: (!isNaN(Number(maxQuestions)) && Number(maxQuestions) > 0 && Number(maxQuestions) <= 100) ? Number(maxQuestions) : 25,
-        status: 'pending',
-        user_id: user.id,
-      }])
-      .select('id')
-      .single();
+    const { data: rpcRows, error: rpcError } = await supabaseAdmin.rpc('create_session_if_under_quota', {
+      p_user_id: user.id,
+      p_template_id: templateId,
+      p_session_name: sessionName.trim().slice(0, 200),
+      p_initial_context: initialContext ? String(initialContext).trim().substring(0, 30000) : null,
+      p_selected_packages: Array.isArray(selectedPackages) ? selectedPackages.slice(0, 50) : [],
+      p_edit_passphrase: editPassphrase?.trim() || null,
+      p_access_password: accessPassword?.trim() || null,
+      p_briefing_purpose: briefingPurpose ? String(briefingPurpose).trim().substring(0, 30000) : null,
+      p_depth_signals: Array.isArray(depthSignals) ? depthSignals.slice(0, 100) : [],
+      p_max_questions: safeMaxQuestions,
+      p_max_briefings: typeof quota?.max_briefings === 'number' ? quota.max_briefings : -1,
+    });
 
-    if (error) {
-      console.error("Error creating session in DB:", error);
+    if (rpcError) {
+      console.error("Error creating session via RPC:", rpcError);
       return NextResponse.json({ error: "Erro ao criar a sessão no banco." }, { status: 500 });
     }
 
-    return NextResponse.json({ id: data.id });
+    const rpcRow = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+    const rpcStatus = (rpcRow as { status?: string } | null)?.status;
+    const rpcId = (rpcRow as { id?: string } | null)?.id;
+
+    if (rpcStatus === 'duplicate_name') {
+      return NextResponse.json({ error: "Você já possui uma sessão com este nome. Escolha um nome diferente." }, { status: 400 });
+    }
+    if (rpcStatus === 'quota_exceeded') {
+      return NextResponse.json({ error: `Você atingiu seu limite de ${quota?.max_briefings} briefings. Faça upgrade para continuar.` }, { status: 403 });
+    }
+    if (rpcStatus !== 'ok' || !rpcId) {
+      return NextResponse.json({ error: "Não foi possível criar a sessão." }, { status: 500 });
+    }
+
+    return NextResponse.json({ id: rpcId });
   } catch (err) {
     console.error("Session Generate Error:", err);
     return NextResponse.json({ error: "Erro interno do servidor." }, { status: 500 });

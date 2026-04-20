@@ -226,7 +226,10 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
       const res = await fetch('/api/briefing/suggest-packages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initialContext: initialContext.trim() }),
+        body: JSON.stringify({
+          initialContext: initialContext.trim(),
+          chosenLanguage: language === 'pt' ? 'português' : language === 'es' ? 'español' : 'english',
+        }),
       });
       const data = await res.json();
       if (data.suggested_slugs && data.suggested_slugs.length > 0) {
@@ -471,10 +474,10 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--orange-light)] border border-[var(--orange-mid)]"
+                  className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--orange)]/10 border border-[var(--orange)]/30"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-[var(--orange)] flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-black italic leading-relaxed">{aiReasoning}</p>
+                  <p className="text-xs text-[var(--text)] italic leading-relaxed">{aiReasoning}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -532,7 +535,7 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                               <div className={`
                                 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200
                                 ${isSelected
-                                  ? 'border-[var(--actext)] bg-white'
+                                  ? 'border-[var(--actext)] bg-[var(--bg)]'
                                   : 'border-[var(--bd-strong)] bg-[var(--bg2)]'
                                 }
                               `}>
@@ -540,7 +543,7 @@ export function EditBriefingModal({ sessionId, initialName, initialContextValue,
                               </div>
                               <div className={`
                                 w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors
-                                ${isSelected ? 'bg-white' : 'bg-[var(--bg3)]'}
+                                ${isSelected ? 'bg-[var(--bg)]' : 'bg-[var(--bg3)]'}
                               `}>
                                 <IconComp className={`w-3 h-3 ${isSelected ? 'text-[var(--actext)]' : 'text-[var(--text3)]'}`} />
                               </div>

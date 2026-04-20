@@ -126,7 +126,7 @@ export function AdminExtendedCharts({
                 <span className="font-bold" style={{ color: PLAN_COLORS[p.plan] || '#6b7280' }}>{p.count}</span>
               </div>
             ))}
-            {planDistribution.length === 0 && <p className="text-zinc-600 text-xs">No data</p>}
+            {planDistribution.length === 0 && <p className="text-[var(--text3)] text-xs">No data</p>}
           </CardContent>
         </Card>
       </div>

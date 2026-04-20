@@ -87,7 +87,7 @@ export async function GET(req: Request) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("Error fetching packages:", msg);
     return NextResponse.json(
-      { error: "Failed to fetch packages", details: msg },
+      { error: "Failed to fetch packages" },
       { status: 500 }
     );
   }
@@ -105,6 +105,19 @@ export async function POST(req: Request) {
     if (!slug || !name) {
       return NextResponse.json({ error: "slug and name are required" }, { status: 400 });
     }
+
+    // Numeric range guards — reject negatives and absurd ceilings before persisting,
+    // they propagate into prompt strings ("up to N questions") and break logic.
+    const safeMaxQuestions = (() => {
+      const raw = Number(max_questions);
+      if (!Number.isFinite(raw)) return 10;
+      return Math.max(1, Math.min(50, Math.trunc(raw)));
+    })();
+    const safeSortOrder = (() => {
+      const raw = Number(sort_order);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.max(0, Math.min(9999, Math.trunc(raw)));
+    })();
 
     // Security: Only Admins can create Official or Community skills for now
     if (!isAdmin) {
@@ -125,9 +138,9 @@ export async function POST(req: Request) {
         description: description || "",
         icon: icon || "Package",
         system_prompt_fragment: system_prompt_fragment || "",
-        max_questions: max_questions ?? 10,
+        max_questions: safeMaxQuestions,
         is_default_enabled: is_default_enabled ?? false,
-        sort_order: sort_order ?? 0,
+        sort_order: safeSortOrder,
         department: department || "general",
         skill_type,
         author_id: user.id
@@ -181,6 +194,20 @@ export async function PUT(req: Request) {
     // Standard user overrides
     if (!isAdmin) {
       updates.is_default_enabled = false;
+    }
+
+    // Same numeric guards as POST — never persist negative/absurd values.
+    if (updates.max_questions !== undefined) {
+      const raw = Number(updates.max_questions);
+      updates.max_questions = Number.isFinite(raw)
+        ? Math.max(1, Math.min(50, Math.trunc(raw)))
+        : 10;
+    }
+    if (updates.sort_order !== undefined) {
+      const raw = Number(updates.sort_order);
+      updates.sort_order = Number.isFinite(raw)
+        ? Math.max(0, Math.min(9999, Math.trunc(raw)))
+        : 0;
     }
 
     const { data, error } = await adminSupabase!

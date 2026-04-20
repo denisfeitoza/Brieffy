@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
 import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { logApiUsage } from "@/lib/services/usageLogger";
+
+// Sanitize untrusted file names before injecting into a system prompt
+// to mitigate prompt injection via crafted file names.
+function sanitizeFileName(raw: unknown): string {
+  if (typeof raw !== 'string') return 'documento';
+  return raw
+    .replace(/[\r\n\t<>{}`"\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80) || 'documento';
+}
 
 export async function POST(req: Request) {
   try {
@@ -9,6 +22,14 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rl = await checkRateLimit(`summarize_doc:${user.id}`, { maxRequests: 20, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many summarization requests." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
     }
 
     const { text, fileName } = await req.json();
@@ -20,9 +41,10 @@ export async function POST(req: Request) {
     // Limit the maximum input to 24,000 caracteres (~6000-7000 tokens)
     // to strictly prevent 400 Bad Request (Context Length Exceeded) errors on 8K models like Llama 3!
     const safeText = text.substring(0, 24000);
+    const safeFileName = sanitizeFileName(fileName);
 
     const systemPrompt = `Você é um Estrategista de Projetos Sênior focado em extrair essencialidades para briefings. 
-O usuário enviará o conteúdo bruto de um documento (chamado ${fileName || "documento"}). 
+O usuário enviará o conteúdo bruto de um documento (chamado ${safeFileName}). 
 Sua tarefa é criar um Resumo Executivo ultra-denso e objetivo desse material.
 
 Foque EXCLUSIVAMENTE em extrair:
@@ -73,6 +95,15 @@ Regras:
 
     const data = await response.json();
     const summary = data.choices?.[0]?.message?.content || "";
+
+    void logApiUsage({
+      userId: user.id,
+      sessionId: null,
+      provider: llmConfig.provider,
+      model: llmConfig.model,
+      usage: data?.usage,
+      endpoint: "summarize_doc",
+    });
 
     return NextResponse.json({ summary: summary.trim() });
   } catch (error) {

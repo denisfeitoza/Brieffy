@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 
 const THINKING_MESSAGES: Record<string, string[]> = {
   pt: [
@@ -51,12 +52,21 @@ const THINKING_MESSAGES: Record<string, string[]> = {
 export const AIThinkingAnimation = memo(function AIThinkingAnimation({ 
   language, 
   brandColor = '#ff6029',
-  accentColor = '#000000',
+  accentColor,
 }: { 
   language: string; 
   brandColor?: string;
   accentColor?: string;
 }) {
+  const { resolvedTheme } = useTheme();
+  // The "third" particle and the gradient endpoints depend on the active theme
+  // so the animation stays visible against the canvas: in light mode we want
+  // dark sparks, in dark mode we want light ones. If no `accentColor` was
+  // provided we derive a theme-aware default instead of the previous hardcoded
+  // black, which used to disappear in dark mode.
+  const themeNeutral = resolvedTheme === 'dark' ? '#ffffff' : '#000000';
+  const themeContrast = resolvedTheme === 'dark' ? '#000000' : '#ffffff';
+  const effectiveAccent = accentColor || themeNeutral;
   const msgs = THINKING_MESSAGES[language] || THINKING_MESSAGES.pt;
   const [msgIdx, setMsgIdx] = useState(() => Math.floor(Math.random() * msgs.length));
 
@@ -75,10 +85,10 @@ export const AIThinkingAnimation = memo(function AIThinkingAnimation({
       size: 2 + (i % 3),
       delay: i * 0.15,
       duration: 2 + (i % 4) * 0.5,
-      color: i % 3 === 0 ? brandColor : i % 3 === 1 ? accentColor : '#ffffff',
+      color: i % 3 === 0 ? brandColor : i % 3 === 1 ? effectiveAccent : themeContrast,
       opacity: i % 3 === 2 ? 0.15 : 0.4,
     })),
-    [brandColor, accentColor]
+    [brandColor, effectiveAccent, themeContrast]
   );
 
   // Neural wave bars config
@@ -86,9 +96,9 @@ export const AIThinkingAnimation = memo(function AIThinkingAnimation({
     Array.from({ length: 5 }, (_, i) => ({
       id: i,
       delay: i * 0.08,
-      color: i % 2 === 0 ? brandColor : accentColor,
+      color: i % 2 === 0 ? brandColor : effectiveAccent,
     })),
-    [brandColor, accentColor]
+    [brandColor, effectiveAccent]
   );
 
   return (
@@ -164,7 +174,7 @@ export const AIThinkingAnimation = memo(function AIThinkingAnimation({
             <span 
               className="text-sm font-medium font-inter"
               style={{
-                background: `linear-gradient(90deg, ${brandColor}, ${accentColor}, ${brandColor})`,
+                background: `linear-gradient(90deg, ${brandColor}, ${effectiveAccent}, ${brandColor})`,
                 backgroundSize: '200% 100%',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -181,7 +191,7 @@ export const AIThinkingAnimation = memo(function AIThinkingAnimation({
       <motion.div
         className="h-[1px] rounded-full"
         style={{
-          background: `linear-gradient(90deg, transparent, ${brandColor}40, ${accentColor}40, transparent)`,
+          background: `linear-gradient(90deg, transparent, ${brandColor}40, ${effectiveAccent}40, transparent)`,
           width: '100%',
         }}
         animate={{ opacity: [0.3, 0.7, 0.3] }}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Languages, Loader2, Check, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
@@ -41,6 +42,10 @@ export function TranslateDocumentAction({
   onSaveAssets,
 }: TranslateDocumentActionProps) {
   const [isTranslating, setIsTranslating] = useState(false);
+  // Controlled open state lets us close the dropdown deterministically (e.g.
+  // after triggering a re-translation) without simulating a body click, which
+  // can leak focus or trigger unrelated outside-click handlers.
+  const [open, setOpen] = useState(false);
   const router = useRouter();
 
   // Determine the active requested language
@@ -80,11 +85,15 @@ export function TranslateDocumentAction({
             })
          });
          
+         if (!res.ok) {
+           const data = await res.json().catch(() => ({}));
+           throw new Error(data?.error || `HTTP ${res.status}`);
+         }
          const data = await res.json();
-         if (data.document) {
+         if (data?.document) {
            newDoc = data.document;
          } else {
-           throw new Error(data.error || 'Falha na resposta da API.');
+           throw new Error(data?.error || 'Empty translation response.');
          }
       }
 
@@ -114,15 +123,20 @@ export function TranslateDocumentAction({
       router.refresh();
       
     } catch(err) {
-      console.error(err);
-      alert('Erro ao traduzir documento. Tente novamente.');
+      console.error('[translate]', err);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(
+        baseLanguage === 'pt'
+          ? `Falha ao traduzir o documento: ${msg}`
+          : `Failed to translate document: ${msg}`
+      );
     } finally {
       setIsTranslating(false);
     }
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
         disabled={isTranslating} 
         className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-[11px] uppercase tracking-wider font-bold transition-colors border shadow-sm h-8 px-3 shrink-0 bg-[var(--bg)] border-[var(--bd-strong)] hover:bg-[var(--bg2)] text-[var(--text2)] hover:text-[var(--text)] gap-1.5 disabled:opacity-50"
@@ -150,8 +164,7 @@ export function TranslateDocumentAction({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Close menu and trigger re-translation
-                        document.body.click(); 
+                        setOpen(false);
                         handleTranslate(code, true);
                       }}
                       className="p-1 rounded opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity"

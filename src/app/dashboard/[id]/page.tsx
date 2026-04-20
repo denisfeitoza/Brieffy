@@ -1,4 +1,6 @@
 import { getSessionById, getInteractionsBySession } from '@/lib/services/briefingService';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 
 import {
@@ -153,10 +155,21 @@ function renderTranscriptAnswer(answerRaw: unknown, inputType: string) {
 /* ── Main Content: Document Reader View ─────────────────────────── */
 
 async function SessionContent({ id }: { id: string }) {
-  const [session, interactions] = await Promise.all([
-    getSessionById(id),
-    getInteractionsBySession(id),
-  ]);
+  // IDOR defense: only fetch sessions belonging to the authenticated user.
+  // Without this, RLS would be the only line of defense — and a misconfigured
+  // service role client elsewhere could leak data.
+  const authClient = await createServerSupabaseClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    redirect('/auth/login');
+  }
+
+  const sessionPromise = getSessionById(id, user.id).catch(() => null);
+  const interactionsPromise = getInteractionsBySession(id);
+  const [session, interactions] = await Promise.all([sessionPromise, interactionsPromise]);
+  if (!session) {
+    notFound();
+  }
 
   const companyInfo = (session.company_info as Record<string, unknown>) || null;
   const qualityScore = session.session_quality_score as number | null;
@@ -381,7 +394,7 @@ function SessionDetailsSkeleton() {
           <div className="h-10 w-10 bg-[var(--bg2)] rounded-lg" />
         </div>
       </div>
-      <div className="h-[70vh] bg-white border border-[var(--bd)] rounded-[2rem]" />
+      <div className="h-[70vh] bg-[var(--bg)] border border-[var(--bd)] rounded-[2rem]" />
     </div>
   );
 }

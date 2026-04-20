@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { ForceLightMode } from "@/components/ui/force-light-mode";
 
 export const metadata: Metadata = {
   title: "Brieffy | Briefings Inteligentes com IA",
@@ -27,10 +26,10 @@ export default function LandingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <>
-      <ForceLightMode />
-      {children}
-    </>
-  );
+  // Landing is always rendered in light mode regardless of the user's saved
+  // theme. We scope it via a wrapper with the `.light` class (defined in
+  // globals.css) which resets all CSS variables to light values. This avoids
+  // the FOUC that happens when forcing the theme via `useEffect` because the
+  // wrapper is applied on the very first server-rendered paint.
+  return <div className="light bg-background text-foreground">{children}</div>;
 }

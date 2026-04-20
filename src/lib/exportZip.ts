@@ -84,7 +84,11 @@ export async function exportSessionsAsZip(sessions: Session[], lang: DashboardLa
 
   for (const session of sessions) {
     const rawName = session.template_name || session.id;
-    const folderName = rawName.replace(/[^a-zA-Z0-9À-ÿ \-_]/g, "").trim().slice(0, 60) || session.id;
+    const baseFolder = rawName.replace(/[^a-zA-Z0-9À-ÿ \-_]/g, "").trim().slice(0, 60) || session.id;
+    // Suffix with the session id prefix so two sessions with identical names
+    // don't overwrite each other inside the archive.
+    const idSuffix = String(session.id).slice(0, 8);
+    const folderName = `${baseFolder}_${idSuffix}`;
     const dateStr = session.created_at
       ? format(new Date(session.created_at), "yyyy-MM-dd")
       : "no-date";

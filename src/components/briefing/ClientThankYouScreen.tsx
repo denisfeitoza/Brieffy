@@ -126,7 +126,7 @@ export function ClientThankYouScreen({
             <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-[var(--text)]" style={{ fontFamily: '"Outfit", sans-serif' }}>
               {t.thankYouTitle}
             </h1>
-            <p className="text-lg text-gray-500 font-medium">
+            <p className="text-lg text-[var(--text2)] font-medium">
               {t.thankYouSubtitle}
             </p>
           </motion.div>
@@ -135,7 +135,7 @@ export function ClientThankYouScreen({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.8, duration: 0.8 }}
-            className="text-neutral-500 leading-relaxed max-w-md"
+            className="text-[var(--text2)] leading-relaxed max-w-md"
           >
             {t.thankYouBody}
           </motion.p>
@@ -145,10 +145,10 @@ export function ClientThankYouScreen({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 2.4, duration: 0.5 }}
-            className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-gray-200 bg-white shadow-sm"
+            className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-[var(--bd)] bg-[var(--bg2)] shadow-sm"
           >
             <BrandedLogo branding={{ ...branding, brand_color: activeColor, company_name: activeCompanyName }} size="sm" isSolid />
-            <span className="text-sm font-medium text-neutral-400" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
+            <span className="text-sm font-medium text-[var(--text3)]" style={{ fontFamily: `"${activeFont}", sans-serif` }}>
               {activeCompanyName}
             </span>
           </motion.div>
@@ -183,12 +183,12 @@ export function ClientThankYouScreen({
           <div className="flex flex-col gap-3 mt-8 w-full max-w-sm relative z-10">
             <Button 
               variant="outline" 
-              className="w-full bg-white/50 backdrop-blur-sm border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+              className="w-full bg-[var(--bg2)]/60 backdrop-blur-sm border-[var(--bd)] text-[var(--text)] hover:bg-[var(--bg2)] flex items-center justify-center gap-2"
               onClick={() => setShowReviewModal(true)}
             >
               {t.reviewAnswers}
             </Button>
-            <p className="text-xs text-neutral-500 pt-2 text-center opacity-80">
+            <p className="text-xs text-[var(--text2)] pt-2 text-center opacity-80">
               {t.reviewDesc}
             </p>
           </div>
@@ -209,25 +209,26 @@ export function ClientThankYouScreen({
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 50, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl relative"
+                className="w-full max-w-2xl bg-[var(--bg)] border border-[var(--bd)] rounded-3xl p-6 sm:p-8 shadow-2xl relative"
               >
                 <button 
                   onClick={() => setShowReviewModal(false)}
-                  className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                  className="absolute top-4 right-4 p-2 bg-[var(--bg2)] text-[var(--text2)] rounded-full hover:bg-[var(--bg3)] transition-colors"
+                  aria-label="Fechar"
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M13 1L1 13" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M1 1L13 13" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M1 1L13 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-800" style={{ fontFamily: '"Outfit", sans-serif' }}>
+                  <h2 className="text-2xl font-semibold text-[var(--text)]" style={{ fontFamily: '"Outfit", sans-serif' }}>
                     {t.reviewAnswers}
                   </h2>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2 text-gray-600 mr-8"
+                    className="flex items-center gap-2 text-[var(--text2)] border-[var(--bd)] mr-8"
                     onClick={handleCopy}
                   >
                     {isCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
@@ -236,15 +237,15 @@ export function ClientThankYouScreen({
                 </div>
                 <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar text-left text-sm">
                   {messages.filter(m => m.userAnswer).map((m, i) => (
-                    <div key={i} className="pb-4 border-b border-gray-100 last:border-0">
-                      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1 font-semibold">
+                    <div key={i} className="pb-4 border-b border-[var(--bd)] last:border-0">
+                      <p className="text-[var(--text3)] text-xs uppercase tracking-wider mb-1 font-semibold">
                         {t.questionTitle} {i + 1}
                       </p>
-                      <p className="text-gray-800 font-medium mb-3">
+                      <p className="text-[var(--text)] font-medium mb-3">
                         {m.content}
                       </p>
-                      <div className="bg-gray-50 p-3 rounded-xl inline-block max-w-full">
-                        <span className="text-gray-600 block break-words">
+                      <div className="bg-[var(--bg2)] p-3 rounded-xl inline-block max-w-full">
+                        <span className="text-[var(--text2)] block break-words">
                           {Array.isArray(m.userAnswer) ? m.userAnswer.join(', ') : m.userAnswer}
                         </span>
                       </div>

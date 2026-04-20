@@ -1,20 +1,17 @@
-# 🔄 Core Prompt — Phase Modules (Fases da Conversa)
+# Core Prompt — Phase Modules
 
-**Arquivo fonte:** `src/lib/ai/promptDictionary.ts` → `PHASE_MODULES`  
-**Injetado em:** Toda chamada ao `/api/briefing`  
-**Posição no prompt:** #5
+> ⚠️ **SOURCE OF TRUTH:** `src/lib/ai/promptDictionary.ts` → `PHASE_MODULES`
+> This document is a human-readable mirror. If you change a phase, change it
+> in TypeScript first, then sync this file.
 
----
-
-## Descrição
-
-A IA opera em **4 fases sequenciais**. O servidor detecta a fase atual com base na cobertura basal e no número de perguntas feitas. Apenas **um** módulo de fase é injetado por chamada.
+**Injected in:** Every call to `/api/briefing`
+**Position in compiled prompt:** between `EXTRACTION_MODULE` and `CONSULTANT_RULES`
 
 ---
 
-## Detecção de Fase (server-side)
+## Phase detection (server-side)
 
-```typescript
+```ts
 let currentPhase: BriefingPhase = 'discovery';
 
 const confirmThreshold = Math.floor(effectiveMinQuestions * 0.3);  // ≈ Q8
@@ -24,96 +21,96 @@ if (questionCount >= confirmThreshold && basalCoverage >= 0.20) currentPhase = '
 if (questionCount >= depthThreshold   && basalCoverage >= 0.40) currentPhase = 'depth';
 if (basalCoverage >= basalThreshold   && questionCount >= minQuestions) currentPhase = 'finalize';
 
-// Circuit breaker sempre sobrescreve para 'finalize'
+// Circuit breaker always wins
 if (forceFinish) currentPhase = 'finalize';
 ```
 
+The compiler in `compileSystemPrompt` injects exactly **one** phase module per
+turn (`PHASE_MODULES[currentPhase](forceFinish)`).
+
 ---
 
-## Fase 1 — DISCOVERY (Descoberta)
-
-**Trigger:** Início da sessão até ~Q8 ou cobertura < 20%
+## Phase 1 — DISCOVERY
 
 ```xml
 <Fase nome="DESCOBERTA">
-A PRIMEIRA PERGUNTA (Q1) DEVE focar em entender a essência da EMPRESA de forma 
-EXTREMAMENTE RESUMIDA E DIRETA. Faça uma ÚNICA pergunta curta, conversacional e 
-amigável (ex: "Para começar, me conte resumidamente o que vocês fazem e o que torna 
-a empresa única?"). NUNCA faça perguntas compostas com múltiplos itens.
-
-- SMART BRANCHING E LENTES DE SKILL: Use os pacotes ativos como "lente". Faça perguntas 
-  que satisfaçam o objetivo basal enquanto puxa aspectos da skill selecionada.
-  Após Q1: ≥8 inferências→avance para confirmação. 4-7→mais 1 pergunta. <4→até 2 perguntas.
-
-- DINAMISMO: Se detectou barreira ou falta de conhecimento, MUDE DE SEÇÃO imediatamente.
-- CONTEXTO JÁ INSERIDO É SAGRADO: Não repergunte o que o usuário já forneceu.
-- FOCO EM PILARES: Se 'target_audience' ou 'brand_tone' não foram validados, Priorize.
+A PRIMEIRA PERGUNTA (Q1) DEVE ser sobre a essência da EMPRESA de forma curta e direta (ex: "Me conte resumidamente o que vocês fazem e o que torna a empresa única?"). Tipo "text".
+- SMART BRANCHING: Use os pacotes ativos como "lente" já nas perguntas iniciais.
+- Após Q1: ≥8 inferências→avance. 4-7→mais uma pergunta. <4→até 2 perguntas.
+- DINAMISMO: Se detectou barreira em um tópico, MUDE DE SEÇÃO imediatamente.
+- FOCO EM PILARES: Priorize 'target_audience' e 'brand_tone' se ainda vazios.
 - PIPELINE: CONTEXTO → PÚBLICO → IDENTIDADE → MERCADO.
-- ABANDONO DEFINITIVO: 1 resposta negativa/skip = tema ENCERRADO.
-- micro_feedback DEVE ser null. Prefira questionType 'text', MAS use múltipla escolha 
-  quando o tema tiver opções limitadas (tom de voz, personalidade).
+Dê PREFERÊNCIA ao "text" nesta fase, MAS use 'multiple_choice'/'card_selector' para temas com escolhas limitadas.
 </Fase>
 ```
 
 ---
 
-## Fase 2 — CONFIRM (Confirmação Rápida)
-
-**Trigger:** ~Q8 com cobertura ≥ 20%
+## Phase 2 — CONFIRM
 
 ```xml
 <Fase nome="CONFIRMAÇÃO-RÁPIDA">
-Confirme inferências em LOTE: use multi_slider, card_selector, boolean_toggle.
-Máximo 2-3 perguntas. Referencie o que o cliente disse. micro_feedback: max 1 total.
+Confirme inferências em LOTE: use card_selector, boolean_toggle, multiple_choice.
+Máximo 2-3 perguntas. Referencie o que o cliente disse.
 </Fase>
 ```
 
 ---
 
-## Fase 3 — DEPTH (Profundidade Cirúrgica)
-
-**Trigger:** ~Q15 com cobertura ≥ 40%
+## Phase 3 — DEPTH
 
 ```xml
 <Fase nome="PROFUNDIDADE-CIRÚRGICA">
-Perguntas cirúrgicas para lacunas restantes. Pode combinar 2 campos por pergunta, 
-MAS APENAS se tiverem forte conexão lógica. NUNCA misture assuntos desconexos.
-Variedade total de questionType. Varie tipos (nunca 3 consecutivos iguais).
+Perguntas cirúrgicas para lacunas restantes. Variedade total de questionType (nunca 3 consecutivos iguais).
 micro_feedback: max 1 a cada 3-4 perguntas. Sem emojis.
 </Fase>
 ```
 
 ---
 
-## Fase 4 — FINALIZE (Finalização)
+## Phase 4 — FINALIZE
 
-**Trigger:** Cobertura ≥ 70% + mínimo de perguntas atingido, OU circuit breaker ativo
+`PHASE_MODULES.finalize(forceFinish)` returns the same body, conditionally
+prefixed when the circuit breaker fires:
 
 ```xml
 <Fase nome="FINALIZAÇÃO">
-<!-- Quando circuit breaker ativo (forceFinish=true): -->
-CIRCUIT BREAKER ATIVO: limite MÁXIMO absoluto de perguntas atingido OU o usuário 
-demonstrou exaustão (muitos skips). Você DEVE finalizar AGORA com isFinished=true. 
-NÃO faça mais perguntas. Infira os campos restantes com confiança 0.5. 
-Retorne isFinished=true imediatamente.
+<!-- prefix injected when forceFinish=true -->
+CIRCUIT BREAKER ATIVO: FINALIZE AGORA com isFinished=true. NÃO faça mais perguntas. Infira campos restantes com confiança 0.5.
 
-<!-- Comportamento padrão: -->
-Escaneie basalFieldsMissing + pacotes ativos. Se houver lacunas + engagement não baixo: 
-1-3 perguntas rápidas táteis.
-Se engagement="low" ou "fatigue": infira campos restantes (confiança 0.5-0.7) e finalize.
-Quando isFinished=true inclua: session_quality_score (0-100).
-ATENÇÃO: A regra "NUNCA finalize se basalCoverage<0.4" é SUSPENSA quando forceFinish=true 
-ou engagement é "exhausted"/"fatigue". Respeite o tempo do usuário.
+Se houver lacunas + engagement bom: 1-3 perguntas rápidas. Se engagement="low"/"fatigue": infira e finalize.
+Quando isFinished=true inclua session_quality_score (0-100).
 </Fase>
 ```
 
+In this phase the compiler also drops `EXTRACTION_MODULE`, `CONSULTANT_RULES`,
+and `<AllowedFormats>` from the prompt — see `compileSystemPrompt`.
+
 ---
 
-## Fluxo Visual das Fases
+## Visual flow
 
 ```
 Q1         Q8          Q15         Q25+         Q45
  |    DISCOVERY    |   CONFIRM  |    DEPTH     |  FINALIZE  |
-              ↑ cobertura ≥20%       ↑ cobertura ≥40%   ↑ cobertura ≥70% + minQ
-                                                          ou forceFinish
+              ↑ basalCoverage ≥ 0.20       ↑ ≥ 0.40       ↑ ≥ basalThreshold + minQ
+                                                            or forceFinish
 ```
+
+---
+
+## Related blocks always present
+
+In addition to the phase module, every compiled prompt includes:
+
+1. `corePersona` (with `<SystemRole>` + `<Context>`)
+2. `buildLanguageRule(targetLang)` — second-pass language reminder
+3. `GOLDEN_RULES`
+4. `EXTRACTION_MODULE` (skipped in finalize)
+5. **phase module** (this file)
+6. `CONSULTANT_RULES` (skipped in finalize)
+7. `behaviorRules` (block strategy + checkpoint)
+8. `<AllowedFormats>` (skipped in finalize)
+9. `<PreviousQuestions>` (anti-repetition, last 8)
+10. `<CurrentState>` (compacted; see `src/app/api/briefing/route.ts`)
+11. `buildOutputFormat()` (see `09_output_format.md`)

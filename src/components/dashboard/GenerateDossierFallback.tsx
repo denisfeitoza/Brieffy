@@ -43,7 +43,7 @@ export function GenerateDossierFallback({ sessionId }: { sessionId: string }) {
         <div className="flex flex-col items-center gap-4">
           <div className="relative mb-4 mt-2">
             <div className="absolute inset-0 bg-[var(--orange)] blur-xl opacity-20 rounded-full animate-pulse z-0 scale-150"></div>
-            <div className="relative z-10 w-20 h-20 bg-white rounded-full flex items-center justify-center border-2 border-orange-100 shadow-md">
+            <div className="relative z-10 w-20 h-20 bg-[var(--bg)] rounded-full flex items-center justify-center border-2 border-[var(--orange)]/20 shadow-md">
               <div className="absolute inset-2 border-2 border-[var(--orange)] border-dotted rounded-full animate-[spin_8s_linear_infinite] opacity-30"></div>
               <FileText className="w-8 h-8 text-[var(--orange)] animate-pulse" />
             </div>

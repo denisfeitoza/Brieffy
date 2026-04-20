@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Message, MultiSliderOption, QuestionType } from "@/lib/types";
 import { MultiSliderQuestion } from "@/components/briefing/MultiSliderQuestion";
 import { CheckCircle2, Mic } from "lucide-react";
@@ -164,8 +165,10 @@ export function DynamicInput({
       else setInputText("");
     }
     setIsSubmittingLocal(false);
+    // Include userAnswer so going back to a previously-answered question rehydrates
+    // the saved answer (was being missed: deps were [id, questionType] only).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMessage.id, activeMessage.questionType]);
+  }, [activeMessage.id, activeMessage.questionType, activeMessage.userAnswer]);
 
   useEffect(() => {
     if (!isLoading) setIsSubmittingLocal(false);
@@ -179,6 +182,7 @@ export function DynamicInput({
       setSuggestedMainColors(colors);
     } catch (e) {
       console.error("fetchInitialColors error:", e);
+      toast.error('Não foi possível sugerir cores agora. Tente novamente.');
     } finally {
       setIsFetchingColors(false);
     }
@@ -268,7 +272,7 @@ export function DynamicInput({
       {/* Already-answered badge */}
       {hasAnswered && (
         <div className="flex mb-6 mt-[-10px]">
-          <div className="bg-white text-gray-500 px-4 py-3 rounded-2xl flex items-center gap-3 border border-gray-200 shadow-sm">
+          <div className="bg-[var(--bg2)] text-[var(--text2)] px-4 py-3 rounded-2xl flex items-center gap-3 border border-[var(--bd)] shadow-sm">
             <CheckCircle2 className="w-5 h-5 text-green-500" />
             <span>
               {Array.isArray(activeMessage.userAnswer)
@@ -298,12 +302,12 @@ export function DynamicInput({
               <Mic className="w-3.5 h-3.5" />
               <span>{t.audioHint}</span>
             </div>
-            <div className="text-gray-500 font-inter text-sm hidden sm:flex gap-4 px-2 items-center justify-center w-full">
+            <div className="text-[var(--text2)] font-inter text-sm hidden sm:flex gap-4 px-2 items-center justify-center w-full">
               <span>
-                <b className="font-semibold text-gray-400">Enter</b> {t.enterToSend}
+                <b className="font-semibold text-[var(--text3)]">Enter</b> {t.enterToSend}
               </span>
               <span>
-                <b className="font-semibold text-gray-400">Shift + Enter</b> {t.shiftToSkip}
+                <b className="font-semibold text-[var(--text3)]">Shift + Enter</b> {t.shiftToSkip}
               </span>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import { BriefingState, Message, FinalAssets, BriefingContextType, BasalCoverageInfo, BrandingInfo, PackageDetail } from "./types";
 
 const DEFAULT_BRANDING: BrandingInfo = {
@@ -26,17 +27,31 @@ import {
 const BriefingContext = createContext<BriefingContextType | undefined>(undefined);
 
 // ================================================================
-// LOCAL STORAGE HELPERS — fallback when Supabase is unreachable
+// SESSION STORAGE HELPERS — fallback when Supabase is unreachable.
+// Switched from localStorage to sessionStorage so client briefing answers
+// (which can include sensitive business info) are NOT persisted across
+// browser sessions / shared devices, and clear themselves on tab close.
 // ================================================================
 const LS_PREFIX = 'brieffy_';
 
+function getStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try { return window.sessionStorage; } catch { return null; }
+}
+
 function lsSave(key: string, data: unknown) {
-  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(data)); } catch { /* quota or SSR */ }
+  const store = getStorage();
+  if (!store) return;
+  try { store.setItem(LS_PREFIX + key, JSON.stringify(data)); } catch { /* quota */ }
 }
 
 
 function lsRemove(key: string) {
-  try { localStorage.removeItem(LS_PREFIX + key); } catch { /* SSR */ }
+  const store = getStorage();
+  if (!store) return;
+  try { store.removeItem(LS_PREFIX + key); } catch { /* SSR / locked */ }
+  // Best-effort: also wipe any legacy localStorage copy from older versions
+  try { window.localStorage?.removeItem(LS_PREFIX + key); } catch { /* ignore */ }
 }
 
 export interface SerializedTemplate {
@@ -413,6 +428,11 @@ export function BriefingProvider({
       }
     } catch (err) {
       console.error("[Resume] Failed to fetch next question:", err);
+      toast.error(
+        chosenLanguage === 'pt'
+          ? 'Não foi possível continuar de onde você parou. Tente recarregar.'
+          : 'Could not resume where you left off. Try reloading.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -504,10 +524,13 @@ export function BriefingProvider({
       }
     }).catch(() => {});
 
-    const currentMsgToLog = messages[currentStepIndex];
+    // Use the FRESH snapshot captured inside setMessages, not the stale `messages`
+    // closure (which still reflects the pre-update state). This was logging
+    // wrong question/answer pairs to the tracker.
+    const currentMsgToLog = snapshotMessages[currentStepIndex] ?? messages[currentStepIndex];
     const interactionPromise = activeSessionPromise.then(activeSessionId => {
       if (activeSessionId) {
-        if (currentStepIndex < messages.length - 1) {
+        if (currentStepIndex < snapshotMessages.length - 1) {
           clearFutureInteractionsInDb(activeSessionId, currentStepIndex).catch(() => {});
         }
         return logInteractionInDb(
@@ -523,7 +546,7 @@ export function BriefingProvider({
       return null;
     });
 
-    const historyPayload = messages.slice(0, currentStepIndex + 1).map(m => {
+    const historyPayload = snapshotMessages.slice(0, currentStepIndex + 1).map(m => {
       const resp = Array.isArray(m.userAnswer) ? m.userAnswer.join(', ') : m.userAnswer;
       return {
         role: m.role,

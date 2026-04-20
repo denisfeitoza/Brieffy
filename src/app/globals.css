@@ -132,6 +132,70 @@
 }
 
 /* ============================================
+   BRIEFFY DESIGN SYSTEM — Light Theme (scoped)
+   Mirrors :root values so a `.light` ancestor can override
+   an inherited `.dark` ancestor (used by route segments
+   that must always render light, e.g. the landing page).
+   ============================================ */
+
+.light {
+  --bg: #ffffff;
+  --bg2: #f5f5f4;
+  --bg3: #ebebea;
+  --bd: #e8e8e5;
+  --bd-strong: #c8c8c4;
+  --text: #000000;
+  --text2: #5a5a57;
+  --text3: #9e9e9a;
+  --acbg: #fff2ed;
+  --acbd: #ffcfbc;
+  --actext: #ff6029;
+  --orange: #ff6029;
+
+  --background: #ffffff;
+  --foreground: #000000;
+
+  --card: #ffffff;
+  --card-foreground: #000000;
+
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f5f5f4;
+  --secondary-foreground: #000000;
+
+  --muted: #f5f5f4;
+  --muted-foreground: #5a5a57;
+
+  --accent: #fff2ed;
+  --accent-foreground: #ff6029;
+
+  --destructive: #ef4444;
+
+  --border: #e8e8e5;
+  --input: #e8e8e5;
+  --ring: #ff6029;
+
+  --chart-1: #ff6029;
+  --chart-2: #000000;
+  --chart-3: #5a5a57;
+  --chart-4: #9e9e9a;
+  --chart-5: #c8c8c4;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fff2ed;
+  --sidebar-accent-foreground: #ff6029;
+  --sidebar-border: #e8e8e5;
+  --sidebar-ring: #ff6029;
+}
+
+/* ============================================
    BRIEFFY DESIGN SYSTEM — Dark Theme
    Brand: #fff on #0a0a0a + #ff6029 accent
    ============================================ */

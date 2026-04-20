@@ -93,30 +93,30 @@ export function CardSelectorInput({
               key={idx}
               onClick={() => handleCardClick(title)}
               disabled={isLoading || isSubmittingLocal}
-              className={`group flex flex-col items-start text-left p-4 md:p-8 rounded-3xl bg-white border transition-all min-h-[120px] md:min-h-auto active:scale-[0.98] ${
+              className={`group flex flex-col items-start text-left p-4 md:p-8 rounded-3xl bg-[var(--bg)] border transition-all min-h-[120px] md:min-h-auto active:scale-[0.98] ${
                 isSelected
                   ? "border-[var(--orange)] bg-[var(--orange)]/5 shadow-[0_5px_30px_rgba(255,96,41,0.15)]"
-                  : "border-gray-200 hover:border-[var(--orange)]/50 hover:bg-[var(--orange)]/5 hover:-translate-y-1 hover:shadow-lg"
+                  : "border-[var(--bd)] hover:border-[var(--orange)]/50 hover:bg-[var(--orange)]/5 hover:-translate-y-1 hover:shadow-lg"
               }`}
             >
               <div
                 className={`w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-2xl flex items-center justify-center mb-4 md:mb-6 transition-colors border ${
                   isSelected
                     ? "bg-[var(--orange)]/10 border-[var(--orange)]/50"
-                    : "bg-gray-50 border-gray-200 group-hover:bg-[var(--orange)]/10"
+                    : "bg-[var(--bg2)] border-[var(--bd)] group-hover:bg-[var(--orange)]/10"
                 }`}
               >
                 <div
                   className={`w-3 h-3 md:w-4 md:h-4 rounded-full transition-all ${
                     isSelected
                       ? "bg-[var(--orange)] shadow-sm"
-                      : "bg-gray-300 group-hover:bg-[var(--orange)]"
+                      : "bg-[var(--bd-strong)] group-hover:bg-[var(--orange)]"
                   }`}
                 />
               </div>
               <h3
                 className={`text-lg md:text-xl font-bold mb-2 md:mb-3 transition-colors ${
-                  isSelected ? "text-[var(--orange)]" : "text-black group-hover:text-[var(--orange)]"
+                  isSelected ? "text-[var(--orange)]" : "text-[var(--text)] group-hover:text-[var(--orange)]"
                 }`}
                 style={
                   isFontSelection
@@ -133,7 +133,7 @@ export function CardSelectorInput({
               >
                 {title}
               </h3>
-              {desc && <p className="text-sm text-gray-500 font-inter leading-relaxed">{desc}</p>}
+              {desc && <p className="text-sm text-[var(--text2)] font-inter leading-relaxed">{desc}</p>}
             </button>
           );
         })}
@@ -145,7 +145,7 @@ export function CardSelectorInput({
             onClick={generateMoreOptions}
             disabled={isGeneratingMore}
             variant="outline"
-            className="rounded-full gap-2 border-gray-200 bg-white shadow-sm text-[var(--orange)] hover:bg-gray-50 hover:text-[#e05221] h-14 px-8 w-full sm:w-auto"
+            className="rounded-full gap-2 border-[var(--bd)] bg-[var(--bg)] shadow-sm text-[var(--orange)] hover:bg-[var(--bg2)] hover:text-[var(--orange)] h-14 px-8 w-full sm:w-auto"
           >
             <RefreshCw className={`w-4 h-4 ${isGeneratingMore ? "animate-spin" : ""}`} />
             <span>{t.suggestRoutes}</span>
@@ -165,7 +165,7 @@ export function CardSelectorInput({
                 ↓ {specifyLabel}
               </p>
             )}
-            <p className="text-sm text-center text-gray-500 mb-2">{t.addDetails}</p>
+            <p className="text-sm text-center text-[var(--text2)] mb-2">{t.addDetails}</p>
             <TextAudioInput
               inputText={inputText}
               setInputText={setInputText}
@@ -185,7 +185,7 @@ export function CardSelectorInput({
               variant="ghost"
               size="sm"
               onClick={() => setShowTextInput(true)}
-              className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
+              className="text-xs text-[var(--text3)] hover:text-[var(--text2)] rounded-full"
             >
               + {t.moreDetails || "Adicionar detalhes"}
             </Button>
@@ -194,7 +194,7 @@ export function CardSelectorInput({
       </div>
 
       <ScrollConfirmWrapper
-        containerClassName="flex flex-col sm:flex-row gap-4 w-full mt-6 items-center justify-end border-t border-gray-200 pt-6"
+        containerClassName="flex flex-col sm:flex-row gap-4 w-full mt-6 items-center justify-end border-t border-[var(--bd)] pt-6"
         isDisabled={
           (selectedMultiples.length === 0 && !inputText.trim()) || isLoading || isSubmittingLocal
         }
@@ -203,8 +203,8 @@ export function CardSelectorInput({
             size="lg"
             className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
               selectedMultiples.length > 0 || inputText.trim()
-                ? "bg-black text-white hover:bg-neutral-800 shadow-xl hover:scale-105"
-                : "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
+                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-xl hover:scale-105 border-transparent"
+                : "bg-[var(--bg2)] text-[var(--text3)] border-[var(--bd)] hover:bg-[var(--bg3)]"
             }`}
             onClick={handleLocalSend}
             disabled={
@@ -212,7 +212,7 @@ export function CardSelectorInput({
             }
           >
             {isLoading || isSubmittingLocal ? (
-              <RefreshCw className="w-5 h-5 mr-2 animate-spin text-white/70" />
+              <RefreshCw className="w-5 h-5 mr-2 animate-spin opacity-70" />
             ) : null}
             {t.confirmSelection} <ArrowRight className="w-5 h-5 ml-2" />
           </Button>

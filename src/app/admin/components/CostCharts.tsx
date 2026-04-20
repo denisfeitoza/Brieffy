@@ -23,10 +23,14 @@ interface CostChartsProps {
 
 export function CostCharts({ totalCostUSD, totalCostBRL, costByCompany, timelineData }: CostChartsProps) {
   // Take top 5 companies by cost for the bar chart
-  const topCompanies = costByCompany.slice(0, 5).map(c => ({
-    name: c.companyName.length > 15 ? c.companyName.substring(0, 15) + "..." : c.companyName,
-    cost: parseFloat(c.costUsd.toFixed(4))
-  }));
+  // Guard against companyName being null/undefined which would crash on .length.
+  const topCompanies = costByCompany.slice(0, 5).map(c => {
+    const safeName = (c.companyName ?? '').toString() || 'Sem nome';
+    return {
+      name: safeName.length > 15 ? safeName.substring(0, 15) + "..." : safeName,
+      cost: parseFloat((c.costUsd ?? 0).toFixed(4))
+    };
+  });
 
   // Format timeline data
   const formattedTimeline = timelineData.map(t => ({

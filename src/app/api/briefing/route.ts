@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
-import { getLLMConfig, getDBSettings, getPerformanceConfig, getFormatConfig } from "@/lib/aiConfig";
+import { getLLMConfig, getLLMFallbackConfig, getDBSettings, getPerformanceConfig, getFormatConfig } from "@/lib/aiConfig";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
+import { logApiUsage } from "@/lib/services/usageLogger";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("briefing");
 import {
   EXTRACTION_MODULE,
   CONSULTANT_RULES,
@@ -42,11 +46,32 @@ async function buildPackagePrompts(selectedSlugs?: string[]): Promise<{ prompt: 
     const purposes: string[] = [];
     const depthSignals: string[] = [];
 
+    // Sanitize each fragment.
+    // Rationale: `system_prompt_fragment` is admin-editable from the dashboard,
+    // but if an admin (or a compromised admin account) ever pastes XML-like tags
+    // it could break our prompt structure (closing <SystemRole> early, opening a
+    // bogus <CurrentState>, etc) or smuggle instructions overriding the golden
+    // rules. We strip angle brackets, normalize whitespace, and cap length.
+    const sanitizeFragment = (raw: string | null | undefined): string => {
+      if (!raw || typeof raw !== "string") return "";
+      const MAX_FRAGMENT_CHARS = 4000;
+      // 1. Drop XML-style tag delimiters (we already namespace ours via < >)
+      // 2. Collapse runs of >2 newlines to keep prompt budget tight
+      // 3. Hard-cap length so a single rogue package can't blow the context window
+      const noTags = raw.replace(/[<>]/g, "");
+      const collapsed = noTags.replace(/\n{3,}/g, "\n\n").trim();
+      return collapsed.length > MAX_FRAGMENT_CHARS
+        ? `${collapsed.slice(0, MAX_FRAGMENT_CHARS)}…[truncated]`
+        : collapsed;
+    };
+
     const fragments = packages.map((pkg: { name: string; max_questions: number | null; system_prompt_fragment: string; briefing_purpose?: string; depth_signals?: string[] }) => {
       if (pkg.briefing_purpose) purposes.push(pkg.briefing_purpose);
       if (pkg.depth_signals) depthSignals.push(...pkg.depth_signals);
       const limit = pkg.max_questions ? `(up to ${pkg.max_questions} unique questions)` : '(UNLIMITED questions — adapt to complexity)';
-      return `[ACTIVE PACKAGE: ${pkg.name}] ${limit}\n${pkg.system_prompt_fragment}`;
+      // Also sanitize the package name (used as a label) so it can't sneak in tags.
+      const safeName = String(pkg.name || "Package").replace(/[<>]/g, "").slice(0, 80);
+      return `[ACTIVE PACKAGE: ${safeName}] ${limit}\n${sanitizeFragment(pkg.system_prompt_fragment)}`;
     }).join('\n\n');
 
     const prompt = `
@@ -116,26 +141,37 @@ function calculateEngagement(history: { role: string; content: string }[]): 'hig
   const isSkip = (m: { content: string }) => m.content === '(skipped)' || m.content.trim().length < 3;
   const totalSkips = allUserMsgs.filter(isSkip).length;
 
-  // Detect skip-streaks: sequences of 2+ consecutive skips
+  // Detect skip-streaks: track BOTH the longest streak in the session AND the
+  // tail streak (i.e. ending on the latest message). The "max" matches the
+  // documented "3 consecutive" intent; the "tail" is what we use for "right now".
   let currentStreak = 0;
+  let maxStreak = 0;
+  let tailStreak = 0;
   for (const msg of allUserMsgs) {
     if (isSkip(msg)) {
       currentStreak++;
+      if (currentStreak > maxStreak) maxStreak = currentStreak;
     } else {
       currentStreak = 0;
     }
   }
+  tailStreak = currentStreak;
 
   // EXHAUSTED: user has given up. Override minQuestions entirely.
-  // Triggers when: 5+ total skips OR 3 consecutive skips OR manual finish requested via UI
-  if (totalSkips >= 5 || currentStreak >= 3) return 'exhausted';
-  
+  // Triggers when: 5+ total skips OR 3 consecutive skips at any point
+  // OR manual finish requested via UI.
+  if (totalSkips >= 5 || maxStreak >= 3 || tailStreak >= 3) return 'exhausted';
+
   if (recentUserMsgs.some(m => m.content === '(FINALIZAR_AGORA)')) {
     return 'exhausted';
   }
 
+  // Word count: empty trimmed string -> 0 (the previous code returned 1 because
+  // "".split(/\s+/) === [""], which biased avgWords upward and masked fatigue).
   const avgWords = recentUserMsgs.reduce((sum, m) => {
-    return sum + m.content.trim().split(/\s+/).length;
+    const trimmed = m.content.trim();
+    if (!trimmed) return sum;
+    return sum + trimmed.split(/\s+/).length;
   }, 0) / recentUserMsgs.length;
 
   const recentSkippedCount = recentUserMsgs.filter(isSkip).length;
@@ -242,7 +278,7 @@ export async function POST(req: Request) {
   try {
     // Rate limit: 20 requests per minute for briefing
     const ip = getRequestIP(req);
-    const rl = checkRateLimit(`briefing:${ip}`, { maxRequests: 20, windowMs: 60_000 });
+    const rl = await checkRateLimit(`briefing:${ip}`, { maxRequests: 20, windowMs: 60_000 });
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Please wait before trying again." },
@@ -309,8 +345,8 @@ export async function POST(req: Request) {
       ? activeTemplate.sections
       : SECTION_PIPELINE;
 
-    const templateContext = activeTemplate 
-      ? `Template: ${activeTemplate.name} (${activeTemplate.category}). Goals: ${activeTemplate.objectives.join(", ")}. Core fields: ${activeTemplate.core_fields.join(", ")}`
+    const templateContext = activeTemplate
+      ? `Template: ${activeTemplate.name} (${activeTemplate.category}). Goals: ${(activeTemplate.objectives ?? []).join(", ")}. Core fields: ${(activeTemplate.core_fields ?? []).join(", ")}`
       : 'No template. General business interview.';
 
     const briefingPurpose = sessionPurpose || activeTemplate?.briefing_purpose || '';
@@ -464,10 +500,54 @@ export async function POST(req: Request) {
     // PreviousQuestions — limited to last 8 for anti-repetition (saves ~2000 tokens on long sessions)
     const assistantMessages = history.filter((m: { role: string }) => m.role === 'assistant');
     const recentQuestions = assistantMessages.slice(-8);
-    const previousQuestionsBlock = `<PreviousQuestions>\n${recentQuestions.map((m: { content: string }, i: number) => `${i + 1}. ${m.content.split('\n')[0].slice(0, 100)}`).join('\n')}\n</PreviousQuestions>`;
+    const previousQuestionsBlock = `<PreviousQuestions>\n${recentQuestions.map((m: { content: string }, i: number) => `${i + 1}. ${String(m.content ?? '').split('\n')[0].slice(0, 100)}`).join('\n')}\n</PreviousQuestions>`;
 
-    // CurrentState — compact format: only collected/missing field names + key values
-    const stateCompact = `<CurrentState collected="${collected.join(',')}" missing="${missing.join(',')}" coverage="${Math.round(currentBasalCoverage * 100)}%">${JSON.stringify(currentState)}</CurrentState>`;
+    // CurrentState — compact format.
+    // Why compact:
+    //   The previous JSON.stringify(currentState) dumped the entire state on
+    //   every turn. As the briefing progressed this could balloon to thousands
+    //   of tokens (e.g. long descriptions, pasted content) — and the LLM only
+    //   needs to know "what's filled" and the gist of each value to avoid
+    //   re-asking. Cap each value at 200 chars and skip empty/null fields.
+    const compactCurrentState = (state: Record<string, unknown> | null | undefined): Record<string, unknown> => {
+      if (!state || typeof state !== "object") return {};
+      const MAX_VALUE_CHARS = 200;
+      const out: Record<string, unknown> = {};
+      for (const [key, raw] of Object.entries(state)) {
+        if (raw === null || raw === undefined) continue;
+        if (typeof raw === "string") {
+          const trimmed = raw.trim();
+          if (!trimmed) continue;
+          out[key] = trimmed.length > MAX_VALUE_CHARS
+            ? `${trimmed.slice(0, MAX_VALUE_CHARS)}…[truncated ${trimmed.length - MAX_VALUE_CHARS} chars]`
+            : trimmed;
+          continue;
+        }
+        if (typeof raw === "number" || typeof raw === "boolean") { out[key] = raw; continue; }
+        if (Array.isArray(raw)) {
+          if (raw.length === 0) continue;
+          // Keep only first 5 entries and truncate string entries
+          const slice = raw.slice(0, 5).map((v) => {
+            if (typeof v === "string") return v.length > MAX_VALUE_CHARS ? `${v.slice(0, MAX_VALUE_CHARS)}…` : v;
+            return v;
+          });
+          out[key] = raw.length > 5 ? [...slice, `…+${raw.length - 5} more`] : slice;
+          continue;
+        }
+        // Object: stringify then truncate as a last resort
+        try {
+          const json = JSON.stringify(raw);
+          if (!json || json === "{}" || json === "[]") continue;
+          out[key] = json.length > MAX_VALUE_CHARS ? `${json.slice(0, MAX_VALUE_CHARS)}…[truncated]` : json;
+        } catch {
+          // unserializable — skip silently
+        }
+      }
+      return out;
+    };
+
+    const compactState = compactCurrentState(currentState);
+    const stateCompact = `<CurrentState collected="${collected.join(',')}" missing="${missing.join(',')}" coverage="${Math.round(currentBasalCoverage * 100)}%">${JSON.stringify(compactState)}</CurrentState>`;
 
     const systemPrompt = compileSystemPrompt({
       phase: currentPhase,
@@ -477,6 +557,7 @@ export async function POST(req: Request) {
       allowedFormats: `<AllowedFormats>\n${allowedFormats.join('\n')}\n</AllowedFormats>`,
       previousQuestions: previousQuestionsBlock,
       currentStateCompact: stateCompact,
+      targetLang,
     });
 
     // ================================================================
@@ -491,11 +572,11 @@ export async function POST(req: Request) {
       const union = new Set([...setA, ...setB]);
       return intersection.size / union.size;
     };
-    const previousQuestions = assistantMessages.map((m: { content: string }) => m.content.split('\n')[0]);
+    const previousQuestions = assistantMessages.map((m: { content: string }) => String(m.content ?? '').split('\n')[0]);
 
     // LLM call — WITH RETRY
     const startTime = Date.now();
-    console.log(`[AI] Using ${llmConfig.provider} / ${llmConfig.model} | Phase: ${currentPhase} | Q: ${questionCount} | Coverage: ${Math.round(currentBasalCoverage * 100)}%`);
+    log.debug(`Using ${llmConfig.provider} / ${llmConfig.model} | Phase: ${currentPhase} | Q: ${questionCount} | Coverage: ${Math.round(currentBasalCoverage * 100)}%`);
 
     const llmMessages = [
       { role: "system", content: systemPrompt },
@@ -508,33 +589,71 @@ export async function POST(req: Request) {
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
+        // Last-attempt fallback: if our primary provider keeps failing, swap
+        // to OpenRouter (gpt-4o-mini by default) so the user gets a degraded
+        // but functional reply instead of a hard error.
+        const isLastAttempt = attempt === MAX_RETRIES - 1;
+        const fallbackConfig: ReturnType<typeof getLLMFallbackConfig> = isLastAttempt ? getLLMFallbackConfig() : null;
+        const useFallback: boolean = !!fallbackConfig && lastError !== null;
+        const activeConfig: typeof llmConfig = useFallback && fallbackConfig ? fallbackConfig : llmConfig;
+        if (useFallback) {
+          console.warn(`[LLM_FALLBACK_USED] Switching to ${activeConfig.provider}/${activeConfig.model} after primary failures.`);
+        }
+
         // On retry, bump temperature slightly to help escape JSON generation ruts
         const attemptTemperature = attempt > 0
-          ? Math.min(llmConfig.temperature + 0.15, 0.7)
-          : llmConfig.temperature;
+          ? Math.min(activeConfig.temperature + 0.15, 0.7)
+          : activeConfig.temperature;
 
         if (attempt > 0) {
           console.warn(`[AI] Retry attempt ${attempt + 1}/${MAX_RETRIES} with temperature=${attemptTemperature}`);
         }
 
-        const res = await fetch(llmConfig.baseUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${llmConfig.apiKey}`,
-            ...llmConfig.headers,
-          },
-          body: JSON.stringify({
-            model: llmConfig.model,
-            response_format: { type: "json_object" },
-            temperature: attemptTemperature,
-            max_tokens: llmConfig.maxTokens,
-            messages: llmMessages,
-          }),
-        });
+        // Server-side AbortController guarantees we don't keep paying for a
+        // hung provider call after the user's browser already gave up.
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), perfConfig.timeoutMs);
+
+        let res: Response;
+        try {
+          res = await fetch(activeConfig.baseUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${activeConfig.apiKey}`,
+              ...activeConfig.headers,
+            },
+            body: JSON.stringify({
+              model: activeConfig.model,
+              response_format: { type: "json_object" },
+              temperature: attemptTemperature,
+              max_tokens: activeConfig.maxTokens,
+              // Sampling controls: kept identical across retries so quality is
+              // predictable. Override per-tenant via app_settings.ai_llm_top_p etc.
+              top_p: activeConfig.topP,
+              presence_penalty: activeConfig.presencePenalty,
+              frequency_penalty: activeConfig.frequencyPenalty,
+              messages: llmMessages,
+            }),
+            signal: controller.signal,
+          });
+        } catch (e) {
+          clearTimeout(timeoutId);
+          if ((e as Error).name === "AbortError") {
+            console.warn(`[AI] Provider timed out after ${perfConfig.timeoutMs}ms (attempt ${attempt + 1}).`);
+            if (attempt < MAX_RETRIES - 1) {
+              lastError = new Error("provider_timeout");
+              await new Promise(r => setTimeout(r, 200));
+              continue;
+            }
+            return NextResponse.json({ error: "AI provider timed out." }, { status: 504 });
+          }
+          throw e;
+        }
+        clearTimeout(timeoutId);
 
         if (!res.ok) {
           const errorText = await res.text();
-          console.error(`[${llmConfig.provider.toUpperCase()}] Error (attempt ${attempt + 1}):`, errorText);
+          console.error(`[${activeConfig.provider.toUpperCase()}] Error (attempt ${attempt + 1}):`, errorText);
 
           // Retryable: Groq json_validate_failed (400), rate limit (429), server error (5xx)
           const isRetryable = res.status === 400 && errorText.includes('json_validate_failed')
@@ -542,38 +661,35 @@ export async function POST(req: Request) {
             || res.status >= 500;
 
           if (isRetryable && attempt < MAX_RETRIES - 1) {
-            lastError = new Error(`${llmConfig.provider} API falhou: ${res.status}`);
+            lastError = new Error(`${activeConfig.provider} API falhou: ${res.status}`);
             await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
             continue;
           }
 
-          throw new Error(`${llmConfig.provider} API falhou: ${res.status} - ${errorText}`);
+          throw new Error(`${activeConfig.provider} API falhou: ${res.status} - ${errorText}`);
         }
 
         const data = await res.json();
-        const content = data.choices[0].message.content;
-        const usage = data.usage;
+        const content = data?.choices?.[0]?.message?.content;
+        const usage = data?.usage;
+        if (typeof content !== 'string' || !content.trim()) {
+          // Treat as a parse failure so the existing retry path kicks in
+          throw new Error("LLM returned empty/invalid response shape");
+        }
 
-        console.log(`[AI] Response in ${Date.now() - startTime}ms (attempt ${attempt + 1})`);
+        log.debug(`Response in ${Date.now() - startTime}ms (attempt ${attempt + 1})`);
 
         // ================================================================
         // ASYNC LOGGING — Save token usage and estimated cost to db
         // ================================================================
         if (usage) {
-          const { estimateCost } = await import('@/lib/aiConfig');
-          const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
-          const { sessionId } = body;
-
-          getSupabaseServer().from('api_usage').insert({
-            user_id: user?.id || null,
-            session_id: sessionId || null,
-            provider: llmConfig.provider,
-            model: llmConfig.model,
-            prompt_tokens: usage.prompt_tokens || 0,
-            completion_tokens: usage.completion_tokens || 0,
-            estimated_cost_usd: cost
-          }).then(({ error }: { error: { message: string } | null }) => {
-            if (error) console.error("[API_USAGE] Failed to log usage:", error);
+          void logApiUsage({
+            userId: user?.id ?? null,
+            sessionId: body.sessionId ?? null,
+            provider: activeConfig.provider,
+            model: activeConfig.model,
+            usage,
+            endpoint: useFallback ? "briefing_fallback" : "briefing",
           });
         }
 
@@ -629,8 +745,40 @@ export async function POST(req: Request) {
             // FINAL DOCUMENT GENERATOR: Transforms mapped data back into the Dossiê
             // ════════════════════════════════════════════════════════════════
             try {
-              console.log("[AI] Generating final Markdown Document (Dossiê Estratégico)...");
+              log.info("Generating final Markdown Document (Dossiê Estratégico)…");
               const fullState = { ...currentState, ...parsed.updates };
+
+              // Compact inputs before final dossier call (mirrors generate-dossier route)
+              const MAX_MSG_CHARS_DOC = 600;
+              const MAX_FIELD_CHARS_DOC = 500;
+              type HistMsgDoc = { role?: string; content?: unknown };
+              const compactHistoryDoc = (Array.isArray(history) ? history : []).reduce<Array<{ role: string; content: string }>>((acc, raw: HistMsgDoc) => {
+                const role = typeof raw?.role === "string" ? raw.role : "user";
+                const rawContent = typeof raw?.content === "string" ? raw.content : (raw?.content == null ? "" : JSON.stringify(raw.content));
+                const trimmed = rawContent.trim();
+                if (!trimmed) return acc;
+                const content = trimmed.length > MAX_MSG_CHARS_DOC
+                  ? `${trimmed.slice(0, MAX_MSG_CHARS_DOC)}…[truncated ${trimmed.length - MAX_MSG_CHARS_DOC} chars]`
+                  : trimmed;
+                acc.push({ role, content });
+                return acc;
+              }, []);
+              const compactFullStateDoc = Object.entries(fullState).reduce<Record<string, unknown>>((acc, [k, v]) => {
+                if (v === null || v === undefined) return acc;
+                if (typeof v === "string") {
+                  const trimmed = v.trim();
+                  if (!trimmed) return acc;
+                  acc[k] = trimmed.length > MAX_FIELD_CHARS_DOC ? `${trimmed.slice(0, MAX_FIELD_CHARS_DOC)}…[truncated]` : trimmed;
+                  return acc;
+                }
+                if (typeof v === "number" || typeof v === "boolean") { acc[k] = v; return acc; }
+                try {
+                  const json = JSON.stringify(v);
+                  if (!json || json === "{}" || json === "[]") return acc;
+                  acc[k] = json.length > MAX_FIELD_CHARS_DOC ? `${json.slice(0, MAX_FIELD_CHARS_DOC)}…[truncated]` : json;
+                } catch { /* skip unserializable */ }
+                return acc;
+              }, {});
               const docSystemPrompt = `Você é um Consultor Estratégico e Copywriter de Elite.
 Com base nos dados extraídos (JSON), no contexto inicial da empresa e no histórico completo da transcrição (anexos e nuances), escreva um Dossiê Estratégico completo em formato Markdown nativo.
 O usuário NÃO deve ver o JSON. Você deve compilar todas essas fontes de informação num relatório humano, riquíssimo em detalhes e maravilhosamente formatado.
@@ -656,30 +804,54 @@ ESTRUTURA OBRIGATÓRIA (use headings H1, H2, H3, bullet points e bold):
 
 IMPORTANTE: Seja detalhista (500 a 1500 palavras). Transforme as informações brutas (JSON + Histórico) numa obra-prima de estratégia. NUNCA envolva sua resposta em blocos de código markdown ou texto extra. Apenas retorne o próprio Markdown puro.`;
 
-              const docRes = await fetch(llmConfig.baseUrl, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${llmConfig.apiKey}`,
-                  ...llmConfig.headers,
-                },
-                body: JSON.stringify({
-                  model: llmConfig.model,
-                  temperature: 0.3,
-                  max_tokens: 3000, // large context for full document
-                  messages: [
-                    { role: "system", content: docSystemPrompt },
-                    { role: "user", content: `DADOS EXTRAÍDOS (JSON):\n${JSON.stringify(fullState, null, 2)}\n\nCONTEXTO INICIAL (Preparação):\n${body.initialContext || 'Nenhum contexto inicial fornecido.'}\n\nHISTÓRICO COMPLETO DA SESSÃO (Transcrição e Anexos):\n${JSON.stringify(history, null, 2)}` }
-                  ],
-                }),
-              });
+              const docController = new AbortController();
+              const docTimeoutId = setTimeout(() => docController.abort(), Math.max(perfConfig.timeoutMs, 45_000));
+
+              let docRes: Response;
+              try {
+                docRes = await fetch(llmConfig.baseUrl, {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bearer ${llmConfig.apiKey}`,
+                    ...llmConfig.headers,
+                  },
+                  body: JSON.stringify({
+                    model: llmConfig.model,
+                    temperature: 0.3,
+                    max_tokens: 3000,
+                    messages: [
+                      { role: "system", content: docSystemPrompt },
+                      { role: "user", content: `DADOS EXTRAÍDOS (JSON, valores compactados):\n${JSON.stringify(compactFullStateDoc, null, 2)}\n\nCONTEXTO INICIAL (Preparação):\n${body.initialContext || 'Nenhum contexto inicial fornecido.'}\n\nHISTÓRICO DA SESSÃO (mensagens truncadas a ${MAX_MSG_CHARS_DOC} chars cada):\n${JSON.stringify(compactHistoryDoc, null, 2)}` }
+                    ],
+                  }),
+                  signal: docController.signal,
+                });
+              } catch (e) {
+                clearTimeout(docTimeoutId);
+                if ((e as Error).name === "AbortError") {
+                  console.warn("[AI] Final document generation timed out — skipping inline doc.");
+                  docRes = new Response(null, { status: 504 });
+                } else {
+                  throw e;
+                }
+              }
+              clearTimeout(docTimeoutId);
 
               if (docRes.ok) {
                 const docData = await docRes.json();
                 const mdContent = docData.choices?.[0]?.message?.content;
                 if (mdContent) {
                   parsed.assets.document = mdContent.trim();
-                  console.log("[AI] Final document generated successfully.");
+                  log.debug("Final document generated successfully.");
                 }
+                void logApiUsage({
+                  userId: user?.id ?? null,
+                  sessionId: body.sessionId ?? null,
+                  provider: llmConfig.provider,
+                  model: llmConfig.model,
+                  usage: docData?.usage,
+                  endpoint: "briefing_dossier",
+                });
               } else {
                 console.error("[Briefing] Error from LLM during document generation", await docRes.text());
               }
@@ -787,7 +959,7 @@ IMPORTANTE: Seja detalhista (500 a 1500 palavras). Transforme as informações b
 
   } catch (error) {
     console.error("Briefing API Route Error:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Internal error processing briefing" }, { status: 500 });
   }
 }
 

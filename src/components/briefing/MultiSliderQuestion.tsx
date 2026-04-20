@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { MultiSliderOption } from '@/lib/types';
 import { ScrollConfirmWrapper } from './ScrollConfirmWrapper';
 
@@ -12,14 +12,36 @@ interface MultiSliderQuestionProps {
   confirmLabel?: string;
 }
 
-export function MultiSliderQuestion({ sliders, onConfirm, disabled, initialValues, confirmLabel }: MultiSliderQuestionProps) {
-  const [values, setValues] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
-    sliders.forEach(s => {
-      initial[s.label] = initialValues?.[s.label] ?? s.defaultValue ?? Math.ceil((s.max - s.min) / 2) + s.min;
-    });
-    return initial;
+function buildInitialValues(
+  sliders: MultiSliderOption[],
+  initialValues?: Record<string, number>
+): Record<string, number> {
+  const initial: Record<string, number> = {};
+  sliders.forEach(s => {
+    initial[s.label] = initialValues?.[s.label] ?? s.defaultValue ?? Math.ceil((s.max - s.min) / 2) + s.min;
   });
+  return initial;
+}
+
+export function MultiSliderQuestion({ sliders, onConfirm, disabled, initialValues, confirmLabel }: MultiSliderQuestionProps) {
+  const [values, setValues] = useState<Record<string, number>>(() =>
+    buildInitialValues(sliders, initialValues)
+  );
+
+  // When the question changes (sliders set or pre-filled answers), resync state.
+  // Without this the previous question's values bleed into the next one.
+  const sliderSignature = useMemo(
+    () => sliders.map(s => `${s.label}:${s.min}-${s.max}`).join('|'),
+    [sliders]
+  );
+  const initialSignature = useMemo(
+    () => initialValues ? Object.entries(initialValues).map(([k, v]) => `${k}=${v}`).join(',') : '',
+    [initialValues]
+  );
+  useEffect(() => {
+    setValues(buildInitialValues(sliders, initialValues));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sliderSignature, initialSignature]);
 
   const handleChange = useCallback((label: string, val: number) => {
     setValues(prev => ({ ...prev, [label]: val }));
@@ -53,7 +75,7 @@ export function MultiSliderQuestion({ sliders, onConfirm, disabled, initialValue
             disabled={disabled}
             className="
               px-8 py-3 rounded-2xl font-bold text-sm tracking-wide
-              bg-[var(--orange)] text-white shadow-xl hover:opacity-90
+              bg-[var(--orange)] text-white shadow-xl shadow-[var(--orange)]/20 hover:opacity-90
               hover:scale-[1.02] active:scale-[0.98]
               transition-all duration-200
               disabled:opacity-40 disabled:cursor-not-allowed
@@ -95,7 +117,7 @@ function SingleMiniSlider({
       style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}
     >
       <div className="flex items-center justify-between mt-2">
-        <span className="text-sm font-medium text-black leading-tight">
+        <span className="text-sm font-medium text-[var(--text)] leading-tight">
           {slider.label}
         </span>
         <span className="text-lg font-black text-[var(--orange)] tabular-nums">
@@ -128,16 +150,16 @@ function SingleMiniSlider({
           [&::-moz-range-track]:bg-transparent
         "
         style={{
-          background: `linear-gradient(to right, var(--orange) ${progress}%, rgba(0,0,0,0.1) ${progress}%)`
+          background: `linear-gradient(to right, var(--orange) ${progress}%, var(--bg3) ${progress}%)`
         }}
       />
 
       {/* Min/Max Labels */}
       <div className="flex justify-between mt-2">
-        <span className="text-[11px] text-gray-400 font-medium">
+        <span className="text-[11px] text-[var(--text3)] font-medium">
           {slider.minLabel || slider.min}
         </span>
-        <span className="text-[11px] text-gray-400 font-medium">
+        <span className="text-[11px] text-[var(--text3)] font-medium">
           {slider.maxLabel || slider.max}
         </span>
       </div>

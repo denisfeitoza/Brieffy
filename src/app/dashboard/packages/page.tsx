@@ -195,10 +195,10 @@ export default function PackagesPage() {
   };
 
   const renderForm = () => (
-    <div className="space-y-4 p-6 bg-white border border-[var(--bd)] shadow-sm rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+    <div className="space-y-4 p-6 bg-[var(--bg)] border border-[var(--bd)] shadow-sm rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300">
       <div className="flex justify-between items-start">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-          {creating ? <><Sparkles className="w-5 h-5 text-[var(--orange)]" /> Nova Skill de IA</> : <><Pencil className="w-5 h-5 text-gray-500" /> Editar Skill</>}
+        <h3 className="text-lg font-bold text-[var(--text)] flex items-center gap-2">
+          {creating ? <><Sparkles className="w-5 h-5 text-[var(--orange)]" /> Nova Skill de IA</> : <><Pencil className="w-5 h-5 text-[var(--text2)]" /> Editar Skill</>}
         </h3>
         {form.skill_type === 'personal' && (
           <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5">
@@ -209,7 +209,7 @@ export default function PackagesPage() {
 
       {creating && (
         <div className="space-y-2 pb-2">
-          <Label className="text-gray-500 text-xs uppercase tracking-wider flex items-center gap-1.5">
+          <Label className="text-[var(--text2)] text-xs uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-[var(--orange)]" />
             Começar a partir de um Template Global
           </Label>
@@ -221,13 +221,13 @@ export default function PackagesPage() {
                   key={tpl.id}
                   type="button"
                   onClick={() => applySkillTemplate(tpl)}
-                  className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-[var(--orange)]/40 hover:bg-[var(--orange)]/5 transition-all text-left group"
+                  className="flex items-start gap-3 p-3 rounded-xl border border-[var(--bd)] hover:border-[var(--orange)]/40 hover:bg-[var(--orange)]/5 transition-all text-left group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-[var(--orange)]/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <TplIcon className="w-4 h-4 text-gray-400 group-hover:text-[var(--orange)]" />
+                  <div className="w-8 h-8 rounded-lg bg-[var(--bg2)] group-hover:bg-[var(--orange)]/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <TplIcon className="w-4 h-4 text-[var(--text3)] group-hover:text-[var(--orange)]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 truncate">{tpl.name}</p>
+                    <p className="text-xs font-semibold text-[var(--text)] group-hover:text-[var(--text)] truncate">{tpl.name}</p>
                   </div>
                 </button>
               );
@@ -238,43 +238,43 @@ export default function PackagesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label className="text-gray-500 text-xs uppercase tracking-wider">Identificador (Slug)</Label>
+          <Label className="text-[var(--text2)] text-xs uppercase tracking-wider">Identificador (Slug)</Label>
           <Input 
             value={form.slug || ''} 
             onChange={e => setForm({...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_')})}
             placeholder="ex: analise_mercado"
-            className="bg-white border-gray-200 mt-1"
+            className="bg-[var(--bg)] border-[var(--bd)] mt-1"
             disabled={!!editing && form.skill_type === 'official'}
           />
         </div>
         <div>
-          <Label className="text-gray-500 text-xs uppercase tracking-wider">Nome da Skill</Label>
+          <Label className="text-[var(--text2)] text-xs uppercase tracking-wider">Nome da Skill</Label>
           <Input 
             value={form.name || ''} 
             onChange={e => setForm({...form, name: e.target.value})}
             placeholder="ex: Análise de Mercado"
-            className="bg-white border-gray-200 mt-1"
+            className="bg-[var(--bg)] border-[var(--bd)] mt-1"
           />
         </div>
       </div>
 
       <div>
-        <Label className="text-gray-500 text-xs uppercase tracking-wider">Descrição Rápida</Label>
+        <Label className="text-[var(--text2)] text-xs uppercase tracking-wider">Descrição Rápida</Label>
         <Input 
           value={form.description || ''} 
           onChange={e => setForm({...form, description: e.target.value})}
           placeholder="O que essa skill faz?"
-          className="bg-white border-gray-200 mt-1"
+          className="bg-[var(--bg)] border-[var(--bd)] mt-1"
         />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
-          <Label className="text-gray-500 text-xs uppercase tracking-wider">Ícone</Label>
+          <Label className="text-[var(--text2)] text-xs uppercase tracking-wider">Ícone</Label>
           <select 
             value={form.icon || 'Brain'} 
             onChange={e => setForm({...form, icon: e.target.value})}
-            className="w-full bg-white border border-gray-200 rounded-md text-gray-900 px-3 py-2 text-sm mt-1"
+            className="w-full bg-[var(--bg)] border border-[var(--bd)] rounded-md text-[var(--text)] px-3 py-2 text-sm mt-1"
           >
             {ICON_OPTIONS.map(icon => (
               <option key={icon} value={icon}>{icon}</option>
@@ -282,11 +282,11 @@ export default function PackagesPage() {
           </select>
         </div>
         <div>
-          <Label className="text-gray-500 text-xs uppercase tracking-wider">Departamento</Label>
+          <Label className="text-[var(--text2)] text-xs uppercase tracking-wider">Departamento</Label>
           <select 
             value={form.department || 'general'} 
             onChange={e => setForm({...form, department: e.target.value})}
-            className="w-full bg-white border border-gray-200 rounded-md text-gray-900 px-3 py-2 text-sm mt-1"
+            className="w-full bg-[var(--bg)] border border-[var(--bd)] rounded-md text-[var(--text)] px-3 py-2 text-sm mt-1"
           >
             {DEPT_OPTIONS.map(d => (
               <option key={d} value={d}>{d}</option>
@@ -294,23 +294,23 @@ export default function PackagesPage() {
           </select>
         </div>
         <div>
-          <Label className="text-gray-500 text-xs uppercase tracking-wider">Max Perguntas</Label>
+          <Label className="text-[var(--text2)] text-xs uppercase tracking-wider">Max Perguntas</Label>
           <Input 
             type="number"
             value={form.max_questions === null ? '' : (form.max_questions ?? 10)} 
             onChange={e => setForm({...form, max_questions: e.target.value === '' ? null : parseInt(e.target.value)})}
             placeholder="vazio = ilimitado"
-            className="bg-white border-gray-200 mt-1"
+            className="bg-[var(--bg)] border-[var(--bd)] mt-1"
           />
         </div>
         
         {isAdmin && form.skill_type === 'official' && (
           <div>
-             <Label className="text-gray-500 text-xs uppercase tracking-wider text-red-500">Privilégio ADMIN</Label>
+             <Label className="text-[var(--text2)] text-xs uppercase tracking-wider text-red-500">Privilégio ADMIN</Label>
              <select 
                value={form.skill_type || 'official'}
                onChange={e => setForm({...form, skill_type: e.target.value as 'official' | 'personal'})}
-               className="w-full bg-white border border-gray-200 rounded-md text-gray-900 px-3 py-2 text-sm mt-1 font-bold"
+               className="w-full bg-[var(--bg)] border border-[var(--bd)] rounded-md text-[var(--text)] px-3 py-2 text-sm mt-1 font-bold"
                disabled={!creating}
              >
                <option value="official">Global / Oficial</option>
@@ -326,25 +326,25 @@ export default function PackagesPage() {
           onCheckedChange={checked => setForm({...form, is_default_enabled: checked})}
           disabled={!isAdmin && form.skill_type !== 'personal'}
         />
-        <Label className="text-gray-700 text-sm">
+        <Label className="text-[var(--text)] text-sm">
           Ativar por padrão em todas as sessões 
           {!isAdmin && " (Apenas admins podem forçar skills globais por padrão)"}
         </Label>
       </div>
 
       <div>
-        <Label className="text-gray-500 text-xs uppercase tracking-wider">System Prompt (O Cérebro da Skill)</Label>
+        <Label className="text-[var(--text2)] text-xs uppercase tracking-wider">System Prompt (O Cérebro da Skill)</Label>
         <Textarea 
           value={form.system_prompt_fragment || ''} 
           onChange={e => setForm({...form, system_prompt_fragment: e.target.value})}
           placeholder="Comporte-se como um especialista em X. Você deve EXTRAIR as seguintes informações..."
-          className="bg-white border-gray-200 mt-1 min-h-[250px] font-mono text-sm text-gray-800"
+          className="bg-[var(--bg)] border-[var(--bd)] mt-1 min-h-[250px] font-mono text-sm text-[var(--text)]"
         />
-        <span className="text-[10px] text-gray-500 mt-1 block">Este texto é injetado diretamente na IA quando o usuário escolhe usar esta skill. Seja imperativo.</span>
+        <span className="text-[10px] text-[var(--text2)] mt-1 block">Este texto é injetado diretamente na IA quando o usuário escolhe usar esta skill. Seja imperativo.</span>
       </div>
 
-      <div className="flex gap-2 justify-end pt-4 border-t border-gray-100">
-        <Button variant="outline" className="border-gray-200 text-gray-600 hover:text-gray-900" onClick={cancelEdit}>
+      <div className="flex gap-2 justify-end pt-4 border-t border-[var(--bd)]">
+        <Button variant="outline" className="border-[var(--bd)] text-[var(--text)] hover:text-[var(--text)]" onClick={cancelEdit}>
           <X className="w-4 h-4 mr-1" /> Cancelar
         </Button>
         <Button 
@@ -361,10 +361,10 @@ export default function PackagesPage() {
   const renderSkillList = (list: CategoryPackage[], isEditable: boolean) => {
     if (list.length === 0) {
       return (
-        <div className="py-16 text-center text-gray-500 bg-[var(--bg2)] border border-dashed border-[var(--bd)] rounded-2xl">
-          <Brain className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-600 font-medium">Nenhuma Skill encontrada.</p>
-          {isEditable && <p className="text-xs text-gray-400 mt-1">Clique em &quot;Nova Skill&quot; para criar a sua.</p>}
+        <div className="py-16 text-center text-[var(--text2)] bg-[var(--bg2)] border border-dashed border-[var(--bd)] rounded-2xl">
+          <Brain className="w-12 h-12 text-[var(--text3)] mx-auto mb-3" />
+          <p className="text-[var(--text)] font-medium">Nenhuma Skill encontrada.</p>
+          {isEditable && <p className="text-xs text-[var(--text3)] mt-1">Clique em &quot;Nova Skill&quot; para criar a sua.</p>}
         </div>
       );
     }
@@ -381,37 +381,37 @@ export default function PackagesPage() {
               className={`flex flex-col gap-3 p-5 rounded-2xl border transition-all ${
                 editing === pkg.slug 
                   ? 'border-[var(--orange)] shadow-md bg-[var(--bg)]' 
-                  : 'border-[var(--bd)] bg-[var(--bg2)] hover:border-gray-300 shadow-sm'
+                  : 'border-[var(--bd)] bg-[var(--bg2)] hover:border-[var(--bd-strong)] shadow-sm'
               }`}
             >
               <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center shrink-0 shadow-sm">
-                  <IconComp className="w-6 h-6 text-gray-600" />
+                <div className="w-12 h-12 rounded-xl bg-[var(--bg)] border border-[var(--bd)] flex items-center justify-center shrink-0 shadow-sm">
+                  <IconComp className="w-6 h-6 text-[var(--text)]" />
                 </div>
                 {canEdit ? (
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-[var(--orange)] hover:bg-[var(--orange)]/10 h-8 w-8 p-0" onClick={() => startEdit(pkg)}>
+                    <Button variant="ghost" size="sm" className="text-[var(--text3)] hover:text-[var(--orange)] hover:bg-[var(--orange)]/10 h-8 w-8 p-0" onClick={() => startEdit(pkg)}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-500 hover:bg-red-50 h-8 w-8 p-0" onClick={() => handleDelete(pkg)}>
+                    <Button variant="ghost" size="sm" className="text-[var(--text3)] hover:text-red-500 hover:bg-red-50 h-8 w-8 p-0" onClick={() => handleDelete(pkg)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 ) : (
                   <div className="h-8 flex items-center">
-                    <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded bg-gray-100 text-gray-500">Somente Leitura</span>
+                    <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded bg-[var(--bg2)] text-[var(--text2)]">Somente Leitura</span>
                   </div>
                 )}
               </div>
 
               <div className="flex-1 mt-1">
-                <h4 className="text-base font-bold text-gray-900 group-hover:text-[var(--orange)] transition-colors">{pkg.name}</h4>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2 md:line-clamp-3">{pkg.description}</p>
+                <h4 className="text-base font-bold text-[var(--text)] group-hover:text-[var(--orange)] transition-colors">{pkg.name}</h4>
+                <p className="text-xs text-[var(--text2)] mt-1 line-clamp-2 md:line-clamp-3">{pkg.description}</p>
               </div>
 
               <div className="flex items-center justify-between mt-2 pt-3 border-t border-[var(--bd)]">
                 <div className="flex gap-2">
-                  <span className="text-[10px] text-gray-600 bg-white border border-gray-200 px-2 py-0.5 rounded-md font-medium">
+                  <span className="text-[10px] text-[var(--text)] bg-[var(--bg)] border border-[var(--bd)] px-2 py-0.5 rounded-md font-medium">
                     {pkg.department}
                   </span>
                   {pkg.is_default_enabled && (
@@ -420,7 +420,7 @@ export default function PackagesPage() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-gray-400 font-mono">
+                <span className="text-xs text-[var(--text3)] font-mono">
                   {pkg.max_questions === null ? '∞' : `≤${pkg.max_questions}`} Q
                 </span>
               </div>
@@ -436,13 +436,13 @@ export default function PackagesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--bg2)] p-6 rounded-3xl border border-[var(--bd)] shadow-sm">
         <div>
-          <h1 className="text-2xl md:text-3xl font-outfit font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-outfit font-bold text-[var(--text)] flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--orange)] to-rose-500 shadow-md flex items-center justify-center shrink-0">
               <Brain className="w-6 h-6 text-white" />
             </div>
             Skills de IA
           </h1>
-          <p className="text-gray-500 text-sm mt-2 max-w-xl">
+          <p className="text-[var(--text2)] text-sm mt-2 max-w-xl">
             As Skills são personalidades da IA que direcionam o resultado do briefing para o seu negócio.
             Explore habilidades prontas ou crie as suas próprias.
           </p>
@@ -472,14 +472,14 @@ export default function PackagesPage() {
       {/* Skills Tabs */}
       {!creating && !editing && (
         <Tabs defaultValue="official" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-gray-100/60 border border-gray-200 p-1.5 rounded-2xl h-14 w-full max-w-md mx-auto grid grid-cols-3 mb-8">
-            <TabsTrigger value="official" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
+          <TabsList className="bg-[var(--bg2)] border border-[var(--bd)] p-1.5 rounded-2xl h-14 w-full max-w-md mx-auto grid grid-cols-3 mb-8">
+            <TabsTrigger value="official" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-[var(--bg)] data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
               <Sparkles className="w-4 h-4" /> Oficiais
             </TabsTrigger>
-            <TabsTrigger value="personal" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
+            <TabsTrigger value="personal" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-[var(--bg)] data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
               <Brain className="w-4 h-4" /> Minhas
             </TabsTrigger>
-            <TabsTrigger value="community" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
+            <TabsTrigger value="community" className="flex items-center gap-2 justify-center rounded-xl h-full text-xs font-semibold data-[state=active]:bg-[var(--bg)] data-[state=active]:text-[var(--orange)] data-[state=active]:shadow-sm transition-all focus:outline-none">
               <Globe className="w-4 h-4" /> Comunidade
             </TabsTrigger>
           </TabsList>
@@ -494,8 +494,8 @@ export default function PackagesPage() {
                 <TabsContent value="official" className="animate-in fade-in slide-in-from-bottom-4 duration-500 focus-visible:outline-none">
                   <div className="mb-6 flex justify-between items-end">
                     <div>
-                      <h2 className="text-xl font-bold font-outfit text-gray-900">Skills Globais da Brieffy</h2>
-                      <p className="text-sm text-gray-500 mt-1">Especializações criadas e curadas pelo time oficial.</p>
+                      <h2 className="text-xl font-bold font-outfit text-[var(--text)]">Skills Globais da Brieffy</h2>
+                      <p className="text-sm text-[var(--text2)] mt-1">Especializações criadas e curadas pelo time oficial.</p>
                     </div>
                   </div>
                   {renderSkillList(officialSkills, true)}
@@ -504,21 +504,21 @@ export default function PackagesPage() {
                 <TabsContent value="personal" className="animate-in fade-in slide-in-from-bottom-4 duration-500 focus-visible:outline-none">
                   <div className="mb-6 flex justify-between items-end">
                     <div>
-                      <h2 className="text-xl font-bold font-outfit text-gray-900">Suas Skills Privadas</h2>
-                      <p className="text-sm text-gray-500 mt-1">Conhecimento sob medida criado por você para sua agência.</p>
+                      <h2 className="text-xl font-bold font-outfit text-[var(--text)]">Suas Skills Privadas</h2>
+                      <p className="text-sm text-[var(--text2)] mt-1">Conhecimento sob medida criado por você para sua agência.</p>
                     </div>
                   </div>
                   {renderSkillList(personalSkills, true)}
                 </TabsContent>
 
                 <TabsContent value="community" className="animate-in fade-in slide-in-from-bottom-4 duration-500 focus-visible:outline-none">
-                  <div className="py-20 text-center bg-gradient-to-b from-white to-[var(--bg2)] border border-[var(--bd)] rounded-3xl opacity-80">
+                  <div className="py-20 text-center bg-gradient-to-b from-[var(--bg)] to-[var(--bg2)] border border-[var(--bd)] rounded-3xl opacity-80">
                     <Globe className="w-16 h-16 text-[var(--orange)]/40 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold font-outfit text-gray-900 mb-2">Comunidade Global Brieffy</h3>
-                    <p className="text-gray-500 max-w-md mx-auto mb-6">
+                    <h3 className="text-2xl font-bold font-outfit text-[var(--text)] mb-2">Comunidade Global Brieffy</h3>
+                    <p className="text-[var(--text2)] max-w-md mx-auto mb-6">
                       Em breve você poderá descobrir e usar Skills de IA criadas pelas mentes mais brilhantes do mercado.
                     </p>
-                    <Button variant="outline" className="border-gray-200 pointer-events-none rounded-xl" disabled>
+                    <Button variant="outline" className="border-[var(--bd)] pointer-events-none rounded-xl" disabled>
                       Coming Soon
                     </Button>
                   </div>

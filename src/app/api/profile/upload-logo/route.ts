@@ -17,10 +17,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Use PNG, JPG, WebP or SVG.' }, { status: 400 });
+    // Validate file type — SVG removed because malicious SVGs in a public bucket
+    // can execute scripts when rendered inline (XSS). If SVG support is required,
+    // sanitize server-side with DOMPurify before storing.
+    const allowedTypes: Record<string, string> = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/webp': 'webp',
+    };
+    if (!Object.prototype.hasOwnProperty.call(allowedTypes, file.type)) {
+      return NextResponse.json({ error: 'Invalid file type. Use PNG, JPG or WebP.' }, { status: 400 });
     }
 
     // Validate file size (max 2MB)
@@ -28,7 +34,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File too large. Max 2MB.' }, { status: 400 });
     }
 
-    const ext = file.name.split('.').pop() || 'png';
+    // Derive extension from the validated MIME type (never trust file.name).
+    const ext = allowedTypes[file.type];
     const filePath = `${user.id}/logo.${ext}`;
 
     // Convert File to ArrayBuffer then to Uint8Array for upload
@@ -44,7 +51,8 @@ export async function POST(request: Request) {
       });
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+      console.error('Logo upload storage error:', uploadError);
+      return NextResponse.json({ error: 'Failed to upload logo' }, { status: 500 });
     }
 
     // Get public URL

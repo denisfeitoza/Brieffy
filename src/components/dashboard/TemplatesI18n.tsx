@@ -123,7 +123,7 @@ export function LimitReachedButton() {
 
   return (
     <Dialog>
-      <DialogTrigger suppressHydrationWarning className="flex items-center gap-2 px-3 h-10 text-xs font-medium rounded-full hover:bg-[var(--acbg)] text-[var(--actext)] hover:text-black transition-colors btn-pill">
+      <DialogTrigger suppressHydrationWarning className="flex items-center gap-2 px-3 h-10 text-xs font-medium rounded-full hover:bg-[var(--acbg)] text-[var(--actext)] hover:text-[var(--text)] transition-colors btn-pill">
         <Share2 className="w-4 h-4" />
         {t('generateLink')}
       </DialogTrigger>

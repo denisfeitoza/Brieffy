@@ -29,11 +29,35 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import DOMPurify from "isomorphic-dompurify";
 import {
   SlashCommandMenu,
   filterSlashItems,
   type SlashItem,
 } from "./SlashCommandMenu";
+
+// Allowlist for HTML produced by either the LLM (write path) or stored
+// historically (read path). Keeping this list narrow is intentional —
+// Tiptap/StarterKit only needs a small set of structural tags. Anything
+// outside this list is stripped, which neutralizes stored XSS via crafted
+// dossier content.
+const SAFE_HTML_TAGS = [
+  'p','br','hr','span','strong','em','u','s','mark','blockquote','code','pre',
+  'h1','h2','h3','h4','h5','h6','ul','ol','li','div',
+];
+const SAFE_HTML_ATTRS = ['class'];
+
+export function sanitizeDossierHtml(input: string): string {
+  if (!input) return '';
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: SAFE_HTML_TAGS,
+    ALLOWED_ATTR: SAFE_HTML_ATTRS,
+    FORBID_TAGS: ['script','style','iframe','object','embed','form','input','button','svg','math','link','meta','base'],
+    FORBID_ATTR: ['style','onerror','onload','onclick','onmouseover','onfocus','onblur','onchange','onsubmit','href','src','xmlns'],
+    KEEP_CONTENT: true,
+    USE_PROFILES: { html: true },
+  });
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let html2pdf: any;
@@ -94,12 +118,15 @@ function isMarkdown(content: string): boolean {
   return /^#{1,3}\s|^[\-\*] |\*\*((?!\s).+?)\*\*/m.test(trimmed);
 }
 
-/** Prepare content for Tiptap: convert from Markdown or return HTML as-is */
+/** Prepare content for Tiptap: convert from Markdown or return HTML as-is.
+ *  All HTML is run through DOMPurify before reaching the editor — even our
+ *  own LLM output, since prompt injection could theoretically embed scripts.
+ */
 function prepareContent(raw: string): string {
   if (!raw || !raw.trim()) return "<p></p>";
-  if (isMarkdown(raw)) return cleanHtml(markdownToHtml(raw));
-  if (raw.includes("<")) return cleanHtml(raw);
-  // Plain text fallback
+  if (isMarkdown(raw)) return sanitizeDossierHtml(cleanHtml(markdownToHtml(raw)));
+  if (raw.includes("<")) return sanitizeDossierHtml(cleanHtml(raw));
+  // Plain text fallback (no HTML to sanitize, but escape & still applies via templating).
   return `<p>${raw.replace(/\n/g, "<br />")}</p>`;
 }
 
@@ -120,7 +147,7 @@ function ToolbarBtn({ onClick, isActive, disabled, title, children }: ToolbarBtn
       disabled={disabled}
       title={title}
       className={`
-        flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150 shrink-0
+        flex items-center justify-center w-9 h-9 md:w-8 md:h-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 rounded-lg transition-all duration-150 shrink-0
         ${isActive
           ? "bg-[var(--orange)]/15 text-[var(--orange)] shadow-sm"
           : "text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg3)]"
@@ -404,8 +431,13 @@ export function DocumentEditor({ initialContent, onSave, readOnly = false }: Doc
     isSavingRef.current = true;
     setSaveStatus("saving");
     try {
-      await onSave(htmlContent);
-      prevInitialContentRef.current = htmlContent;
+      // Always sanitize before persisting. Even though Tiptap is unlikely to
+      // produce dangerous markup, the editor instance can be controlled via
+      // setContent() with arbitrary input — so we treat the write path as
+      // untrusted on principle.
+      const safeContent = sanitizeDossierHtml(htmlContent);
+      await onSave(safeContent);
+      prevInitialContentRef.current = safeContent;
       setSaveStatus("saved");
       if (pendingSaveRef.current !== null) {
         const pending = pendingSaveRef.current;

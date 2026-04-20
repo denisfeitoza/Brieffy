@@ -58,7 +58,13 @@ export type Message = {
   
   userAnswer?: string | string[] | number; // O que o usuario respondeu
 
-  // Active Listening: marks intercalated depth probe questions
+  // Active Listening: marks intercalated depth probe questions.
+  // ⚠️ LEGACY: kept for backward-compat with rows persisted by older
+  // briefing engine runs. The current /api/briefing route does NOT set
+  // this anymore — depth probing is handled via session-level depth_signals
+  // and dynamic prompt phases. Always read defensively (default false) and
+  // never rely on it for branching new logic. Safe to drop after one full
+  // session retention cycle.
   isDepthQuestion?: boolean;
   depthSignalCategory?: SignalCategory;
 

@@ -2,10 +2,28 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+/**
+ * Returns a safe relative path for post-login redirect.
+ * Blocks open-redirect vectors: absolute URLs, protocol-relative URLs ("//evil.com"),
+ * backslash tricks ("/\\evil.com"), and any non-string input.
+ */
+function safeNextPath(raw: string | null): string {
+  const fallback = '/dashboard';
+  if (!raw || typeof raw !== 'string') return fallback;
+  // Must start with single forward slash and not be protocol-relative
+  if (!raw.startsWith('/')) return fallback;
+  if (raw.startsWith('//') || raw.startsWith('/\\')) return fallback;
+  // Reject embedded absolute URLs or schemes
+  if (/^\/[^/]*:/.test(raw)) return fallback;
+  // Limit length to avoid abuse
+  if (raw.length > 512) return fallback;
+  return raw;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard';
+  const next = safeNextPath(searchParams.get('next'));
 
   if (code) {
     const cookieStore = await cookies();

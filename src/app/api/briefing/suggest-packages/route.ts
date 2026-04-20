@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { logApiUsage } from "@/lib/services/usageLogger";
 
 // BUG-05 pattern: lazy init to avoid build-time crash
 function getSupabase() {
@@ -12,8 +15,26 @@ function getSupabase() {
 
 export async function POST(req: Request) {
   try {
+    // Rate limit (per user if authenticated, otherwise per IP)
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const scope = user ? `suggest_pkg:user:${user.id}` : `suggest_pkg:ip:${getRequestIP(req)}`;
+    const rl = await checkRateLimit(scope, { maxRequests: 30, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { suggested_slugs: [], reasoning: "", error: "rate_limited" },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const body = await req.json();
-    const { initialContext, briefingPurpose, depthSignals } = body;
+    const { initialContext, briefingPurpose, depthSignals, chosenLanguage } = body;
+    // Language is whatever the agency picked for the briefing. Falls back to
+    // "the same language as the user's input" so the LLM auto-detects instead
+    // of hardcoding pt-BR (which used to leak Portuguese reasoning to en/es agencies).
+    const safeLang = (typeof chosenLanguage === "string" && chosenLanguage.trim())
+      ? chosenLanguage.trim().slice(0, 40)
+      : "the same language as the user input below";
 
     // Need at least one piece of context to suggest
     const contextParts: string[] = [];
@@ -56,8 +77,8 @@ Rules:
 1. Suggest 3-7 packages that are MOST relevant to the briefing purpose and context
 2. Always include packages that seem directly relevant to the company's industry/needs
 3. Weight the briefing PURPOSE more heavily than the client context — the purpose defines what the briefing needs
-4. Return ONLY a JSON object with this exact format: {"suggested_slugs": ["slug1", "slug2"], "reasoning": "brief explanation in Portuguese"}
-5. Reasoning should be 1-2 sentences in Portuguese explaining the selection
+4. Return ONLY a JSON object with this exact format: {"suggested_slugs": ["slug1", "slug2"], "reasoning": "brief explanation"}
+5. Reasoning MUST be 1-2 sentences written in: ${safeLang}. Do NOT default to Portuguese unless that is the requested language.
 6. Return valid JSON only, no markdown formatting`;
 
     const userPrompt = contextParts.join("\n\n").slice(0, 3000);
@@ -97,6 +118,15 @@ Rules:
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
+
+    void logApiUsage({
+      userId: user?.id ?? null,
+      sessionId: null,
+      provider: llmConfig.provider,
+      model: llmConfig.model,
+      usage: data?.usage,
+      endpoint: "suggest_packages",
+    });
 
     // Parse JSON from response (handle markdown code blocks)
     let parsed: { suggested_slugs: string[]; reasoning: string };

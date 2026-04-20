@@ -133,38 +133,38 @@ export function FileUploadInput({
       />
       {/* Mobile fix: h-40 md:h-56 */}
       <div
-        className={`w-full h-40 md:h-56 rounded-3xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center hover:border-[var(--orange)]/50 hover:bg-[var(--orange)]/5 transition-all cursor-pointer group hover:shadow-lg active:scale-[0.98] ${
+        className={`w-full h-40 md:h-56 rounded-3xl border-2 border-dashed border-[var(--bd)] bg-[var(--bg2)] flex flex-col items-center justify-center hover:border-[var(--orange)]/50 hover:bg-[var(--orange)]/5 transition-all cursor-pointer group hover:shadow-lg active:scale-[0.98] ${
           isUploading ? "opacity-50 pointer-events-none" : ""
         }`}
         onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
       >
-        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border border-gray-200 group-hover:bg-[var(--orange)]/10 flex items-center justify-center mb-4 transition-colors shadow-sm">
+        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[var(--bg)] border border-[var(--bd)] group-hover:bg-[var(--orange)]/10 flex items-center justify-center mb-4 transition-colors shadow-sm">
           {isUploading ? (
             <Loader2 className="w-7 h-7 md:w-8 md:h-8 text-[var(--orange)] animate-spin" />
           ) : (
-            <UploadCloud className="w-7 h-7 md:w-8 md:h-8 text-gray-400 group-hover:text-[var(--orange)] transition-colors" />
+            <UploadCloud className="w-7 h-7 md:w-8 md:h-8 text-[var(--text3)] group-hover:text-[var(--orange)] transition-colors" />
           )}
         </div>
-        <p className="text-black font-medium text-base md:text-lg">
+        <p className="text-[var(--text)] font-medium text-base md:text-lg">
           {isUploading ? (t.sendingFile || "Enviando...") : (t.dragFiles || "Toque para adicionar arquivos")}
         </p>
-        <p className="text-gray-500 text-sm mt-1">{t.fileConstraints}</p>
+        <p className="text-[var(--text2)] text-sm mt-1">{t.fileConstraints}</p>
       </div>
       
       {uploadedFiles.length > 0 && (
         <div className="flex flex-col gap-2 w-full mt-2">
-          <p className="text-sm font-medium text-gray-700">{t.attachedFiles}</p>
+          <p className="text-sm font-medium text-[var(--text)]">{t.attachedFiles}</p>
           {uploadedFiles.map((file, i) => (
-            <div key={i} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div key={i} className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--bd)] rounded-xl shadow-sm">
               <div className="flex items-center gap-3 overflow-hidden">
                 <div className="w-8 h-8 rounded-lg bg-[var(--orange)]/10 flex items-center justify-center shrink-0">
                   <FileText className="w-4 h-4 text-[var(--orange)]" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 truncate" title={file.name}>{file.name}</span>
+                <span className="text-sm font-medium text-[var(--text)] truncate" title={file.name}>{file.name}</span>
               </div>
               <button 
                 onClick={() => removeFile(i)}
-                className="p-2 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                className="p-2 text-[var(--text3)] hover:text-red-500 transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -174,7 +174,7 @@ export function FileUploadInput({
       )}
 
       <div className="w-full">
-        <p className="text-sm text-center text-gray-500 mb-2">{t.orTypeFile || "Ou digite os links / responda em texto:"}</p>
+        <p className="text-sm text-center text-[var(--text2)] mb-2">{t.orTypeFile || "Ou digite os links / responda em texto:"}</p>
         <TextAudioInput
           inputText={inputText}
           setInputText={setInputText}
@@ -189,7 +189,7 @@ export function FileUploadInput({
            <button 
              onClick={handleFinalSend}
              disabled={isLoading || isSubmittingLocal || isUploading}
-             className="mt-6 w-full py-3.5 px-4 rounded-xl bg-[var(--orange)] text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
+             className="mt-6 w-full py-3.5 px-4 rounded-xl bg-[var(--orange)] text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md dark:text-white"
            >
              {t.sendFileBtnPrefix} {uploadedFiles.length} {uploadedFiles.length === 1 ? t.fileWord : t.filesWord} {inputText.trim() ? t.withTextWord : ''}
            </button>
@@ -197,7 +197,7 @@ export function FileUploadInput({
           <button 
             onClick={() => doSubmit('(skipped)')}
             disabled={isLoading || isSubmittingLocal || isUploading}
-            className="mt-6 w-full py-3 px-4 rounded-xl border border-gray-200 text-gray-500 font-medium text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="mt-6 w-full py-3 px-4 rounded-xl border border-[var(--bd)] text-[var(--text2)] font-medium text-sm hover:bg-[var(--bg2)] transition-colors disabled:opacity-50"
           >
             {t.skipFiles || "Pular (Não tenho arquivos no momento)"}
           </button>

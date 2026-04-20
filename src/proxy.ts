@@ -1,6 +1,24 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+function applySecurityHeaders(res: NextResponse): NextResponse {
+  res.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.headers.set('X-DNS-Prefetch-Control', 'on');
+  res.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(self), geolocation=(), payment=()'
+  );
+  if (process.env.NODE_ENV === 'production') {
+    res.headers.set(
+      'Strict-Transport-Security',
+      'max-age=63072000; includeSubDomains; preload'
+    );
+  }
+  return res;
+}
+
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
@@ -37,17 +55,21 @@ export default async function proxy(request: NextRequest) {
     !pathname.startsWith('/dashboard/register')
   ) {
     if (!user) {
-      return NextResponse.redirect(new URL('/dashboard/login', request.url));
+      return applySecurityHeaders(
+        NextResponse.redirect(new URL('/dashboard/login', request.url))
+      );
     }
   }
 
   // Protect /admin routes — only super admin
   if (pathname.startsWith('/admin')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/dashboard/login', request.url));
+      return applySecurityHeaders(
+        NextResponse.redirect(new URL('/dashboard/login', request.url))
+      );
     }
     // Admin check is done at the page level (checking briefing_profiles.is_admin)
-    // Middleware just ensures authentication
+    // Proxy just ensures authentication
   }
 
   // Redirect logged-in users away from login/register
@@ -55,10 +77,12 @@ export default async function proxy(request: NextRequest) {
     user &&
     (pathname === '/dashboard/login' || pathname === '/dashboard/register')
   ) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return applySecurityHeaders(
+      NextResponse.redirect(new URL('/dashboard', request.url))
+    );
   }
 
-  return response;
+  return applySecurityHeaders(response);
 }
 
 export const config = {

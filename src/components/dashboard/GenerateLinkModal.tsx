@@ -157,6 +157,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
       setSelectedSlugs(defaults);
     } catch (err) {
       console.error('Error fetching packages:', err);
+      toast.error('Não foi possível carregar pacotes. Tente novamente.');
     } finally {
       setLoadingPackages(false);
     }
@@ -231,7 +232,11 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
       const res = await fetch('/api/briefing/suggest-packages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initialContext: initialContext.trim() }),
+        body: JSON.stringify({
+          initialContext: initialContext.trim(),
+          // Pass dashboard language so reasoning comes back in the agency's UI language.
+          chosenLanguage: language === 'pt' ? 'português' : language === 'es' ? 'español' : 'english',
+        }),
       });
       const data = await res.json();
       if (data.suggested_slugs && data.suggested_slugs.length > 0) {
@@ -362,7 +367,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
           children ? (
             children
           ) : (
-            <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill cursor-pointer">
+            <Button variant="ghost" className="text-[var(--actext)] hover:text-[var(--text)] hover:bg-[var(--acbg)] px-3 btn-pill cursor-pointer">
               {triggerLabel ? (
                 <Wand2 className="w-4 h-4 mr-2" />
               ) : (
@@ -526,10 +531,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--orange-light)] border border-[var(--orange-mid)]"
+                    className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--orange)]/10 border border-[var(--orange)]/30"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[var(--orange)] flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-black italic leading-relaxed">{aiReasoning}</p>
+                    <p className="text-xs text-[var(--text)] italic leading-relaxed">{aiReasoning}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -589,7 +594,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
                                 <div className={`
                                   w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200
                                   ${isSelected
-                                    ? 'border-[var(--actext)] bg-white'
+                                    ? 'border-[var(--actext)] bg-[var(--bg)]'
                                     : 'border-[var(--bd-strong)] bg-[var(--bg2)]'
                                   }
                                 `}>
@@ -597,7 +602,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
                                 </div>
                                 <div className={`
                                   w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-colors
-                                  ${isSelected ? 'bg-white' : 'bg-[var(--bg3)]'}
+                                  ${isSelected ? 'bg-[var(--bg)]' : 'bg-[var(--bg3)]'}
                                 `}>
                                   <IconComp className={`w-3 h-3 ${isSelected ? 'text-[var(--actext)]' : 'text-[var(--text3)]'}`} />
                                 </div>

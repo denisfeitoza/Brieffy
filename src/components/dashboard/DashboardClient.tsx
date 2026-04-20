@@ -14,7 +14,13 @@ import {
   AlertCircle, FileText, Eye, CalendarDays, X, Download, Package, Lock
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { exportSessionsAsZip } from '@/lib/exportZip';
+// exportSessionsAsZip is loaded lazily inside the export handlers — JSZip +
+// file-saver are heavy (~150KB) and only needed when the user actually exports.
+type ExportFn = (typeof import('@/lib/exportZip'))['exportSessionsAsZip'];
+async function getExporter(): Promise<ExportFn> {
+  const mod = await import('@/lib/exportZip');
+  return mod.exportSessionsAsZip;
+}
 import { useDashboardLanguage } from '@/i18n/DashboardLanguageContext';
 import { toast } from 'sonner';
 
@@ -30,10 +36,11 @@ interface Session {
   basal_coverage?: number | null;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  finished: { label: 'Completed', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: CheckCircle2 },
-  in_progress: { label: 'In Progress', color: 'text-amber-600 bg-amber-50 border-amber-200', icon: Clock },
-  pending: { label: 'Pending', color: 'text-[var(--text3)] bg-[var(--bg2)] border-[var(--bd)]', icon: AlertCircle },
+// Status config without hardcoded labels — labels are resolved via i18n at render time.
+const STATUS_CONFIG: Record<string, { color: string; icon: React.ComponentType<{ className?: string }>; tKey: string }> = {
+  finished: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: CheckCircle2, tKey: 'status.finished' },
+  in_progress: { color: 'text-amber-600 bg-amber-50 border-amber-200', icon: Clock, tKey: 'status.in_progress' },
+  pending: { color: 'text-[var(--text3)] bg-[var(--bg2)] border-[var(--bd)]', icon: AlertCircle, tKey: 'status.pending' },
 };
 
 const FILTER_TABS = [
@@ -128,10 +135,12 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
     if (toExport.length === 0) return;
     setIsExporting(true);
     try {
-      await exportSessionsAsZip(toExport as Parameters<typeof exportSessionsAsZip>[0], language);
+      const exportSessionsAsZip = await getExporter();
+      await exportSessionsAsZip(toExport as Parameters<ExportFn>[0], language);
       setSelectedForExport(new Set());
     } catch (e) {
       console.error('Export error:', e);
+      toast.error(language === 'pt' ? 'Falha ao exportar briefings.' : 'Failed to export briefings.');
     } finally {
       setIsExporting(false);
     }
@@ -140,9 +149,11 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
   const handleExportAll = async () => {
     setIsExporting(true);
     try {
-      await exportSessionsAsZip(sessions as Parameters<typeof exportSessionsAsZip>[0], language);
+      const exportSessionsAsZip = await getExporter();
+      await exportSessionsAsZip(sessions as Parameters<ExportFn>[0], language);
     } catch (e) {
       console.error('Export error:', e);
+      toast.error(language === 'pt' ? 'Falha ao exportar todos os briefings.' : 'Failed to export all briefings.');
     } finally {
       setIsExporting(false);
     }
@@ -303,11 +314,11 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h4 className="font-semibold text-[var(--text)] truncate text-base">
-                          {session.session_name || 'Untitled Briefing'}
+                          {session.session_name || t('dashboard.untitled')}
                         </h4>
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${statusInfo.color}`}>
                           <StatusIcon className="w-3.5 h-3.5" />
-                          {statusInfo.label}
+                          {t(statusInfo.tKey)}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-[var(--text3)]">
@@ -318,15 +329,26 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                           <>
                             <span>•</span>
                             <div className="flex items-center gap-1.5">
-                              <div className="w-14 h-1.5 bg-[var(--bg3)] rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-[var(--orange)] rounded-full transition-all"
-                                  style={{ width: `${Math.min(100, Math.round(Number(session.basal_coverage) * 100))}%` }}
-                                />
-                              </div>
-                              <span className="text-xs text-[var(--orange)] font-mono">
-                                {Math.round(Number(session.basal_coverage) * 100)}%
-                              </span>
+                              {(() => {
+                                // Clamp 0..1 — DB rows from old engine versions
+                                // can hold negatives or >1 which break the bar.
+                                const raw = Number(session.basal_coverage);
+                                const safe = Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 0;
+                                const pct = Math.round(safe * 100);
+                                return (
+                                  <>
+                                    <div className="w-14 h-1.5 bg-[var(--bg3)] rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-[var(--orange)] rounded-full transition-all"
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs text-[var(--orange)] font-mono">
+                                      {pct}%
+                                    </span>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </>
                         )}
@@ -421,7 +443,11 @@ export function DashboardClient({ sessions }: { sessions: Session[] }) {
                       onClick={async () => {
                         setIsExporting(true);
                         try {
-                          await exportSessionsAsZip([previewSession] as Parameters<typeof exportSessionsAsZip>[0], language);
+                          const exportSessionsAsZip = await getExporter();
+                          await exportSessionsAsZip([previewSession] as Parameters<ExportFn>[0], language);
+                        } catch (e) {
+                          console.error('Export error:', e);
+                          toast.error(language === 'pt' ? 'Falha ao exportar.' : 'Export failed.');
                         } finally {
                           setIsExporting(false);
                         }

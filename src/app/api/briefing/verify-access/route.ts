@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "crypto";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 
 function getSupabaseAdmin() {
   return createClient(
@@ -24,8 +25,22 @@ export async function POST(req: Request) {
   try {
     const { sessionId, password } = await req.json();
 
-    if (!sessionId || typeof password !== "string") {
+    if (!sessionId || typeof sessionId !== "string" || typeof password !== "string") {
       return NextResponse.json({ valid: false, error: "Incomplete data." }, { status: 400 });
+    }
+
+    // Brute-force protection: cap attempts per (IP+session) AND per session globally.
+    const ip = getRequestIP(req);
+    const [ipRl, sessionRl] = await Promise.all([
+      checkRateLimit(`verify_access:ip:${ip}:${sessionId}`, { maxRequests: 5, windowMs: 15 * 60_000 }),
+      checkRateLimit(`verify_access:session:${sessionId}`, { maxRequests: 50, windowMs: 15 * 60_000 }),
+    ]);
+    if (!ipRl.allowed || !sessionRl.allowed) {
+      const reset = Math.max(ipRl.resetAt, sessionRl.resetAt);
+      return NextResponse.json(
+        { valid: false, error: "Too many attempts. Try again later." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((reset - Date.now()) / 1000)) } }
+      );
     }
 
     const { data: session, error } = await getSupabaseAdmin()
@@ -50,7 +65,7 @@ export async function POST(req: Request) {
   } catch (err: unknown) {
     console.error("[verify-access] Error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: "Internal error" },
       { status: 500 }
     );
   }

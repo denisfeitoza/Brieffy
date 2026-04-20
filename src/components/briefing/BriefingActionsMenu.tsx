@@ -59,15 +59,15 @@ export function BriefingActionsMenu({ isOwner, isOnboarding }: Omit<BriefingActi
       <DropdownMenu>
         <DropdownMenuTrigger className={cn(
           buttonVariants({ variant: "ghost", size: "icon" }), 
-          "shrink-0 rounded-full w-9 h-9 text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors border border-gray-200 bg-white shadow-sm"
+          "shrink-0 rounded-full w-9 h-9 text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg2)] transition-colors border border-[var(--bd)] bg-[var(--bg)] shadow-sm"
         )}>
           <MoreVertical className="w-4 h-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl p-1.5 z-[100]">
+        <DropdownMenuContent align="end" className="w-56 bg-[var(--bg)] border border-[var(--bd)] shadow-xl rounded-xl p-1.5 z-[100]">
           {isOwner && (
             <DropdownMenuItem 
               onClick={() => setShowConfirmReset(true)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg cursor-pointer transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-500 focus:text-red-500 focus:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
             >
               <RefreshCcw className="w-4 h-4" />
               <span>Resetar Briefing</span>
@@ -76,10 +76,10 @@ export function BriefingActionsMenu({ isOwner, isOnboarding }: Omit<BriefingActi
           
           {isOnboarding && (
             <>
-              {isOwner && <DropdownMenuSeparator className="bg-gray-100 my-1" />}
+              {isOwner && <DropdownMenuSeparator className="bg-[var(--bd)] my-1" />}
               <DropdownMenuItem 
                 onClick={handleLogout}
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 focus:text-gray-900 focus:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--text)] focus:text-[var(--text)] focus:bg-[var(--bg2)] rounded-lg cursor-pointer transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sair da conta</span>
@@ -92,13 +92,13 @@ export function BriefingActionsMenu({ isOwner, isOnboarding }: Omit<BriefingActi
       {/* Manual Dialog Portal (to avoid z-index/transform issues in the wizard) */}
       {showConfirmReset && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-          <div className="bg-white border border-gray-200 rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center">
-            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="bg-[var(--bg)] border border-[var(--bd)] rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="w-8 h-8" />
             </div>
             
-            <h4 className="text-xl font-bold text-gray-900 mb-3">Reiniciar Briefing?</h4>
-            <p className="text-sm text-gray-600 mb-8 leading-relaxed">
+            <h4 className="text-xl font-bold text-[var(--text)] mb-3">Reiniciar Briefing?</h4>
+            <p className="text-sm text-[var(--text2)] mb-8 leading-relaxed">
               Isso apagará todo o diálogo atual com a IA. As informações da sua empresa serão preservadas, mas você começará a conversa do zero.
             </p>
             
@@ -120,7 +120,7 @@ export function BriefingActionsMenu({ isOwner, isOnboarding }: Omit<BriefingActi
               </Button>
               <Button 
                 variant="ghost" 
-                className="w-full text-gray-500 hover:text-gray-700 font-medium h-12 rounded-2xl transition-all"
+                className="w-full text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg2)] font-medium h-12 rounded-2xl transition-all"
                 onClick={() => setShowConfirmReset(false)}
                 disabled={isResetting}
               >

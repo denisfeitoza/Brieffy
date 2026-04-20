@@ -5,13 +5,68 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, LogOut, Users, Settings, Shield, Sparkles, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  // Refs for the mobile overlay so we can run a focus trap and restore focus
+  // to the toggle button when it closes (a11y requirement for modal dialogs).
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
+
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    // Remember the trigger so we can restore focus after closing.
+    lastFocusedRef.current = (document.activeElement as HTMLElement) ?? null;
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const focusables = () =>
+      Array.from(
+        overlay.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => !el.hasAttribute('hidden'));
+
+    // Move focus into the overlay so screen readers announce it as a dialog.
+    const initial = focusables()[0];
+    initial?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMobileMenu();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      lastFocusedRef.current?.focus?.();
+    };
+  }, [mobileMenuOpen, closeMobileMenu]);
 
   useEffect(() => {
     async function checkAdmin() {
@@ -127,17 +182,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Shield className="w-5 h-5 text-[var(--text)]" />
           <span className="font-bold text-lg text-[var(--text)]">Admin<span className="text-[var(--orange)]">.</span></span>
         </Link>
-        <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-[var(--text)]">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+          className="text-[var(--text)]"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="admin-mobile-menu"
+          aria-label={mobileMenuOpen ? 'Close admin menu' : 'Open admin menu'}
+        >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </Button>
       </div>
 
       {/* ============ MOBILE MENU OVERLAY ============ */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-[var(--bg)] flex flex-col p-6 animate-in fade-in duration-200">
+        <div
+          ref={overlayRef}
+          id="admin-mobile-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-mobile-menu-title"
+          className="md:hidden fixed inset-0 z-50 bg-[var(--bg)] flex flex-col p-6 animate-in fade-in duration-200"
+        >
           <div className="flex justify-between items-center mb-8">
-            <span className="font-bold text-xl text-[var(--text)]">Admin Menu</span>
-            <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} className="text-[var(--text)]">
+            <span id="admin-mobile-menu-title" className="font-bold text-xl text-[var(--text)]">Admin Menu</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closeMobileMenu}
+              className="text-[var(--text)]"
+              aria-label="Close admin menu"
+            >
               <X className="w-5 h-5" />
             </Button>
           </div>
@@ -145,7 +221,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {navItems.map(item => {
               const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
               return (
-                <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                <Link key={item.href} href={item.href} onClick={closeMobileMenu}>
                   <Button
                     variant="ghost"
                     className={`w-full justify-start rounded-xl text-lg py-6 ${
@@ -160,7 +236,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               );
             })}
-            <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+            <Link href="/dashboard" onClick={closeMobileMenu}>
               <Button variant="ghost" className="w-full justify-start rounded-xl text-lg py-6 text-[var(--actext)]">
                 <Sparkles className="w-5 h-5 mr-4" />
                 User Dashboard
@@ -169,7 +245,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
           <Button
             variant="ghost"
-            onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+            onClick={() => { handleLogout(); closeMobileMenu(); }}
             className="w-full justify-start rounded-xl text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] py-6 text-lg"
           >
             <LogOut className="w-5 h-5 mr-4" />

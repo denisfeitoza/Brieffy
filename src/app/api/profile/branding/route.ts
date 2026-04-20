@@ -21,7 +21,7 @@ const supabase = createClient(
 export async function GET(request: Request) {
   try {
     const ip = getRequestIP(request);
-    const rl = checkRateLimit(`profile_branding:${ip}`, { maxRequests: 60, windowMs: 60_000 });
+    const rl = await checkRateLimit(`profile_branding:${ip}`, { maxRequests: 60, windowMs: 60_000 });
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Você atingiu o limite de requisições. Tente novamente em alguns instantes." },

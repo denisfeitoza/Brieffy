@@ -48,14 +48,30 @@ if (typeof window !== "undefined") {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  // Defaults tuned for this app:
+  // - mutations.retry = 0 → never silently retry destructive ops (delete, charge,
+  //   generate dossier) which would double-bill / double-create on transient errors.
+  // - queries: short staleTime to avoid spammy refetches; disable refetchOnWindowFocus
+  //   to keep the briefing wizard from blowing away local user input on tab switch.
+  const [queryClient] = useState(
+    () => new QueryClient({
+      defaultOptions: {
+        mutations: { retry: 0 },
+        queries: {
+          retry: 1,
+          staleTime: 30_000,
+          refetchOnWindowFocus: false,
+        },
+      },
+    })
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
       <NextThemesProvider
         attribute="class"
-        defaultTheme="dark"
-        enableSystem={false}
+        defaultTheme="system"
+        enableSystem
         disableTransitionOnChange
       >
         {children}

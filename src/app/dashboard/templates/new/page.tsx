@@ -131,7 +131,7 @@ function NewBriefingWizardContent() {
   const searchParams = useSearchParams();
   const searchTemplateId = searchParams.get('templateId');
 
-  const { t } = useDashboardLanguage();
+  const { t, language } = useDashboardLanguage();
   
   // ── Wizard Step ─────────────────
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -406,6 +406,7 @@ function NewBriefingWizardContent() {
             briefingPurpose: purpose.trim(),
             initialContext: undefined,
             depthSignals: depthSignals.length > 0 ? depthSignals : undefined,
+            chosenLanguage: language === 'pt' ? 'português' : language === 'es' ? 'español' : 'english',
           }),
         });
         

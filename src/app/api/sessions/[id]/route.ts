@@ -93,16 +93,22 @@ export async function PATCH(
      return NextResponse.json({ error: 'Session name is required' }, { status: 400 });
   }
 
-  // Update session
-  const { error } = await supabase
+  // Update session — .select('id') so we can verify a row was actually updated.
+  // Without this PostgREST happily returns success when no row matched.
+  const { data, error } = await supabase
     .from('briefing_sessions')
     .update(updateData)
     .eq('id', id)
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .select('id');
 
   if (error) {
     console.error('Error updating session:', error);
     return NextResponse.json({ error: 'Failed to update session' }, { status: 500 });
+  }
+
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Session not found or unauthorized' }, { status: 404 });
   }
 
   return NextResponse.json({ success: true });

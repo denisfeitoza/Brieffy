@@ -246,13 +246,17 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
   }, [pendingCheckpoint, dismissCheckpoint]);
   
   const mainRef = useRef<HTMLElement>(null);
-  const [prevStep, setPrevStep] = useState(currentStepIndex);
+  // Track previous step in a ref to derive direction without setState-in-render
+  // (which caused recursive re-renders / "Maximum update depth" risk).
+  const prevStepRef = useRef(currentStepIndex);
   const [direction, setDirection] = useState<1 | -1>(1);
 
-  if (currentStepIndex !== prevStep) {
-    setDirection(currentStepIndex > prevStep ? 1 : -1);
-    setPrevStep(currentStepIndex);
-  }
+  useEffect(() => {
+    if (currentStepIndex !== prevStepRef.current) {
+      setDirection(currentStepIndex > prevStepRef.current ? 1 : -1);
+      prevStepRef.current = currentStepIndex;
+    }
+  }, [currentStepIndex]);
 
   const activeMessage = messages[currentStepIndex];
 
@@ -383,10 +387,10 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                <motion.div
                  initial={{ opacity: 0, y: 12 }}
                  animate={{ opacity: 1, y: 0 }}
-                 className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-white border border-gray-200 shadow-sm w-fit max-w-md"
+                 className="inline-flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-[var(--bg2)] border border-[var(--bd)] shadow-sm w-fit max-w-md"
                >
                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--orange)] mt-2 shrink-0" />
-                 <span className="text-[13px] text-gray-500 font-medium">{activeMessage.microFeedback}</span>
+                 <span className="text-[13px] text-[var(--text2)] font-medium">{activeMessage.microFeedback}</span>
                </motion.div>
              )}
 
@@ -410,7 +414,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   <AIThinkingAnimation 
                     language={chosenLanguage} 
                     brandColor={activeColor}
-                    accentColor={branding.brand_accent || '#000000'}
+                    accentColor={branding.brand_accent || activeColor}
                   />
                 </div>
               ) : (
@@ -439,7 +443,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                 <Button 
                   variant="ghost" 
                   onClick={goBack}
-                  className="text-gray-500 hover:text-black rounded-full px-4 sm:px-6 h-12"
+                  className="text-[var(--text2)] hover:text-[var(--text)] hover:bg-[var(--bg2)] rounded-full px-4 sm:px-6 h-12"
                 >
                   <ArrowLeft className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">{t.goBackAdjust}</span>
@@ -452,30 +456,30 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 5, scale: 0.95 }}
                         transition={{ delay: 0.5, duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
-                        className="absolute bottom-[calc(100%+8px)] right-0 bg-gray-900 border border-white/10 text-white p-4 rounded-[1.25rem] shadow-2xl w-[calc(100vw-2rem)] max-w-[18rem] md:w-72 md:max-w-none pointer-events-none origin-bottom-right z-50 flex items-start gap-3 sm:gap-4"
+                        className="absolute bottom-[calc(100%+8px)] right-0 bg-neutral-900 border border-white/10 text-white p-4 rounded-[1.25rem] shadow-2xl w-[calc(100vw-2rem)] max-w-[18rem] md:w-72 md:max-w-none pointer-events-none origin-bottom-right z-50 flex items-start gap-3 sm:gap-4"
                       >
                         <button 
                           onClick={(e) => { e.stopPropagation(); setDismissedSkipHint(true); }}
-                          className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors pointer-events-auto"
+                          className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors pointer-events-auto"
                         >
                           <X className="w-4 h-4" />
                         </button>
-                        <div className="bg-gray-700/50 rounded-[0.85rem] p-2.5 shrink-0 shadow-inner border border-white/5">
-                          <FastForward className="w-5 h-5 text-gray-300" />
+                        <div className="bg-neutral-700/50 rounded-[0.85rem] p-2.5 shrink-0 shadow-inner border border-white/5">
+                          <FastForward className="w-5 h-5 text-neutral-300" />
                         </div>
                         <div className="flex flex-col pt-0.5 text-left pr-4">
-                          <span className="font-bold text-[11px] text-gray-400 uppercase tracking-wider mb-1">
+                          <span className="font-bold text-[11px] text-neutral-400 uppercase tracking-wider mb-1">
                             {t.skipOptional}
                           </span>
                           <span className="font-semibold text-[15px] mb-1 leading-tight">
                             {t.skipOptionalSkip}
                           </span>
-                          <span className="text-[13px] text-gray-300 leading-relaxed">
+                          <span className="text-[13px] text-neutral-300 leading-relaxed">
                             {t.skipOptionalDesc}
                           </span>
                         </div>
                         {/* Pointer triangle */}
-                        <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gray-900 border-r border-b border-white/10 rotate-45 rounded-sm" />
+                        <div className="absolute -bottom-2 right-8 w-4 h-4 bg-neutral-900 border-r border-b border-white/10 rotate-45 rounded-sm" />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -484,7 +488,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                     <Button 
                       variant="ghost" 
                       onClick={() => setShowForceFinishModal(true)}
-                      className="text-[var(--orange)] hover:text-orange-600 hover:bg-orange-50 rounded-full px-6 h-12 text-sm transition-colors font-bold mr-1"
+                      className="text-[var(--orange)] hover:text-[var(--orange)] hover:bg-[var(--acbg)] rounded-full px-6 h-12 text-sm transition-colors font-bold mr-1"
                     >
                       {t.forceFinishBtn}
                     </Button>
@@ -493,7 +497,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   <Button 
                     variant="ghost" 
                     onClick={() => submitAnswer('(skipped)')}
-                    className="text-gray-400 hover:text-gray-600 rounded-full px-6 h-12 text-sm transition-colors"
+                    className="text-[var(--text3)] hover:text-[var(--text2)] hover:bg-[var(--bg2)] rounded-full px-6 h-12 text-sm transition-colors"
                   >
                     {t.skipText}
                   </Button>
@@ -537,7 +541,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
           <header className="flex items-center justify-between p-3 md:p-4 md:px-8 h-16 md:h-20 shrink-0 border-b border-[var(--bd)]">
             <div className="flex items-center gap-4">
               {currentStepIndex > 0 && !isFinished && (
-                <Button variant="ghost" size="icon" onClick={goBack} className="rounded-full w-10 h-10 border border-[var(--bd)] bg-white text-black hover:bg-gray-50">
+                <Button variant="ghost" size="icon" onClick={goBack} className="rounded-full w-10 h-10 border border-[var(--bd)] bg-[var(--bg)] text-[var(--text)] hover:bg-[var(--bg2)]">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               )}
@@ -555,7 +559,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
 
           {/* Progress Line */}
           {!isFinished && (
-            <div className="h-1 bg-gray-100 w-full shrink-0 relative overflow-hidden">
+            <div className="h-1 bg-[var(--bg2)] w-full shrink-0 relative overflow-hidden">
                <motion.div 
                  className="h-full bg-[var(--orange)]"
                  initial={{ width: 0 }}
@@ -585,13 +589,13 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="bg-white rounded-[2rem] p-6 sm:p-8 max-w-[22rem] w-full shadow-2xl relative overflow-hidden"
+                  className="bg-[var(--bg)] border border-[var(--bd)] rounded-[2rem] p-6 sm:p-8 max-w-[22rem] w-full shadow-2xl relative overflow-hidden"
                 >
-                  <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-5">
+                  <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-5">
                     <LogOut className="w-6 h-6 text-red-500 ml-1" />
                   </div>
-                  <h3 className="text-[22px] font-bold text-gray-900 mb-3 tracking-tight leading-tight">{t.forceFinishTitle}</h3>
-                  <p className="text-[15px] font-medium text-gray-500 leading-relaxed mb-8">{t.forceFinishDesc}</p>
+                  <h3 className="text-[22px] font-bold text-[var(--text)] mb-3 tracking-tight leading-tight">{t.forceFinishTitle}</h3>
+                  <p className="text-[15px] font-medium text-[var(--text2)] leading-relaxed mb-8">{t.forceFinishDesc}</p>
                   
                   <div className="flex flex-col gap-2.5">
                     <Button 
@@ -606,7 +610,7 @@ export function TypeformWizard({ hasAccessPassword = false, accessSessionId }: T
                     <Button 
                       variant="ghost" 
                       onClick={() => setShowForceFinishModal(false)}
-                      className="w-full text-gray-400 hover:text-gray-900 h-10 rounded-xl font-medium"
+                      className="w-full text-[var(--text3)] hover:text-[var(--text)] hover:bg-[var(--bg2)] h-10 rounded-xl font-medium"
                     >
                       {t.forceFinishCancel}
                     </Button>

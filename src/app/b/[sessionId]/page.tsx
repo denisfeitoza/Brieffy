@@ -1,12 +1,76 @@
 import { BriefingProvider } from "@/lib/BriefingContext";
 import { TypeformWizard } from "@/components/briefing/TypeformWizard";
-import { getSessionById, getTemplateById, getBrandingByUserId, getPackagesBySlugs, getInteractionsBySession } from "@/lib/services/briefingService";
+import { getPublicSessionForFlow, getTemplateById, getBrandingByUserId, getPackagesBySlugs, getInteractionsBySession } from "@/lib/services/briefingService";
 import { getDBSettings, getPerformanceConfig } from "@/lib/aiConfig";
 import { notFound } from "next/navigation";
 import type { BrandingInfo } from "@/lib/types";
-import { ForceLightMode } from "@/components/ui/force-light-mode";
-
+import type { Metadata } from "next";
 export const dynamic = 'force-dynamic';
+
+// ────────────────────────────────────────────────────────────────
+// Per-session metadata for share previews.
+// ────────────────────────────────────────────────────────────────
+// When an agency sends a briefing link via WhatsApp / email / Slack, the
+// preview card used to show the generic Brieffy landing copy. With this
+// generateMetadata the card shows the briefing's purpose / template name
+// when available — much higher click-through and clearer to the receiver.
+// We re-use the same UUID sanitization as the page itself so a malformed
+// link doesn't blow up metadata generation.
+function sanitizeSessionId(rawSessionId: string): string {
+  let decoded: string;
+  try { decoded = decodeURIComponent(rawSessionId); } catch { decoded = rawSessionId; }
+  return decoded.replace(/[^a-f0-9-]/gi, '');
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ sessionId: string }> }): Promise<Metadata> {
+  const { sessionId: rawSessionId } = await params;
+  const sessionId = sanitizeSessionId(rawSessionId);
+
+  // Defensive defaults — if anything fails we still ship the brand card.
+  const fallback: Metadata = {
+    title: "Briefing Brieffy",
+    description: "Responda em poucos minutos para alinharmos sua estratégia.",
+    openGraph: {
+      title: "Briefing Brieffy",
+      description: "Responda em poucos minutos para alinharmos sua estratégia.",
+      type: "website",
+    },
+    robots: { index: false, follow: false }, // never let public briefings be indexed
+  };
+
+  if (!sessionId || sessionId.length < 32) return fallback;
+
+  try {
+    const session = await getPublicSessionForFlow(sessionId);
+    const purpose = (session.briefing_purpose || "").toString().trim();
+    const sessionName = (session.session_name || "").toString().trim();
+
+    // Build a tasteful title without leaking sensitive info; cap lengths.
+    const titlePart = sessionName || "Novo Briefing";
+    const title = `${titlePart.slice(0, 60)} • Brieffy`;
+    const description = purpose
+      ? `${purpose.slice(0, 160)}`
+      : "Responda em poucos minutos para alinharmos sua estratégia.";
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+      },
+      robots: { index: false, follow: false },
+    };
+  } catch {
+    return fallback;
+  }
+}
 
 export default async function FormPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId: rawSessionId } = await params;
@@ -33,7 +97,7 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
   let branding: BrandingInfo | undefined;
 
   try {
-    session = await getSessionById(sessionId);
+    session = await getPublicSessionForFlow(sessionId);
   } catch {
     notFound();
   }
@@ -108,7 +172,7 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     <BriefingProvider 
        activeTemplate={template} 
        sessionId={session.id} 
-       initialContext={session.initial_context}
+       initialContext={session.initial_context ?? undefined}
        selectedPackages={selectedPackages}
        selectedPackageDetails={selectedPackageDetails}
        branding={branding}
@@ -124,19 +188,19 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
        initialDepthSignals={session.depth_signals || []}
        initialMaxQuestions={session.max_questions || 25}
     >
-      <ForceLightMode />
-      <main className="h-screen w-full bg-[var(--bg)] font-inter relative overflow-hidden">
+      <main className="h-screen w-full bg-background text-foreground font-inter relative overflow-hidden">
         <TypeformWizard 
           hasAccessPassword={hasAccessPassword}
           accessSessionId={session.id}
         />
-        <a 
+        <a
           href="https://brieffy.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="fixed bottom-3 right-4 z-50 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-all duration-300 pointer-events-auto"
+          aria-label="Powered by Brieffy"
+          className="fixed bottom-3 right-4 z-50 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-all duration-300 pointer-events-auto min-h-11 px-2 py-2 -mr-2 -mb-2"
         >
-          <span className="text-[9px] uppercase tracking-widest text-[var(--text3)] font-semibold">Powered by</span>
+          <span className="text-[10px] md:text-[9px] uppercase tracking-widest text-[var(--text3)] font-semibold">Powered by</span>
           <div className="flex items-center gap-1">
             <div 
               className="w-4 h-4 rounded border-none flex items-center justify-center relative overflow-hidden"

@@ -87,7 +87,7 @@ async function TemplatesList() {
                   <LimitReachedButton />
                 ) : !activeSession ? (
                   <Link href={`/dashboard/templates/new?templateId=${template.id}`}>
-                    <Button variant="ghost" className="text-[var(--actext)] hover:text-black hover:bg-[var(--acbg)] px-3 btn-pill cursor-pointer">
+                    <Button variant="ghost" className="text-[var(--actext)] hover:text-[var(--text)] hover:bg-[var(--acbg)] px-3 btn-pill cursor-pointer">
                       <Wand2 className="w-4 h-4 mr-2" />
                       Continuar Configuração
                     </Button>

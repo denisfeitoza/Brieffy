@@ -313,7 +313,7 @@ export default function SandboxPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white text-[var(--text)] selection:bg-[var(--orange)]/30 font-inter">
+    <div className="flex flex-col h-screen bg-background text-foreground selection:bg-[var(--orange)]/30 font-inter">
       {/* Header */}
       <header className="flex items-center justify-between p-4 md:p-6 shrink-0 border-b border-neutral-900 bg-neutral-950/50 backdrop-blur-md">
         <div className="flex items-center gap-4">

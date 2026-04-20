@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CopyHistoryButtonProps {
   historyText: string;
@@ -18,6 +19,7 @@ export function CopyHistoryButton({ historyText }: CopyHistoryButtonProps) {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy', err);
+      toast.error('Não foi possível copiar. Verifique permissões do navegador.');
     }
   };
 

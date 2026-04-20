@@ -25,31 +25,47 @@ export async function DELETE(
   }
 
   // Find all sessions linked to this template
-  const { data: sessions } = await supabase
+  const { data: sessions, error: sessionsErr } = await supabase
     .from('briefing_sessions')
     .select('id')
     .eq('template_id', id);
 
+  if (sessionsErr) {
+    console.error('Error listing sessions for template:', sessionsErr);
+    return NextResponse.json({ error: 'Failed to enumerate template sessions' }, { status: 500 });
+  }
+
   const sessionIds = (sessions || []).map(s => s.id);
 
-  // Delete interactions for all related sessions
+  // Delete cascade — check each step. Without this we leave orphan rows on
+  // partial failures (FK violations later, ghost interactions, etc.).
   if (sessionIds.length > 0) {
-    await supabase
+    const { error: interactionsErr } = await supabase
       .from('briefing_interactions')
       .delete()
       .in('session_id', sessionIds);
+    if (interactionsErr) {
+      console.error('Error deleting interactions:', interactionsErr);
+      return NextResponse.json({ error: 'Failed to delete related interactions' }, { status: 500 });
+    }
 
-    // Delete api_usage for all related sessions
-    await supabase
+    const { error: usageErr } = await supabase
       .from('api_usage')
       .delete()
       .in('session_id', sessionIds);
+    if (usageErr) {
+      console.error('Error deleting api_usage:', usageErr);
+      return NextResponse.json({ error: 'Failed to delete related usage' }, { status: 500 });
+    }
 
-    // Delete all related sessions
-    await supabase
+    const { error: sessionsDelErr } = await supabase
       .from('briefing_sessions')
       .delete()
       .in('id', sessionIds);
+    if (sessionsDelErr) {
+      console.error('Error deleting sessions:', sessionsDelErr);
+      return NextResponse.json({ error: 'Failed to delete related sessions' }, { status: 500 });
+    }
   }
 
   // Delete the template itself

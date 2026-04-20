@@ -88,7 +88,7 @@ export function MultipleChoiceInput({
               className={`flex items-center gap-4 p-5 sm:p-6 min-h-[64px] sm:min-h-[72px] rounded-2xl border cursor-pointer transition-all active:scale-[0.98] ${
                 isSelected
                   ? "border-[var(--orange)] bg-[var(--orange)]/5 ring-2 ring-[var(--orange)]/30 shadow-md"
-                  : "border-gray-200 bg-white hover:border-[var(--orange)]/30 hover:bg-[var(--orange)]/5 shadow-sm"
+                  : "border-[var(--bd)] bg-[var(--bg)] hover:border-[var(--orange)]/30 hover:bg-[var(--orange)]/5 shadow-sm"
               }`}
             >
               <Checkbox
@@ -97,7 +97,7 @@ export function MultipleChoiceInput({
                 onCheckedChange={(checked) => handleCheckChange(optText, checked)}
               />
               <span
-                className="text-black font-medium"
+                className="text-[var(--text)] font-medium"
                 style={
                   isFontSelection
                     ? {
@@ -131,7 +131,7 @@ export function MultipleChoiceInput({
                 ↓ {specifyLabel}
               </p>
             )}
-            <p className="text-sm text-center text-gray-500 mb-2">
+            <p className="text-sm text-center text-[var(--text2)] mb-2">
               {voiceLanguage === "pt"
                 ? "Adicione detalhes via texto ou áudio (opcional):"
                 : voiceLanguage === "es"
@@ -158,7 +158,7 @@ export function MultipleChoiceInput({
               variant="ghost"
               size="sm"
               onClick={() => setShowTextInput(true)}
-              className="text-xs text-gray-400 hover:text-gray-600 rounded-full"
+              className="text-xs text-[var(--text3)] hover:text-[var(--text2)] rounded-full"
             >
               + {t.moreDetails || "Adicionar detalhes"}
             </Button>
@@ -167,7 +167,7 @@ export function MultipleChoiceInput({
       </div>
 
       <ScrollConfirmWrapper
-        containerClassName="flex justify-end mt-6 border-t border-gray-200 pt-6"
+        containerClassName="flex justify-end mt-6 border-t border-[var(--bd)] pt-6"
         isDisabled={
           (selectedMultiples.length === 0 && !inputText.trim()) ||
           isLoading ||
@@ -178,8 +178,8 @@ export function MultipleChoiceInput({
             size="lg"
             className={`w-full sm:w-auto h-14 px-8 rounded-full font-medium transition-all duration-300 border ${
               selectedMultiples.length > 0 || inputText.trim()
-                ? "bg-black text-white hover:bg-neutral-800 shadow-lg hover:scale-105"
-                : "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
+                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-lg hover:scale-105 border-transparent"
+                : "bg-[var(--bg2)] text-[var(--text3)] border-[var(--bd)] hover:bg-[var(--bg3)]"
             }`}
             onClick={handleLocalSend}
             disabled={
@@ -189,7 +189,7 @@ export function MultipleChoiceInput({
             }
           >
             {isLoading || isSubmittingLocal ? (
-              <RefreshCw className="w-5 h-5 mr-2 animate-spin text-white/70" />
+              <RefreshCw className="w-5 h-5 mr-2 animate-spin opacity-70" />
             ) : null}
             {t.confirmSelection} <ArrowRight className="w-5 h-5 ml-2" />
           </Button>

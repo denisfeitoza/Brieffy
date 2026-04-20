@@ -229,8 +229,34 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const BRAND = "#ff6029";
 const ACCENT = "#ffcfbc";
 
+/**
+ * Detects if motion should be reduced — either via OS-level
+ * `prefers-reduced-motion` setting OR small-screen viewport (mobile),
+ * where the heavy particle animations harm scroll perf and battery.
+ */
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mqMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mqMobile = window.matchMedia('(max-width: 767px)');
+    const update = () => setReduced(mqMotion.matches || mqMobile.matches);
+    update();
+    mqMotion.addEventListener('change', update);
+    mqMobile.addEventListener('change', update);
+    return () => {
+      mqMotion.removeEventListener('change', update);
+      mqMobile.removeEventListener('change', update);
+    };
+  }, []);
+  return reduced;
+}
+
 export function HeroSection() {
   const { t } = useLanguage();
+  const reduceMotion = useReducedMotion();
+  const ambientCount = reduceMotion ? 4 : 12;
+  const orbitCount = reduceMotion ? 2 : 5;
 
   const nodes = useMemo(
     () => [
@@ -297,8 +323,8 @@ export function HeroSection() {
         }}
       />
 
-      {/* Floating ambient particles */}
-      {[...Array(12)].map((_, i) => (
+      {/* Floating ambient particles — count adapts to reduced motion / mobile */}
+      {[...Array(ambientCount)].map((_, i) => (
         <motion.div
           key={`amb-${i}`}
           className="absolute rounded-full pointer-events-none"
@@ -526,8 +552,8 @@ export function HeroSection() {
               ))}
             </svg>
 
-            {/* Orbital Particles */}
-            {[0, 1, 2, 3, 4].map((i) => (
+            {/* Orbital Particles — fewer when reduced motion / mobile */}
+            {Array.from({ length: orbitCount }, (_, i) => i).map((i) => (
               <OrbitalParticle
                 key={`horbit-${i}`}
                 delay={i * 0.7}

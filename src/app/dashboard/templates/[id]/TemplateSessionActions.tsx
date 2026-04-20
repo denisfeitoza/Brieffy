@@ -124,7 +124,7 @@ export function TemplateSessionActions({ session }: { session: SessionData }) {
             Copiar Link + Senha
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="bg-white/5" />
+          <DropdownMenuSeparator className="bg-[var(--bd)]" />
 
           <DropdownMenuItem
             onClick={handleDelete}

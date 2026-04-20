@@ -1,24 +1,17 @@
 import { NextResponse } from "next/server";
 import { getLLMConfig, getDBSettings, estimateCost } from "@/lib/aiConfig";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
-
-// BUG-05 FIX: Do NOT create Supabase client at module level.
-// In Vercel build-time, env vars are not available and createClient() would throw.
-// The admin client is created lazily inside the handler.
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error('Supabase env vars not configured');
-  return createClient(url, key);
-}
+// Use the centralized loud-failing admin client. The previous fallback to
+// NEXT_PUBLIC_SUPABASE_ANON_KEY would silently downgrade onboarding writes
+// to RLS-limited reads — an extremely confusing failure mode in prod.
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(req: Request) {
   try {
     // Rate limit: 15 requests per minute for onboarding
     const ip = getRequestIP(req);
-    const rl = checkRateLimit(`onboarding:${ip}`, { maxRequests: 15, windowMs: 60_000 });
+    const rl = await checkRateLimit(`onboarding:${ip}`, { maxRequests: 15, windowMs: 60_000 });
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Please wait before trying again." },
@@ -64,20 +57,35 @@ export async function POST(req: Request) {
         "brand_color": "#hexcode"
       }`;
 
-      const summaryRes = await fetch(llmConfig.baseUrl, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${llmConfig.apiKey}`,
-          ...llmConfig.headers,
-        },
-        body: JSON.stringify({
-          model: llmConfig.model,
-          response_format: { type: "json_object" },
-          temperature: 0.3,
-          max_tokens: 1000,
-          messages: [{ role: "system", content: summaryPrompt }],
-        }),
-      });
+      const summaryController = new AbortController();
+      const summaryTimeout = setTimeout(() => summaryController.abort(), 30_000);
+      let summaryRes: Response;
+      try {
+        summaryRes = await fetch(llmConfig.baseUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${llmConfig.apiKey}`,
+            ...llmConfig.headers,
+          },
+          body: JSON.stringify({
+            model: llmConfig.model,
+            response_format: { type: "json_object" },
+            temperature: 0.3,
+            max_tokens: 1000,
+            messages: [{ role: "system", content: summaryPrompt }],
+          }),
+          signal: summaryController.signal,
+        });
+      } catch (e) {
+        clearTimeout(summaryTimeout);
+        if ((e as Error).name === "AbortError") {
+          // Soft-fail: keep onboarding going with default summary instead of dropping the user.
+          summaryRes = new Response(null, { status: 504 });
+        } else {
+          throw e;
+        }
+      }
+      clearTimeout(summaryTimeout);
 
       // BUG-13 FIX: ALWAYS mark user as onboarded, regardless of summary generation success.
       // Previously, is_onboarded was only set inside the `if (summaryRes.ok)` block,
@@ -195,24 +203,37 @@ export async function POST(req: Request) {
     {"updates":{},"nextQuestion":{"text":"Pergunta curta humana direta...","questionType":"tipo_aqui","options":["Opção 1", "Opção 2"], "allowMoreOptions": false},"isFinished":false}`;
 
 
-    const res = await fetch(llmConfig.baseUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${llmConfig.apiKey}`,
-        ...llmConfig.headers,
-      },
-      body: JSON.stringify({
-        model: llmConfig.model,
-        response_format: { type: "json_object" },
-        temperature: llmConfig.temperature,
-        max_tokens: llmConfig.maxTokens,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...((history || []).map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))),
-          { role: "user", content: typeof answer === 'string' ? answer : JSON.stringify(answer || "Begin onboarding") }
-        ],
-      }),
-    });
+    const onbController = new AbortController();
+    const onbTimeout = setTimeout(() => onbController.abort(), 30_000);
+    let res: Response;
+    try {
+      res = await fetch(llmConfig.baseUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${llmConfig.apiKey}`,
+          ...llmConfig.headers,
+        },
+        body: JSON.stringify({
+          model: llmConfig.model,
+          response_format: { type: "json_object" },
+          temperature: llmConfig.temperature,
+          max_tokens: llmConfig.maxTokens,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...((history || []).map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))),
+            { role: "user", content: typeof answer === 'string' ? answer : JSON.stringify(answer || "Begin onboarding") }
+          ],
+        }),
+        signal: onbController.signal,
+      });
+    } catch (e) {
+      clearTimeout(onbTimeout);
+      if ((e as Error).name === "AbortError") {
+        return NextResponse.json({ error: "Onboarding AI timed out." }, { status: 504 });
+      }
+      throw e;
+    }
+    clearTimeout(onbTimeout);
 
     if (!res.ok) {
       const errorText = await res.text();

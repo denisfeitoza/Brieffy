@@ -1142,3 +1142,290 @@ Durante a fase de perguntas, o progresso é limitado a **95%**.
 - **Cor Primária**: Laranja Brieffy (`#ff6029`).
 - **Indicador**: "Accent Pill" (Pílula de destaque) no header com fundo `#FFF2ED` e texto bold.
 - **Animação**: Transição de largura suave (0.8s) com easing `easeOut` para uma sensação premium.
+
+---
+
+# 🛡️ ANEXO V — SEGURANÇA, VALIDAÇÃO E RATE LIMIT (HARDENING) ✅ IMPLEMENTADO
+
+> Esta seção documenta as regras de segurança, validação de input e rate limiting introduzidas pela auditoria de bugs e melhorias. Toda nova rota / feature DEVE seguir estas regras.
+
+## 1. 🔐 Headers de Segurança Globais
+
+Aplicados em `next.config.ts` (`async headers()`) **e** em `src/proxy.ts` (middleware) para garantir cobertura mesmo quando a resposta vem de uma redireção interna do middleware.
+
+| Header | Valor | Por quê |
+|---|---|---|
+| `X-Frame-Options` | `SAMEORIGIN` | Bloqueia clickjacking (iframe externo). |
+| `X-Content-Type-Options` | `nosniff` | Impede que browsers "adivinhem" MIME e executem texto como script. |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Não vaza paths internos para sites de terceiros. |
+| `Permissions-Policy` | `camera=(), microphone=(self), geolocation=(), payment=()` | Microfone só para gravação interna (transcribe). Demais APIs bloqueadas. |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` (apenas em produção) | Força HTTPS por 2 anos. |
+
+## 2. 🚦 Rate Limiting (Vercel KV / Upstash Redis)
+
+`src/lib/rateLimit.ts` é **assíncrono** (`await checkRateLimit(...)`) e usa um store distribuído quando há credenciais Upstash; cai para in-memory em dev. Em produção sem KV configurado, emite warning único.
+
+### Variáveis de ambiente reconhecidas (qualquer combinação)
+```
+KV_REST_API_URL=...        KV_REST_API_TOKEN=...
+UPSTASH_REDIS_REST_URL=... UPSTASH_REDIS_REST_TOKEN=...
+```
+
+### Limites aplicados (janela de 60s salvo indicado)
+
+| Endpoint | Escopo | maxRequests |
+|---|---|---|
+| `POST /api/briefing` | `user.id` ou IP | conforme já existente |
+| `POST /api/briefing/generate-dossier` | `dossier:user.id` | 10 |
+| `POST /api/briefing/summarize-document` | `summarize_doc:user.id` | 20 |
+| `POST /api/briefing/suggest-packages` | user.id ou IP | 30 |
+| `POST /api/analyze-document` | `analyze_doc:user.id` | 20 |
+| `POST /api/transcribe` | user.id ou IP | 30 |
+| `POST /api/briefing/verify-access` | IP+session: 5/15min, session: 50/15min | brute-force protection |
+
+Toda resposta 429 inclui `{ error, retryAfter, resetAt }` para o cliente esperar o tempo correto.
+
+## 3. 🪪 Ownership / IDOR
+
+- Toda rota que aceita um identificador externo (`sessionId`, `templateId`, `briefingId`) **deve** validar que o recurso pertence ao `auth.uid()` antes de qualquer escrita ou chamada LLM.
+- Quando se usa `supabaseAdmin` (service role), a checagem **não** é opcional — RLS é ignorada.
+- Implementado em:
+  - `POST /api/briefing/generate-dossier` (session.user_id)
+  - `POST /api/sessions/generate` (template.user_id)
+  - `PATCH /api/sessions/[id]` (`.select('id')` confirma update real → 404 se zero linhas)
+  - `DELETE /api/templates/[id]` (verifica erro de cada cascade delete antes de prosseguir)
+
+## 4. 🎯 Validação de Input
+
+### URLs (SSRF)
+- `analyze-document`: `isAllowedFileUrl()` permite **somente** o bucket Supabase configurado ou hosts em `ANALYZE_DOC_ALLOWED_HOSTS`. Bloqueia http://, IPs internos, links externos.
+
+### Redirects (Open Redirect)
+- `auth/callback`: `safeNextPath()` aceita só paths relativos (`/...`), bloqueia `//`, `/\\`, esquemas (`/path:`) e strings >512 chars. Fallback: `/dashboard`.
+
+### Uploads
+- `upload-logo`: allowlist explícita `image/png | image/jpeg | image/webp`. **SVG removido** (vetor de XSS via `<script>` interno). Extensão derivada do MIME validado (não do `file.name`).
+- `analyze-document`: `MAX_DOWNLOAD_BYTES = 15MB` (Content-Length + verificação real do buffer). Heurística `looksBinary()` substitui detecção falha por `\x00`.
+- `transcribe`: `MAX_AUDIO_BYTES = 25MB` (limite Whisper).
+
+### Numéricos
+- `packages POST/PUT`: `max_questions` clampeado em `[1, 50]`, `sort_order` em `[0, 9999]`.
+- `aiConfig.ts`: helper `toFiniteNumber(raw, fallback, {min, max, integer})` aplicado a `temperature` (0-2), `max_tokens` (64-32000), `maxHistory`, `timeoutMs`, `basalThreshold`. Garante que `NaN`/`Infinity` nunca chegam ao payload do LLM.
+
+### Strings em Prompts (Prompt Injection)
+- `summarize-document`: `sanitizeFileName()` remove caracteres de controle e limita tamanho antes de injetar `fileName` no system prompt.
+
+## 5. 📭 Não Vazar Erros Internos
+
+Catches em rotas API retornam mensagens **genéricas** (`"Internal error"`, `"Failed to fetch packages"`). `error.message`, `error.stack` e `details` **nunca** são enviados ao client. Logs detalhados ficam apenas em `console.error` (visível só no servidor).
+
+## 6. 🎨 Resiliência Visual / Frontend
+
+- `getContrastColor()`: valida regex `^[0-9a-f]{3}$|^[0-9a-f]{6}$/i`, fallback `#ffffff`.
+- `DashboardClient`: `basal_coverage` clampeado para `[0, 1]` antes de calcular `%` da barra.
+- `MultiSliderQuestion` / `DynamicInput`: re-sincronizam estado quando `props` mudam (signature de `sliders`/`initialValues`/`activeMessage.userAnswer`).
+- `TypeformWizard`: `setDirection` movido para `useEffect` (evitar re-render infinito).
+- `BriefingContext.submitAnswer`: usa `snapshotMessages` (não a state stale) ao logar interação.
+- `ensureSessionInDb`: idempotente via `inflightSessionPromises` map (evita duplicação por double-click / Strict Mode).
+- `exportZip`: `folderName` recebe sufixo `_{idSuffix}` para evitar colisão entre sessões com mesmo nome.
+
+## 7. 📱 Mobile / A11y / Performance
+
+- **Tap targets**: mínimo 44×44px em `DocumentEditor`, `dashboard/layout`, link "Powered by".
+- **Logos**: migrados para `next/image` com `unoptimized` para SVG. Bucket Supabase já em `images.remotePatterns`.
+- **HeroSection**: respeita `prefers-reduced-motion` E viewport `(max-width: 767px)` → reduz ambient particles 12→4 e orbital 5→2.
+- **AILoadingSplash**: input de senha agora tem `<label htmlFor>`, `aria-label`, `aria-invalid`, `aria-describedby`, `autoComplete="current-password"`.
+- **Bundle**: `exportZip` (JSZip + file-saver) carregado via dynamic import sob demanda no dashboard.
+- **Storage do briefing**: trocado de `localStorage` para `sessionStorage` — dados sensíveis não persistem em dispositivos compartilhados.
+
+## 8. ⚙️ TanStack Query — Defaults Globais
+
+`src/app/providers.tsx`:
+```ts
+new QueryClient({
+  defaultOptions: {
+    mutations: { retry: 0 },          // nunca duplicar ações destrutivas (delete, dossier, charge)
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,    // não destruir input do usuário ao trocar de aba
+    },
+  },
+});
+```
+
+## 9. 🌐 i18n — Strings Consolidadas
+
+Adicionadas em `src/i18n/dashboardTranslations.ts` (PT/EN/ES):
+- `dashboard.untitled`
+- `status.finished` / `status.in_progress` / `status.pending`
+
+Toda nova string visível ao usuário **deve** entrar em um arquivo de i18n — nunca hardcoded em JSX.
+
+## 10. ✅ Checklist para novas rotas/features
+
+Antes de fazer merge:
+- [ ] Auth checada (`supabase.auth.getUser()`).
+- [ ] Ownership do recurso validada (não confiar só em RLS quando usar service role).
+- [ ] `await checkRateLimit(...)` com escopo `feature:user.id` ou `feature:ip:{ip}`.
+- [ ] Inputs numéricos clampeados (range definido).
+- [ ] Strings vindas do usuário sanitizadas antes de irem para LLM.
+- [ ] URLs externas validadas contra allowlist (SSRF).
+- [ ] Upload com MIME allowlist + size cap.
+- [ ] Catches retornam mensagem genérica; detalhe só em `console.error`.
+- [ ] Headers de segurança herdados de `next.config.ts` (não sobrescrever).
+- [ ] Strings visíveis em `src/i18n/*`.
+
+---
+
+# 📎 ANEXO W — IA, CUSTOS E ROBUSTEZ DO MOTOR (AUDITORIA 2) ✅ IMPLEMENTADO
+
+> Captura as decisões da segunda auditoria (28 itens P0/P1/P2). Mantém a memória institucional sobre **por que** cada controle existe — o motor LLM é caro e frágil, então toda mudança passa por: custo, observabilidade, segurança e UX.
+
+## 1. 🔐 Admin Supabase Centralizado (`src/lib/supabase/admin.ts`)
+
+- Único módulo autorizado a instanciar o cliente com `SUPABASE_SERVICE_ROLE_KEY`.
+- `getSupabaseAdmin()` lança imediatamente se a chave estiver ausente — usado em rotas críticas (onboarding, settings, quota, briefing writes).
+- `getSupabaseAdminOptional()` retorna `null` com warning — reservado para caminhos não-críticos (ex.: `usageLogger`), onde silenciar é aceitável.
+- **Por quê**: antes existiam fallbacks silenciosos para `anon`, mascarando bugs em produção e permitindo escritas que nunca chegavam ao banco.
+
+## 2. 💸 Logger de Custo de IA (`api_usage`)
+
+- Toda chamada LLM (briefing, dossier, suggest-packages, colors, analyze-document, transcribe, translate) passa por `usageLogger`.
+- Loga: `provider`, `model`, `route`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `cost_usd_cents` estimado, `latency_ms`, `status`.
+- Tabela `api_usage` é a fonte da verdade para o painel admin de custos.
+- **Por quê**: sem isso, regressão de custo (modelo trocado, prompt inflado, retry storm) só era percebida na fatura.
+
+## 3. ♻️ Compactação de Estado e Histórico
+
+- `compactCurrentState` / `compactFullState` filtram chaves vazias, truncam strings longas e limitam arrays antes de irem ao LLM.
+- `compactHistory` aplica o mesmo princípio ao histórico do dossier final.
+- **Por quê**: contexto inflado = custo linear + risco de estourar `maxTokens` e devolver JSON quebrado. Compactar antes do envio é o controle mais barato.
+
+## 4. 🌍 Idioma Intransigente
+
+- `GOLDEN_RULES` carrega regra explícita: a IA responde **sempre** em `targetLang`.
+- `compileSystemPrompt` injeta `buildLanguageRule(targetLang)` dinamicamente.
+- `suggest-packages` recebe `chosenLanguage` do cliente; eliminamos o "in Portuguese" hardcoded.
+- **Por quê**: usuário escolhia inglês e recebia pacote em PT — quebra de confiança imediata.
+
+## 5. 🚫 Markdown Proibido em UI Direta
+
+- `buildOutputFormat` declara que `nextQuestion.text` e `options[].label` devem ser **plain text**.
+- Frontend renderiza esses campos sem parser — qualquer `**` ou `#` viraria literal.
+
+## 6. 🎛️ Sampling Configurável (`top_p`, `presence_penalty`, `frequency_penalty`)
+
+- `aiConfig.LLMConfig` e `SettingsOverride` aceitam os três parâmetros.
+- `app_settings` no admin pode sobrescrever sem deploy.
+- Aplicado na rota principal de briefing e no fallback.
+- **Por quê**: permite calibrar criatividade vs. consistência por ambiente sem mexer em código.
+
+## 7. 🛡️ Sanitização de `system_prompt_fragment`
+
+- `buildPackagePrompts` passa `pkg.name` e `pkg.system_prompt_fragment` por `sanitizeFragment` antes de costurar no prompt final.
+- Remove tags suspeitas (`<system>`, `</system>`, `<|im_start|>`, etc.) e limita comprimento.
+- **Por quê**: admin malicioso (ou prompt injection via copy/paste) poderia reescrever GOLDEN_RULES.
+
+## 8. 🔁 LLM Fallback no Último Retry
+
+- Após `MAX_RETRIES - 1` falhas, a rota principal usa `getLLMFallbackConfig()` (modelo alternativo configurado em `app_settings`).
+- Mantém o briefing vivo quando o provedor primário está degradado.
+- Fallback também propaga `top_p`/penalties.
+
+## 9. 🧨 AbortController em Fetches LLM
+
+- Toda chamada server→LLM tem `AbortController` com `timeoutMs` vindo de `app_settings`.
+- Cliente desconectou? Cancelamos o upstream e paramos de pagar tokens órfãos.
+
+## 10. 🪪 Validação de Env (`src/lib/env.ts`)
+
+- `assertServerEnv()` roda no primeiro toque de qualquer client admin.
+- Lança para vars **obrigatórias** ausentes (fora do build phase do Next).
+- Avisa para vars opcionais (LLM, Stripe).
+- Proxy `ENV` provê acesso tipado ao restante do código.
+
+## 11. 📜 Logger Estruturado (`src/lib/logger.ts`)
+
+- `createLogger(scope)` retorna `{ debug, info, warn, error }`.
+- `debug`/`info` são no-op em produção; `warn`/`error` sempre emitem JSON estruturado.
+- Substituiu `console.log` em `api/briefing`, `analyze-document`, `colors`, `transcribe`, `generate-dossier`.
+
+## 12. 🛟 Error Boundaries
+
+- `src/app/error.tsx` → fallback de rota com botão "Tentar novamente" + `digest` do erro.
+- `src/app/global-error.tsx` → fallback do root layout (HTML/CSS puros, sem dependências).
+- Combinado com Sentry para correlação por `digest`.
+
+## 13. 🔗 OG Dinâmico em `/b/[sessionId]`
+
+- `generateMetadata` lê `briefing_purpose` e `session_name` para gerar título/descrição.
+- Link compartilhado mostra contexto real, não placeholder genérico.
+
+## 14. 🪙 Concurrency Otimista em `briefing_sessions`
+
+- Coluna `version` (integer, default 0).
+- `updateSessionStateInDb(sessionId, state, expectedVersion?)` faz `UPDATE ... WHERE version = expectedVersion` e retorna `{ ok, conflict, newVersion }`.
+- Caller que não passa `expectedVersion` mantém o comportamento legado (compat).
+- **Por quê**: previne sobrescrita silenciosa quando duas abas/clientes salvam ao mesmo tempo.
+
+## 15. 📦 `xlsx` → `@e965/xlsx`
+
+- Substituído pelo fork mantido com patches de CVEs conhecidas.
+- Import e mensagem de erro em `analyze-document` atualizados.
+
+## 16. 🧭 RPC `create_session_if_under_quota`
+
+- Atomic: confere quota e cria sessão na mesma transação.
+- Substitui o padrão "SELECT count + INSERT" (race-condition em quotas).
+
+## 17. 🧼 Sanitização de `hint`/`context` em `colors/route.ts`
+
+- Strings vindas do cliente são truncadas e escapadas antes de irem ao prompt — bloqueia prompt injection mirando a paleta.
+
+## 18. 🛡️ DOMPurify no `DocumentEditor`
+
+- HTML proveniente de tradução/IA passa por DOMPurify antes de ir ao Tiptap.
+- Remove `<script>`, `on*` handlers, `javascript:` URLs.
+
+## 19. ♿ Overlay Mobile do Admin
+
+- Recebe `role="dialog"`, `aria-modal="true"`, `aria-labelledby`.
+- Focus trap próprio (sem dep), `Escape` fecha, foco volta ao trigger.
+- `body.overflow = hidden` enquanto aberto.
+
+## 20. 🎚️ `viewport` Export Separado
+
+- `src/app/layout.tsx` agora exporta `const viewport: Viewport` ao lado do `metadata`.
+- Atende ao requisito do Next 14+ e habilita `themeColor` light/dark + `viewportFit: cover` (notch).
+
+## 21. 🧰 TranslateDocumentAction Controlado
+
+- Dropdown agora usa `open` controlado em vez de `document.body.click()`.
+- Re-tradução fecha o menu via `setOpen(false)` — sem efeitos colaterais em outros listeners.
+
+## 22. 🧩 `getSessionById(id, userId?)`
+
+- Aceita `userId` opcional para reforçar ownership server-side antes de devolver o registro.
+- Padrão recomendado em qualquer rota autenticada que toque `briefing_sessions`.
+
+## 23. 🧪 `isDepthQuestion` (legado)
+
+- Marcado como deprecated em `src/lib/types.ts`.
+- Não usar em lógica nova; mantido apenas para compat de payloads antigos.
+
+## ✅ Checklist de Regressão (rotas LLM)
+
+Antes de mergear qualquer rota nova que chame LLM:
+
+- [ ] `usageLogger` registrando custo + latência.
+- [ ] `AbortController` ligado ao request do cliente.
+- [ ] Inputs do usuário passam por sanitização antes do prompt.
+- [ ] Estado/histórico passam por `compact*` antes de serializar.
+- [ ] `targetLang` propagado e enforced na regra de idioma.
+- [ ] Fallback de modelo configurado para o último retry.
+- [ ] Markdown proibido em campos plain-text da UI.
+- [ ] `console.log` substituído por `createLogger(scope)`.
+- [ ] `getSupabaseAdmin()` (estrito) em writes; `getSupabaseAdminOptional()` só em logging.
+- [ ] Concurrency otimista (`expectedVersion`) em writes de sessão concorrentes.
+

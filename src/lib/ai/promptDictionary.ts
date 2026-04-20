@@ -13,7 +13,21 @@ export const GOLDEN_RULES = `<RegrasDeOuro>
 6. CLAREZA DE PAPEL: Você entrevista a empresa para entender o negócio DELES. Se vendem "IA" ou "Marketing", eles são os PROVEDORES. NUNCA pergunte se "precisam implementar X".
 7. CONTEXTO PRÉVIO É LEI: <AgencyProfile> e KNOWN CLIENT CONTEXT são sabedoria absoluta. NUNCA repergunte o que já foi dito. Suba o nível.
 8. SKIP SILENCIOSO: Se o usuário der skip, SIGA EM FRENTE SEM FALAR NADA sobre o skip. Sem "Entendi que você não quis responder". Faça a próxima pergunta como se nada aconteceu. micro_feedback = null em skips.
+9. IDIOMA INTRANSIGENTE: TODO conteúdo visível ao usuário (nextQuestion.text, options[].label, micro_feedback, assets.insights, assets.document) DEVE ser ESCRITO no idioma definido em <SystemRole>. Mesmo se o usuário responder em outro idioma, VOCÊ continua no idioma do briefing. Sem misturar línguas, sem "tradução paralela", sem fallback para inglês ou português por inércia.
 </RegrasDeOuro>`;
+
+// Compile-time language reinforcement, injected after CORE_PERSONA so the
+// LLM sees a second, explicit reminder bound to the actual targetLang
+// (covers cases where the model "forgets" because the system prompt is long).
+export function buildLanguageRule(targetLang: string): string {
+  return `<LanguageContract idioma="${targetLang}">
+TODO texto que o usuário lê DEVE estar em ${targetLang}.
+Se ${targetLang} = "português", responda em pt-BR.
+Se ${targetLang} = "english", responda em English.
+Se ${targetLang} = "español", responda em español.
+Não traduza valores que o cliente forneceu (nomes, marcas, jargões da empresa).
+</LanguageContract>`;
+}
 
 // ════════════════════════════════════════════════════════════════
 // EXTRACTION MODULE — Simplified (removed intent classification)
@@ -156,9 +170,11 @@ Retorne APENAS JSON válido:
 }
 updates: campos coletados/inferidos com confiança ≥0.7. Coloque TUDO aqui (sem campo separado de inferences).
 nextQuestion: obrigatório se isFinished=false. questionType deve estar em <AllowedFormats>.
+nextQuestion.text: TEXTO PURO. PROIBIDO Markdown — sem **negrito**, sem _itálico_, sem listas (- / *), sem # cabeçalhos, sem \`código\`, sem links [x](y). Apenas frase corrida. O frontend renderiza como <p>, então caracteres de Markdown aparecem literais para o cliente.
+options[].label: também TEXTO PURO. Sem markdown, sem aspas decorativas.
 isFinished: true quando briefing completo. Inclua session_quality_score (0-100).
-micro_feedback: feedback curto ou null. Null em skips.
-assets: null até isFinished=true. Então: {score:{clareza_marca,clareza_dono,publico,maturidade}, insights:[]}.
+micro_feedback: feedback curto (texto puro, sem markdown) ou null. Null em skips.
+assets: null até isFinished=true. Então: {score:{clareza_marca,clareza_dono,publico,maturidade}, insights:[]}. Apenas assets.document pode conter Markdown.
 </FormatoSaida>`;
 }
 
@@ -206,15 +222,20 @@ interface PromptCompilerParams {
   allowedFormats: string;
   previousQuestions: string;
   currentStateCompact: string;
+  /** Target output language; injected as a hard reminder right after the persona. */
+  targetLang?: string;
 }
 
 export function compileSystemPrompt(params: PromptCompilerParams): string {
-  const { phase, forceFinish, corePersona, behaviorRules, allowedFormats, previousQuestions, currentStateCompact } = params;
+  const { phase, forceFinish, corePersona, behaviorRules, allowedFormats, previousQuestions, currentStateCompact, targetLang } = params;
 
   const parts: string[] = [
     corePersona,
+    // Hard language contract — duplicate of the targetLang line in CORE_PERSONA
+    // because long prompts cause the model to drift on the first instruction.
+    targetLang ? buildLanguageRule(targetLang) : '',
     GOLDEN_RULES,
-  ];
+  ].filter(Boolean) as string[];
 
   // Extraction module: full in discovery/depth, skip in finalize
   if (phase !== 'finalize') {

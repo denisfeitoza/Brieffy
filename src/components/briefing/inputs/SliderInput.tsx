@@ -39,7 +39,7 @@ export function SliderInput({
 
   return (
     <div className="flex flex-col gap-6 w-full mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col items-center justify-center p-6 md:p-12 rounded-3xl bg-white border border-gray-200 shadow-xl relative overflow-hidden">
+      <div className="flex flex-col items-center justify-center p-6 md:p-12 rounded-3xl bg-[var(--bg)] border border-[var(--bd)] shadow-xl relative overflow-hidden">
         <div className="absolute inset-0 bg-[var(--orange)]/5 opacity-50 pointer-events-none" />
 
         {/* Big value display */}
@@ -47,7 +47,7 @@ export function SliderInput({
           <span className="text-xs font-semibold tracking-[0.2em] text-[var(--orange)] uppercase mb-2 block">
             {t.yourResponse}
           </span>
-          <div className="text-6xl md:text-8xl font-black text-black tabular-nums tracking-tighter transition-all duration-300">
+          <div className="text-6xl md:text-8xl font-black text-[var(--text)] tabular-nums tracking-tighter transition-all duration-300">
             {currentVal >= max ? `+${currentVal}` : currentVal}
           </div>
         </div>
@@ -68,11 +68,11 @@ export function SliderInput({
         </div>
 
         {/* Min/Max labels */}
-        <div className="flex justify-between w-full mt-6 px-4 md:px-8 text-gray-500 font-medium text-sm md:text-base relative z-10">
-          <span className="bg-gray-50 px-4 py-1.5 rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex justify-between w-full mt-6 px-4 md:px-8 text-[var(--text2)] font-medium text-sm md:text-base relative z-10">
+          <span className="bg-[var(--bg2)] px-4 py-1.5 rounded-xl border border-[var(--bd)] shadow-sm">
             {min}
           </span>
-          <span className="bg-gray-50 px-4 py-1.5 rounded-xl border border-gray-200 shadow-sm">
+          <span className="bg-[var(--bg2)] px-4 py-1.5 rounded-xl border border-[var(--bd)] shadow-sm">
             {max}
           </span>
         </div>
@@ -84,12 +84,12 @@ export function SliderInput({
         ActionComponent={
           <Button
             size="lg"
-            className="w-full sm:w-auto h-14 bg-black text-white hover:bg-neutral-800 px-10 rounded-full font-bold shadow-xl transition-all hover:scale-105"
+            className="w-full sm:w-auto h-14 bg-primary text-primary-foreground hover:opacity-90 px-10 rounded-full font-bold shadow-xl transition-all hover:scale-105"
             onClick={() => onConfirm(currentVal)}
             disabled={isLoading || isSubmittingLocal}
           >
             {isLoading || isSubmittingLocal ? (
-              <RefreshCw className="w-5 h-5 mr-2 animate-spin text-neutral-500" />
+              <RefreshCw className="w-5 h-5 mr-2 animate-spin opacity-70" />
             ) : null}
             {t.next} <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
@@ -97,7 +97,7 @@ export function SliderInput({
       />
 
       <div className="w-full opacity-70 hover:opacity-100 transition-opacity">
-        <p className="text-sm text-center text-gray-500 mb-2">{t.exactValue}</p>
+        <p className="text-sm text-center text-[var(--text2)] mb-2">{t.exactValue}</p>
         <TextAudioInput
           inputText={inputText}
           setInputText={setInputText}

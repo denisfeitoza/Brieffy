@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
 import { getVoiceConfig, getDBSettings } from "@/lib/aiConfig";
+import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("transcribe");
+
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25MB - Whisper API limit
 
 export async function POST(req: Request) {
   try {
+    // Rate limit per user when authenticated, fallback to IP for public briefing flows
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const scope = user ? `transcribe:user:${user.id}` : `transcribe:ip:${getRequestIP(req)}`;
+    const rl = await checkRateLimit(scope, { maxRequests: 30, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many transcription requests. Please slow down." },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const dbSettings = await getDBSettings();
     const voiceConfig = getVoiceConfig(dbSettings);
 
@@ -23,6 +42,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (audioFile.size > MAX_AUDIO_BYTES) {
+      return NextResponse.json(
+        { error: "Audio file too large (25MB max)." },
+        { status: 413 }
+      );
+    }
+
     // Detect language from form data or default to Portuguese
     const language = (formData.get("language") as string) || voiceConfig.language || "pt";
 
@@ -33,7 +59,7 @@ export async function POST(req: Request) {
     whisperForm.append("language", language);
     whisperForm.append("response_format", "json");
 
-    console.log(`[Voice] Using ${voiceConfig.provider} / ${voiceConfig.model}`);
+    log.debug(`Using ${voiceConfig.provider} / ${voiceConfig.model}`);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
@@ -62,9 +88,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ text: data.text });
   } catch (error: unknown) {
     console.error("Transcribe API Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return NextResponse.json(
-      { error: errorMessage },
+      { error: "Internal error during transcription" },
       { status: 500 }
     );
   }

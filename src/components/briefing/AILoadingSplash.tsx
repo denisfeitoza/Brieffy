@@ -127,11 +127,11 @@ export const AILoadingSplash = memo(function AILoadingSplash({
             <img
               src={branding.logo_url}
               alt={branding.company_name}
-              className="w-16 h-16 md:w-20 md:h-20 rounded-[18px] object-contain bg-white shadow-sm border border-gray-100 p-2"
+              className="w-16 h-16 md:w-20 md:h-20 rounded-[18px] object-contain bg-[var(--bg2)] shadow-sm border border-[var(--bd)] p-2"
             />
           ) : (
             <div
-              className="w-16 h-16 md:w-20 md:h-20 rounded-[18px] flex items-center justify-center font-bold text-2xl shadow-sm border border-gray-100"
+              className="w-16 h-16 md:w-20 md:h-20 rounded-[18px] flex items-center justify-center font-bold text-2xl shadow-sm border border-[var(--bd)]"
               style={{
                 background: brandColor,
                 color: contrastColor,
@@ -159,12 +159,21 @@ export const AILoadingSplash = memo(function AILoadingSplash({
                    <h2 className="text-lg md:text-xl font-semibold text-[var(--text)] tracking-tight" style={{ fontFamily: '"Outfit", sans-serif' }}>
                      {t.passwordTitle}
                    </h2>
-                   <p className="text-xs md:text-sm text-gray-500 mt-1">{t.passwordHint}</p>
+                   <p className="text-xs md:text-sm text-[var(--text2)] mt-1">{t.passwordHint}</p>
                 </div>
 
                 <div className="relative mt-2">
+                  <label htmlFor="briefing-access-password" className="sr-only">
+                    {t.passwordTitle}
+                  </label>
                   <input
+                      id="briefing-access-password"
+                      name="briefing-access-password"
                       type="password"
+                      autoComplete="current-password"
+                      aria-label={t.passwordTitle}
+                      aria-invalid={!!passwordError}
+                      aria-describedby={passwordError ? "briefing-access-password-error" : undefined}
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
@@ -175,12 +184,14 @@ export const AILoadingSplash = memo(function AILoadingSplash({
                       }}
                       placeholder={t.passwordPlaceholder}
                       autoFocus
-                      className="w-full h-12 px-4 bg-gray-50/80 border border-gray-200 rounded-xl text-[var(--text)] text-sm placeholder:text-gray-400 outline-none transition-all focus:border-[var(--orange)] focus:bg-white focus:ring-4 focus:ring-[var(--orange)]/10"
+                      className="w-full h-12 px-4 bg-[var(--bg2)] border border-[var(--bd)] rounded-xl text-[var(--text)] text-sm placeholder:text-[var(--text3)] outline-none transition-all focus:border-[var(--orange)] focus:bg-[var(--bg)] focus:ring-4 focus:ring-[var(--orange)]/10"
                       style={{ fontFamily: '"Inter", sans-serif' }}
                     />
                     <AnimatePresence>
                     {passwordError && (
                       <motion.p
+                        id="briefing-access-password-error"
+                        role="alert"
                         initial={{ opacity: 0, height: 0, y: -5 }}
                         animate={{ opacity: 1, height: "auto", y: 0 }}
                         exit={{ opacity: 0, height: 0, y: -5 }}
@@ -217,7 +228,7 @@ export const AILoadingSplash = memo(function AILoadingSplash({
             ) : (
               <motion.div
                  key="progress-bar"
-                 className="w-32 h-[3px] bg-gray-100 rounded-full overflow-hidden mt-6"
+                 className="w-32 h-[3px] bg-[var(--bg2)] rounded-full overflow-hidden mt-6"
                  initial={{ opacity: 0 }}
                  animate={{ opacity: 1 }}
                  exit={{ opacity: 0, transition: { duration: 0.2 } }}

@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 // Public allowlist — ONLY keys safe to expose to unauthenticated users.
 // Never expose API keys, model names, or admin-sensitive values here.
 const PUBLIC_KEYS = [
   "briefing_timeout_ms",
 ];
-
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Supabase env vars not configured");
-  return createClient(url, key);
-}
 
 // GET — Public, no auth required. Returns a safe subset of app_settings.
 export async function GET() {

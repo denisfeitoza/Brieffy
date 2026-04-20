@@ -290,7 +290,7 @@ export default function ProfilePage() {
                 className={`rounded-xl font-semibold shadow-sm transition-transform hover:scale-105 h-9 px-4 ${
                   isLimitReached 
                     ? 'bg-red-500 text-white hover:bg-red-600' 
-                    : 'bg-[var(--orange)] text-black hover:bg-[#e8552a]'
+                    : 'bg-[var(--orange)] text-white hover:bg-[#e8552a]'
                 }`}
               >
                 {language === 'pt' ? 'Adquirir Mais' : language === 'en' ? 'Get More' : 'Adquirir Más'}
@@ -395,7 +395,7 @@ export default function ProfilePage() {
                     <img
                       src={logoUrl}
                       alt="Logo"
-                      className="w-24 h-24 rounded-2xl object-cover bg-white border border-[var(--bd)] shadow-sm p-1"
+                      className="w-24 h-24 rounded-2xl object-cover bg-[var(--bg)] border border-[var(--bd)] shadow-sm p-1"
                     />
                     <button
                       onClick={() => setLogoUrl('')}
@@ -492,11 +492,11 @@ export default function ProfilePage() {
           {/* Live Preview */}
           <div className="space-y-2">
             <Label className="text-[var(--text2)] text-sm font-semibold">{t('profile.livePreview')}</Label>
-            <div className="rounded-2xl border border-[var(--bd)] bg-white overflow-hidden shadow-sm">
+            <div className="rounded-2xl border border-[var(--bd)] bg-[var(--bg)] overflow-hidden shadow-sm">
               <div className="flex items-center justify-between p-4 border-b border-[var(--bd)] bg-[var(--bg2)]">
                 <div className="flex items-center gap-3">
                   {logoUrl ? (
-                    <img src={logoUrl} alt="Preview" className="w-10 h-10 rounded-xl object-contain bg-white border border-[var(--bd)] p-0.5" />
+                    <img src={logoUrl} alt="Preview" className="w-10 h-10 rounded-xl object-contain bg-[var(--bg)] border border-[var(--bd)] p-0.5" />
                   ) : (
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold border border-[var(--bd)]"
@@ -506,16 +506,16 @@ export default function ProfilePage() {
                     </div>
                   )}
                   <div>
-                    <p className="font-bold text-black text-sm">{companyName || 'Your Company'}</p>
-                    {tagline && <p className="text-[10px] text-gray-500 font-medium">{tagline}</p>}
+                    <p className="font-bold text-[var(--text)] text-sm">{companyName || 'Your Company'}</p>
+                    {tagline && <p className="text-[10px] text-[var(--text2)] font-medium">{tagline}</p>}
                   </div>
                 </div>
-                <div className="text-xs font-bold text-[var(--orange)] bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">1</div>
+                <div className="text-xs font-bold text-[var(--orange)] bg-orange-500/10 px-2.5 py-1 rounded-full border border-[var(--orange)]/30">1</div>
               </div>
-              <div className="p-6 space-y-3 bg-white">
+              <div className="p-6 space-y-3 bg-[var(--bg)]">
                 <div className="h-4 rounded-full w-3/4" style={{ background: brandColor, opacity: 0.2 }} />
-                <div className="h-3 rounded-full bg-gray-100 w-full" />
-                <div className="h-3 rounded-full bg-gray-100 w-5/6" />
+                <div className="h-3 rounded-full bg-[var(--bg2)] w-full" />
+                <div className="h-3 rounded-full bg-[var(--bg2)] w-5/6" />
               </div>
             </div>
           </div>

@@ -14,6 +14,12 @@ interface LLMConfig {
   headers: Record<string, string>;
   temperature: number;
   maxTokens: number;
+  /** Nucleus sampling. 0.9 is a good default for varied yet on-task outputs. */
+  topP: number;
+  /** Penalize tokens already present (anti-repetition). 0..2. */
+  presencePenalty: number;
+  /** Penalize frequent tokens (anti-loop). 0..2. */
+  frequencyPenalty: number;
 }
 
 interface VoiceConfig {
@@ -29,9 +35,15 @@ export interface SettingsOverride {
   ai_llm_model?: string;
   ai_llm_temperature?: string;
   ai_llm_max_tokens?: string;
+  ai_llm_top_p?: string;
+  ai_llm_presence_penalty?: string;
+  ai_llm_frequency_penalty?: string;
   ai_voice_provider?: string;
   ai_voice_model?: string;
   ai_voice_language?: string;
+  ai_vision_model?: string;
+  ai_vision_max_tokens?: string;
+  ai_vision_temperature?: string;
   briefing_max_history?: string;
   briefing_timeout_ms?: string;
   briefing_basal_threshold?: string;
@@ -82,11 +94,38 @@ export function getFormatConfig(overrides?: SettingsOverride): FormatConfig {
 // LLM Configuration
 // Priority: DB settings > ENV vars > defaults
 // ================================================================
+/**
+ * Safely coerce a string/number to a finite number; falls back to default.
+ * Also clamps to [min, max] when provided. Prevents NaN/Infinity from leaking
+ * into LLM payloads (which yields undefined provider behavior).
+ */
+function toFiniteNumber(
+  raw: unknown,
+  fallback: number,
+  opts: { min?: number; max?: number; integer?: boolean } = {}
+): number {
+  let n: number;
+  if (typeof raw === 'number') n = raw;
+  else if (typeof raw === 'string') n = opts.integer ? parseInt(raw, 10) : parseFloat(raw);
+  else n = NaN;
+  if (!Number.isFinite(n)) n = fallback;
+  if (opts.min !== undefined) n = Math.max(opts.min, n);
+  if (opts.max !== undefined) n = Math.min(opts.max, n);
+  return n;
+}
+
 export function getLLMConfig(overrides?: SettingsOverride): LLMConfig {
   const provider = (overrides?.ai_llm_provider || process.env.AI_LLM_PROVIDER || "groq") as LLMProvider;
   const model = overrides?.ai_llm_model || process.env.AI_LLM_MODEL || "openai/gpt-oss-120b";
-  const temperature = parseFloat(overrides?.ai_llm_temperature || "0.35");
-  const maxTokens = parseInt(overrides?.ai_llm_max_tokens || "2500");
+  const temperature = toFiniteNumber(overrides?.ai_llm_temperature, 0.35, { min: 0, max: 2 });
+  const maxTokens = toFiniteNumber(overrides?.ai_llm_max_tokens, 2500, { min: 64, max: 32000, integer: true });
+  // Sampling defaults tuned for the briefing motor:
+  //   topP 0.9        → keeps answers focused while allowing creative phrasing
+  //   presence 0.4    → discourages reusing the same topic ad nauseam
+  //   frequency 0.3   → discourages repeating the same words across questions
+  const topP = toFiniteNumber(overrides?.ai_llm_top_p, 0.9, { min: 0, max: 1 });
+  const presencePenalty = toFiniteNumber(overrides?.ai_llm_presence_penalty, 0.4, { min: -2, max: 2 });
+  const frequencyPenalty = toFiniteNumber(overrides?.ai_llm_frequency_penalty, 0.3, { min: -2, max: 2 });
 
   switch (provider) {
     case "groq":
@@ -98,6 +137,9 @@ export function getLLMConfig(overrides?: SettingsOverride): LLMConfig {
         headers: { "Content-Type": "application/json" },
         temperature,
         maxTokens,
+        topP,
+        presencePenalty,
+        frequencyPenalty,
       };
 
     case "openrouter":
@@ -112,11 +154,43 @@ export function getLLMConfig(overrides?: SettingsOverride): LLMConfig {
         },
         temperature,
         maxTokens,
+        topP,
+        presencePenalty,
+        frequencyPenalty,
       };
 
     default:
       throw new Error(`Unsupported LLM provider: ${provider}`);
   }
+}
+
+/**
+ * Last-resort LLM config used when the primary provider fails repeatedly
+ * (timeout, 5xx, etc). Always points at OpenRouter (most diverse provider
+ * pool) so we have a real alternative to Groq.
+ *
+ * Returns null if OpenRouter is not configured — caller should fail loudly
+ * rather than silently retrying the broken primary.
+ */
+export function getLLMFallbackConfig(): LLMConfig | null {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return null;
+
+  return {
+    provider: "openrouter",
+    model: process.env.AI_LLM_FALLBACK_MODEL || "openai/gpt-4o-mini",
+    apiKey,
+    baseUrl: "https://openrouter.ai/api/v1/chat/completions",
+    headers: {
+      "Content-Type": "application/json",
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    },
+    temperature: 0.4,
+    maxTokens: 2500,
+    topP: 0.9,
+    presencePenalty: 0.4,
+    frequencyPenalty: 0.3,
+  };
 }
 
 // ================================================================
@@ -213,9 +287,9 @@ export function getPerformanceConfig(overrides?: SettingsOverride) {
   return {
     // Context window is UNLIMITED — the AI needs full conversation to make intelligent decisions.
     // maxHistory is kept for legacy admin UI but no longer limits the actual context sent.
-    maxHistory: parseInt(overrides?.briefing_max_history || "999"),
-    timeoutMs: parseInt(overrides?.briefing_timeout_ms || "30000"),
-    basalThreshold: parseFloat(overrides?.briefing_basal_threshold || "0.70"),
+    maxHistory: toFiniteNumber(overrides?.briefing_max_history, 999, { min: 1, max: 9999, integer: true }),
+    timeoutMs: toFiniteNumber(overrides?.briefing_timeout_ms, 30000, { min: 1000, max: 120000, integer: true }),
+    basalThreshold: toFiniteNumber(overrides?.briefing_basal_threshold, 0.70, { min: 0, max: 1 }),
   };
 }
 

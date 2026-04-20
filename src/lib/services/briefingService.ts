@@ -92,14 +92,104 @@ export async function getSessionStats() {
   return { total: all.length, finished, inProgress, pending, completionRate, weeklyData };
 }
 
-export async function getSessionById(id: string) {
-  const supabase = await createServerSupabaseClient();
+/**
+ * Minimal projection used by the public `/b/[sessionId]` flow. Avoids
+ * `select('*')` so we don't accidentally leak admin/internal columns
+ * (e.g. cost_estimate_usd) over a public route. Update this list intentionally.
+ */
+const PUBLIC_SESSION_COLUMNS = [
+  'id',
+  'template_id',
+  'user_id',
+  'access_password',
+  'status',
+  'selected_packages',
+  'company_info',
+  'basal_coverage',
+  'chosen_language',
+  'messages_snapshot',
+  'current_step_index',
+  'initial_context',
+  'briefing_purpose',
+  'depth_signals',
+  'max_questions',
+  // Used by generateMetadata in /b/[sessionId] for share-link previews.
+  // Safe to expose: the briefing flow already shows the name on the page.
+  'session_name',
+].join(',');
 
+/**
+ * Public session shape returned to the unauthenticated `/b/[sessionId]`
+ * flow. We declare it explicitly because `.select(PUBLIC_SESSION_COLUMNS)`
+ * uses a runtime-built string and Supabase's overload then degrades the
+ * inferred type to `GenericStringError`, which makes every downstream
+ * property access fail TypeScript.
+ *
+ * Keep this in sync with `PUBLIC_SESSION_COLUMNS` above.
+ */
+export interface PublicSession {
+  id: string;
+  template_id: string | null;
+  user_id: string | null;
+  access_password: string | null;
+  status: string | null;
+  selected_packages: unknown;
+  company_info: unknown;
+  basal_coverage: number | null;
+  chosen_language: string | null;
+  messages_snapshot: unknown;
+  current_step_index: number | null;
+  initial_context: string | null;
+  briefing_purpose: string | null;
+  depth_signals: string[] | null;
+  max_questions: number | null;
+  session_name: string | null;
+}
+
+/**
+ * Fetch the public-safe shape of a session for the unauthenticated `/b`
+ * briefing flow. Only the columns needed to render and resume the flow
+ * are returned.
+ */
+export async function getPublicSessionForFlow(id: string): Promise<PublicSession> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('briefing_sessions')
-    .select('*')
+    .select(PUBLIC_SESSION_COLUMNS)
     .eq('id', id)
     .single();
+  if (error) {
+    console.error(`Error fetching public session ${id}:`, error);
+    throw new Error('Session not found');
+  }
+  // Runtime-built `select` strings make Supabase fall back to GenericStringError;
+  // we already constrain the shape via `PublicSession`, so a single cast here is
+  // safer than sprinkling `as` across every consumer.
+  return data as unknown as PublicSession;
+}
+
+/**
+ * Fetch a single session by id.
+ *
+ * Defense-in-depth: when `userId` is supplied, we filter at the query level
+ * instead of trusting RLS alone. If RLS is ever weakened (or bypassed via a
+ * misconfigured admin client), this prevents IDOR — `/dashboard/[id]` callers
+ * MUST pass the authenticated user id. Public flows (`/b/[sessionId]`) should
+ * call `getPublicSessionForFlow` instead.
+ */
+export async function getSessionById(id: string, userId?: string) {
+  const supabase = await createServerSupabaseClient();
+
+  let query = supabase
+    .from('briefing_sessions')
+    .select('*')
+    .eq('id', id);
+
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
     console.error(`Error fetching session ${id}:`, error);

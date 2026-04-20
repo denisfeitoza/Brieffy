@@ -115,8 +115,8 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
         placeholder={placeholder}
         className={`w-full transition-all font-inter pr-32 pl-6 md:pl-8 rounded-[2rem] ${
           isRecording 
-            ? 'bg-red-50/50 border-red-500/50 ring-2 ring-red-500/30 text-red-900 placeholder:text-red-500/80 animate-pulse' 
-            : 'bg-white border-gray-200 text-black placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[var(--orange)]/20 focus-visible:border-[var(--orange)] shadow-sm'
+            ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30 text-red-500 placeholder:text-red-500/80 animate-pulse' 
+            : 'bg-[var(--bg)] border-[var(--bd)] text-[var(--text)] placeholder:text-[var(--text3)] focus-visible:ring-2 focus-visible:ring-[var(--orange)]/20 focus-visible:border-[var(--orange)] shadow-sm'
         } ${
           isDiscoveryPhase
             ? `h-[88px] md:h-28 text-xl md:text-2xl ${!isRecording ? 'border-[var(--orange)]/30 shadow-md' : ''}`
@@ -189,8 +189,8 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
             isDiscoveryPhase ? 'h-[72px] w-[72px]' : 'h-14 w-14'
           } ${
             isAddAction && inputText.trim()
-              ? "bg-black text-white hover:bg-neutral-800"
-              : "bg-black text-white hover:bg-neutral-800 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
+              ? "bg-primary text-primary-foreground hover:opacity-90"
+              : "bg-primary text-primary-foreground hover:opacity-90 disabled:bg-[var(--bg2)] disabled:text-[var(--text3)] disabled:shadow-none"
           }`}
           disabled={
             isAddAction
@@ -203,7 +203,7 @@ export const TextAudioInput = forwardRef<TextAudioInputHandle, TextAudioInputPro
           onClick={actionToRun}
         >
           {(isLoading || isSubmittingLocal) && !isAddAction ? (
-            <RefreshCw className="w-5 h-5 animate-spin text-neutral-500" />
+            <RefreshCw className="w-5 h-5 animate-spin opacity-60" />
           ) : actionIcon ? (
             actionIcon
           ) : (

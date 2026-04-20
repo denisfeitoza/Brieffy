@@ -57,12 +57,12 @@ function BooleanButtons({ onSelect, disabled, t, initialAnswer }: DraggableToggl
           transition-all duration-200 cursor-pointer select-none
           ${isYes
             ? "bg-green-500 border-green-400 text-white shadow-[0_0_24px_rgba(34,197,94,0.4)]"
-            : "bg-white border-gray-200 text-gray-500 hover:border-green-500/40 hover:bg-green-50 hover:text-green-600 shadow-sm"
+            : "bg-[var(--bg)] border-[var(--bd)] text-[var(--text2)] hover:border-green-500/40 hover:bg-green-500/10 hover:text-green-600 shadow-sm"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
       >
-        <Check className={`w-7 h-7 ${isYes ? "text-white" : "text-gray-400"}`} />
+        <Check className={`w-7 h-7 ${isYes ? "text-white" : "text-[var(--text3)]"}`} />
         {t.yes}
       </motion.button>
 
@@ -79,12 +79,12 @@ function BooleanButtons({ onSelect, disabled, t, initialAnswer }: DraggableToggl
           transition-all duration-200 cursor-pointer select-none
           ${isNo
             ? "bg-red-500 border-red-400 text-white shadow-[0_0_24px_rgba(239,68,68,0.4)]"
-            : "bg-white border-gray-200 text-gray-500 hover:border-red-500/40 hover:bg-red-50 hover:text-red-600 shadow-sm"
+            : "bg-[var(--bg)] border-[var(--bd)] text-[var(--text2)] hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-600 shadow-sm"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : ""}
         `}
       >
-        <X className={`w-7 h-7 ${isNo ? "text-white" : "text-gray-400"}`} />
+        <X className={`w-7 h-7 ${isNo ? "text-white" : "text-[var(--text3)]"}`} />
         {t.no}
       </motion.button>
     </div>
@@ -123,7 +123,7 @@ export function BooleanToggleInput({
         initialAnswer={initialAnswer}
       />
       <div className="w-full max-w-lg opacity-70 hover:opacity-100 transition-opacity">
-        <p className="text-sm text-center text-gray-500 mb-2">{t.moreDetails}</p>
+        <p className="text-sm text-center text-[var(--text2)] mb-2">{t.moreDetails}</p>
         <TextAudioInput
           inputText={inputText}
           setInputText={setInputText}
