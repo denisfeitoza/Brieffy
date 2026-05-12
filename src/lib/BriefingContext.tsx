@@ -343,7 +343,12 @@ export function BriefingProvider({
       });
 
       clearTimeout(timeoutId);
-      if (!res.ok) throw new Error("Erro na API de retomada");
+      if (!res.ok) {
+        let serverDetail: { detail?: string; errorName?: string; requestId?: string } = {};
+        try { serverDetail = await res.json(); } catch { /* not JSON */ }
+        const msg = serverDetail.detail ? `${serverDetail.errorName || 'Error'}: ${serverDetail.detail}${serverDetail.requestId ? ` [req ${serverDetail.requestId}]` : ''}` : `API ${res.status}`;
+        throw new Error(msg);
+      }
 
       const data = await res.json();
 
@@ -429,10 +434,14 @@ export function BriefingProvider({
       }
     } catch (err) {
       console.error("[Resume] Failed to fetch next question:", err);
+      const errMsg = (err as Error)?.message || '';
+      const fallback = chosenLanguage === 'pt'
+        ? 'Não foi possível continuar de onde você parou. Tente recarregar.'
+        : 'Could not resume where you left off. Try reloading.';
       toast.error(
-        chosenLanguage === 'pt'
-          ? 'Não foi possível continuar de onde você parou. Tente recarregar.'
-          : 'Could not resume where you left off. Try reloading.'
+        errMsg && !errMsg.startsWith('API ')
+          ? `${fallback} (${errMsg})`
+          : fallback
       );
     } finally {
       setIsLoading(false);
