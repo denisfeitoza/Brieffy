@@ -611,8 +611,12 @@ export async function POST(req: Request) {
 
         // Server-side AbortController guarantees we don't keep paying for a
         // hung provider call after the user's browser already gave up.
+        // Per-attempt budget = half of the total turn budget so MAX_RETRIES
+        // attempts fit, leaving headroom for the dossier generator that runs
+        // after the last successful attempt when isFinished=true.
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), perfConfig.timeoutMs);
+        const perAttemptMs = Math.max(8_000, Math.floor(perfConfig.timeoutMs / 2));
+        const timeoutId = setTimeout(() => controller.abort(), perAttemptMs);
 
         let res: Response;
         try {
@@ -639,7 +643,7 @@ export async function POST(req: Request) {
         } catch (e) {
           clearTimeout(timeoutId);
           if ((e as Error).name === "AbortError") {
-            console.warn(`[AI] Provider timed out after ${perfConfig.timeoutMs}ms (attempt ${attempt + 1}).`);
+            console.warn(`[AI] Provider timed out after ${perAttemptMs}ms (attempt ${attempt + 1}/${MAX_RETRIES}).`);
             if (attempt < MAX_RETRIES - 1) {
               lastError = new Error("provider_timeout");
               await new Promise(r => setTimeout(r, 200));

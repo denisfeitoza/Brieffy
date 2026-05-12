@@ -198,11 +198,18 @@ export async function updateInteractionSignalInDb(interactionId: string, interac
 }
 
 export async function markSessionAsFinishedInDb(
-  sessionId: string, 
+  sessionId: string,
   finishedPayload: Record<string, unknown>
-): Promise<void> {
-  const { error } = await supabase.from('briefing_sessions')
-    .update(finishedPayload)
-    .eq('id', sessionId);
-  if (error) console.error("Erro ao fechar sessão no DB:", (error as { message?: string })?.message || JSON.stringify(error));
+): Promise<{ ok: boolean }> {
+  const { error } = await supabaseRetry(async () =>
+    supabase.from('briefing_sessions')
+      .update(finishedPayload)
+      .eq('id', sessionId)
+      .select('id')
+  );
+  if (error) {
+    console.error("Erro ao fechar sessão no DB após retries:", (error as { message?: string })?.message || JSON.stringify(error));
+    return { ok: false };
+  }
+  return { ok: true };
 }

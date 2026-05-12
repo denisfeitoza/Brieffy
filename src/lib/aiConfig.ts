@@ -288,7 +288,12 @@ export function getPerformanceConfig(overrides?: SettingsOverride) {
     // Context window is UNLIMITED — the AI needs full conversation to make intelligent decisions.
     // maxHistory is kept for legacy admin UI but no longer limits the actual context sent.
     maxHistory: toFiniteNumber(overrides?.briefing_max_history, 999, { min: 1, max: 9999, integer: true }),
-    timeoutMs: toFiniteNumber(overrides?.briefing_timeout_ms, 30000, { min: 1000, max: 120000, integer: true }),
+    // Server-side budget for ONE briefing turn.
+    // Per-attempt LLM call uses ~half of this so 3 retries fit inside the budget;
+    // the dossier generator falls back to max(this, 45_000ms).
+    // The browser client waits 3× this (see BriefingContext.submitAnswer) so it
+    // never aborts before the server can finish the slowest finalization path.
+    timeoutMs: toFiniteNumber(overrides?.briefing_timeout_ms, 45000, { min: 1000, max: 120000, integer: true }),
     basalThreshold: toFiniteNumber(overrides?.briefing_basal_threshold, 0.70, { min: 0, max: 1 }),
   };
 }

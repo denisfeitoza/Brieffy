@@ -318,7 +318,8 @@ export function BriefingProvider({
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), perfSettings.timeoutMs);
+      // Wait long enough for server-side retries + dossier. See submitAnswer for rationale.
+      const timeoutId = setTimeout(() => controller.abort(), perfSettings.timeoutMs * 3);
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -522,7 +523,9 @@ export function BriefingProvider({
       if (activeSessionId) {
         persistSnapshot(snapshotMessages, currentStepIndex, activeSessionId);
       }
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('[Briefing] ensureSession failed during snapshot persist:', err);
+    });
 
     // Use the FRESH snapshot captured inside setMessages, not the stale `messages`
     // closure (which still reflects the pre-update state). This was logging
@@ -531,7 +534,9 @@ export function BriefingProvider({
     const interactionPromise = activeSessionPromise.then(activeSessionId => {
       if (activeSessionId) {
         if (currentStepIndex < snapshotMessages.length - 1) {
-          clearFutureInteractionsInDb(activeSessionId, currentStepIndex).catch(() => {});
+          clearFutureInteractionsInDb(activeSessionId, currentStepIndex).catch((err) => {
+            console.warn('[Briefing] clearFutureInteractionsInDb failed:', err);
+          });
         }
         return logInteractionInDb(
           activeSessionId,
@@ -556,14 +561,17 @@ export function BriefingProvider({
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), perfSettings.timeoutMs);
+      // The server can retry the LLM up to 3 times (perfSettings.timeoutMs per attempt)
+      // and then run the dossier generator (~45s). Waiting 3× the budget keeps the
+      // browser from aborting before the slowest finalization path can finish.
+      const timeoutId = setTimeout(() => controller.abort(), perfSettings.timeoutMs * 3);
 
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          answer, 
+          answer,
           currentState: briefingState,
           history: historyPayload, 
           activeTemplate,
@@ -605,12 +613,16 @@ export function BriefingProvider({
           chosen_language: activeLanguage,
           basal_coverage: data.basalCoverage,
           session_name: mergedState.company_name || undefined
-        }).catch(() => {});
+        }).catch((err) => {
+          console.warn('[Briefing] updateSessionStateInDb failed:', err);
+        });
 
         if (interactionId && data.inferences) {
           updateInteractionSignalInDb(interactionId, {
             inferences: data.inferences,
-          }).catch(() => {});
+          }).catch((err) => {
+            console.warn('[Briefing] updateInteractionSignalInDb failed:', err);
+          });
         }
       }
 
@@ -658,13 +670,20 @@ export function BriefingProvider({
         if (data.assets) setAssets(data.assets);
         if (activeSessionId) {
           lsRemove(`session_${activeSessionId}`);
-          markSessionAsFinishedInDb(activeSessionId, { 
-            status: 'finished', 
+          // AWAIT the finalize so we know the DB row was actually flipped to
+          // 'finished'. Without this, a transient failure silently leaves the
+          // session as 'in_progress' while the UI claims success — which is
+          // exactly the "finalizou mas não finaliza" bug we hit in prod.
+          const finalizeResult = await markSessionAsFinishedInDb(activeSessionId, {
+            status: 'finished',
             company_info: briefingStateRef.current,
             final_assets: data.assets,
             session_quality_score: data.session_quality_score,
             engagement_summary: data.engagement_summary || { overall: engagementLevel, by_area: {} },
-          }).catch(() => {});
+          });
+          if (!finalizeResult.ok) {
+            toast.error("Tivemos um problema ao fechar o briefing. Sua resposta foi salva, mas confira no dashboard se a sessão aparece como finalizada.");
+          }
         }
 
         if (isOnboarding) {
