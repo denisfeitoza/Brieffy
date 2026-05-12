@@ -22,14 +22,19 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { assertServerEnv } from "@/lib/env";
 
-// First touch of the admin client triggers the boot-time env audit.
-// Putting it here (instead of at layout) keeps client bundles unaffected.
-assertServerEnv();
-
 let cached: SupabaseClient | null = null;
 let warnedMissing = false;
 
 function buildClient(): SupabaseClient {
+  // Run the env audit on FIRST CLIENT CONSTRUCTION, not at module import time.
+  // Why this matters: this module is transitively imported by API route
+  // handlers (e.g. /api/briefing via usageLogger). If the audit ran during
+  // import and threw, the entire route module would fail to evaluate, the
+  // POST handler would never be invoked, the outer try/catch could not run,
+  // and the user would see Next.js's generic /500 HTML page instead of a
+  // JSON error envelope. Running here keeps the failure recoverable: the
+  // optional caller (`getSupabaseAdminOptional`) catches and degrades to null.
+  assertServerEnv();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
