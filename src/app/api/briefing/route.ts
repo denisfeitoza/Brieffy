@@ -962,8 +962,21 @@ IMPORTANTE: Seja detalhista (500 a 1500 palavras). Transforme as informações b
     });
 
   } catch (error) {
-    console.error("Briefing API Route Error:", error);
-    return NextResponse.json({ error: "Internal error processing briefing" }, { status: 500 });
+    // Surface enough detail to debug in prod from the browser DevTools without
+    // leaking stack/file paths. The request_id correlates the client error
+    // with the full stack written to the server log (Vercel runtime).
+    const requestId = crypto.randomUUID();
+    const err = error as { name?: string; message?: string; stack?: string };
+    console.error(`[Briefing] Request ${requestId} crashed:`, err?.stack || err?.message || error);
+    return NextResponse.json(
+      {
+        error: "Internal error processing briefing",
+        detail: err?.message || String(error),
+        errorName: err?.name || "Error",
+        requestId,
+      },
+      { status: 500 }
+    );
   }
 }
 

@@ -586,7 +586,14 @@ export function BriefingProvider({
       });
 
       clearTimeout(timeoutId);
-      if (!res.ok) throw new Error("Erro na API");
+      if (!res.ok) {
+        // Pull the server-provided detail so the catch handler can show it
+        // in the toast instead of the generic "Erro na API".
+        let serverDetail: { detail?: string; errorName?: string; requestId?: string } = {};
+        try { serverDetail = await res.json(); } catch { /* not JSON */ }
+        const msg = serverDetail.detail ? `${serverDetail.errorName || 'Error'}: ${serverDetail.detail}${serverDetail.requestId ? ` [req ${serverDetail.requestId}]` : ''}` : `API ${res.status}`;
+        throw new Error(msg);
+      }
       const data = await res.json();
       
       if (data.updates) updateBriefingState(data.updates);
@@ -723,8 +730,15 @@ export function BriefingProvider({
       }
     } catch (error) {
       console.error(error);
+      const errMsg = (error as Error)?.message || '';
       import('sonner').then(({ toast }) => {
-        toast.error("Ocorreu um erro. Tente enviar novamente.");
+        // Show the server-provided detail (errorName + requestId) when available
+        // so we can diagnose a 500 without forcing the user to open DevTools.
+        toast.error(
+          errMsg && !errMsg.startsWith('API ')
+            ? `Falha no briefing — ${errMsg}`
+            : "Ocorreu um erro. Tente enviar novamente."
+        );
       });
       setMessages((prev) => {
         const next = [...prev];
