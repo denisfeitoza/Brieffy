@@ -102,6 +102,7 @@ const PUBLIC_SESSION_COLUMNS = [
   'template_id',
   'user_id',
   'access_password',
+  'edit_passphrase',
   'status',
   'selected_packages',
   'company_info',
@@ -132,6 +133,7 @@ export interface PublicSession {
   template_id: string | null;
   user_id: string | null;
   access_password: string | null;
+  edit_passphrase: string | null;
   status: string | null;
   selected_packages: unknown;
   company_info: unknown;

@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
     const { data: session, error } = await getSupabaseAdmin()
       .from("briefing_sessions")
-      .select("access_password")
+      .select("access_password, edit_passphrase")
       .eq("id", sessionId)
       .single();
 
@@ -53,11 +53,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ valid: false, error: "Session not found." }, { status: 404 });
     }
 
-    if (!session.access_password) {
+    // Two secrets can guard the briefing: the manually-set `access_password`
+    // and the auto-generated `edit_passphrase` (which the agency already shares
+    // with the client as "🔑 Senha"). Either one unlocks the gate.
+    const candidates = [session.access_password, session.edit_passphrase].filter(
+      (v): v is string => typeof v === "string" && v.length > 0
+    );
+
+    // No secret configured → public briefing, free access.
+    if (candidates.length === 0) {
       return NextResponse.json({ valid: true });
     }
 
-    if (!safeCompare(session.access_password, password)) {
+    // Run safeCompare against *every* candidate (no early return) so the
+    // response time does not leak which secret matched.
+    let matched = false;
+    for (const stored of candidates) {
+      if (safeCompare(stored, password)) matched = true;
+    }
+
+    if (!matched) {
       return NextResponse.json({ valid: false, error: "Incorrect password." }, { status: 401 });
     }
 

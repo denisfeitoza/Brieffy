@@ -166,7 +166,11 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     ? session.current_step_index
     : undefined;
 
-  const hasAccessPassword = !!session.access_password;
+  // Either secret guards the briefing: `access_password` (legacy opt-in field) or
+  // `edit_passphrase` (auto-generated and already shared with the client by the
+  // agency). Both unlock the same gate so the agency's "🔑 Senha" message just
+  // works without forcing them to type a second password.
+  const hasAccessPassword = !!session.access_password || !!session.edit_passphrase;
 
   return (
     <BriefingProvider 
