@@ -52,7 +52,7 @@ export function HowItWorks() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.4 }}
         >
           <motion.span
             className="inline-block text-xs uppercase tracking-[0.2em] font-semibold mb-4 px-4 py-1.5 rounded-full border"
@@ -61,7 +61,7 @@ export function HowItWorks() {
               borderColor: "#10b98130",
               background: "#10b98108",
             }}
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 1 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
@@ -105,12 +105,12 @@ export function HowItWorks() {
                   className={`relative flex flex-col md:flex-row items-start md:items-center gap-5 md:gap-10 ${
                     !isEven ? "md:flex-row-reverse" : ""
                   }`}
-                  initial={{ opacity: 0, y: 30 }}
+                  initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-60px" }}
                   transition={{
                     delay: i * 0.15,
-                    duration: 0.6,
+                    duration: 0.4,
                     ease: [0.22, 1, 0.36, 1],
                   }}
                 >
@@ -132,7 +132,7 @@ export function HowItWorks() {
                         ],
                       }}
                       viewport={{ once: true }}
-                      transition={{ delay: i * 0.15 + 0.3, duration: 0.8 }}
+                      transition={{ delay: i * 0.15 + 0.3, duration: 0.5 }}
                     />
                   </div>
 

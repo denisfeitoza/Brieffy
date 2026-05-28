@@ -69,10 +69,10 @@ export function CTASection() {
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
           <h2
             className="text-3xl sm:text-5xl md:text-6xl font-bold text-black tracking-tight mb-6 leading-tight"

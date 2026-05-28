@@ -53,7 +53,7 @@ function DemoMessage({
   return (
     <motion.div
       className={`flex ${isAI || isInsight ? "justify-start" : "justify-end"}`}
-      initial={{ opacity: 0, y: 15, scale: 0.97 }}
+      initial={{ opacity: 0, y: 15, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true }}
       transition={{
@@ -100,7 +100,7 @@ function DemoMessage({
                     ? "border-[#ff6029_/_0.5)] bg-[#ff6029_/_0.15)] text-black"
                     : "border-black/[0.08] bg-black/[0.03] text-neutral-600"
                 }`}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 1 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.3 + 0.6 + i * 0.08 }}
@@ -128,7 +128,7 @@ export function SolutionDemo() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.4 }}
         >
           <motion.span
             className="inline-block text-xs uppercase tracking-[0.2em] font-semibold mb-4 px-4 py-1.5 rounded-full border"
@@ -137,7 +137,7 @@ export function SolutionDemo() {
               borderColor: `${ACCENT}30`,
               background: `${ACCENT}08`,
             }}
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 1 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
@@ -173,7 +173,7 @@ export function SolutionDemo() {
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Mockup Header */}
             <div className="flex items-center gap-2 px-5 py-3.5 border-b border-black/[0.06] bg-black/[0.02]">
@@ -246,7 +246,7 @@ export function SolutionDemo() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{
-              duration: 0.7,
+              duration: 0.45,
               delay: 0.2,
               ease: [0.22, 1, 0.36, 1],
             }}
