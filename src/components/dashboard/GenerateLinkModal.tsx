@@ -114,6 +114,10 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
   const [aiSuggestedSlugs, setAiSuggestedSlugs] = useState<string[]>([]);
   const [aiReasoning, setAiReasoning] = useState('');
   const [isSuggesting, setIsSuggesting] = useState(false);
+  // Substring filter over name + description so users with 15+ skills can
+  // narrow down by typing a keyword instead of scrolling through every
+  // department.
+  const [packageQuery, setPackageQuery] = useState('');
 
   // Result state
   const [loading, setLoading] = useState(false);
@@ -187,6 +191,7 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
           setShowContext(false);
           setAiSuggestedSlugs([]);
           setAiReasoning('');
+          setPackageQuery('');
           const defaults = packages
             .filter(p => p.is_default_enabled)
             .map(p => p.slug);
@@ -352,8 +357,16 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
     }
   };
 
-  // Group packages by department
-  const groupedPackages = packages.reduce((acc, pkg) => {
+  // Group packages by department, filtered by the search query if any.
+  const normalizedQuery = packageQuery.trim().toLowerCase();
+  const visiblePackages = normalizedQuery
+    ? packages.filter(p =>
+        p.name.toLowerCase().includes(normalizedQuery) ||
+        p.description.toLowerCase().includes(normalizedQuery) ||
+        p.slug.toLowerCase().includes(normalizedQuery)
+      )
+    : packages;
+  const groupedPackages = visiblePackages.reduce((acc, pkg) => {
     const dept = pkg.department || 'general';
     if (!acc[dept]) acc[dept] = [];
     acc[dept].push(pkg);
@@ -554,6 +567,16 @@ export function GenerateLinkModal({ templateId, templateName, existingSession, t
                     </span>
                   )}
                 </div>
+
+                {/* Quick substring filter — 15+ skills got cluttered to scroll. */}
+                {!loadingPackages && packages.length > 6 && (
+                  <Input
+                    value={packageQuery}
+                    onChange={(e) => setPackageQuery(e.target.value)}
+                    placeholder={language === 'pt' ? 'Buscar skill por nome ou tema…' : language === 'es' ? 'Buscar skill por nombre o tema…' : 'Search skill by name or topic…'}
+                    className="bg-[var(--bg)] border-[var(--bd-strong)] focus-visible:ring-[var(--orange)] h-9 rounded-full text-xs placeholder:text-[var(--text3)]"
+                  />
+                )}
 
                 {loadingPackages ? (
                   <div className="flex items-center justify-center py-8">

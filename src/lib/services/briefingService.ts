@@ -533,18 +533,36 @@ export async function getGlobalStats() {
   const supabase = await createServerSupabaseClient();
 
   const { data: profiles } = await supabase.from('briefing_profiles').select('id');
-  const { data: sessions } = await supabase.from('briefing_sessions').select('id, status, created_at');
+  const { data: sessions } = await supabase
+    .from('briefing_sessions')
+    .select('id, status, created_at, basal_coverage');
 
   const allSessions = sessions || [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todaySessions = allSessions.filter(s => new Date(s.created_at) >= today);
 
+  // Average basal coverage on finished briefings — the closest proxy we have
+  // for "how complete is the data the AI managed to collect". Helps admins
+  // tell apart "many briefings, but they're shallow" from "fewer, but solid".
+  const finishedWithCoverage = allSessions.filter(
+    s => s.status === 'finished' && typeof s.basal_coverage === 'number'
+  );
+  const avgCoverage = finishedWithCoverage.length > 0
+    ? Math.round(
+        (finishedWithCoverage.reduce(
+          (sum, s) => sum + (Number(s.basal_coverage) || 0),
+          0
+        ) / finishedWithCoverage.length) * 100
+      )
+    : 0;
+
   return {
     totalUsers: profiles?.length || 0,
     totalSessions: allSessions.length,
     todaySessions: todaySessions.length,
     finishedSessions: allSessions.filter(s => s.status === 'finished').length,
+    avgCoverage,
   };
 }
 
