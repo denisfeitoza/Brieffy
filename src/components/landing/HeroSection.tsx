@@ -355,16 +355,16 @@ export function HeroSection() {
           {/* Left: Text */}
           <motion.div
             className="flex-1 text-center lg:text-left max-w-2xl"
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Badge */}
             <motion.div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.08] bg-black/[0.03] backdrop-blur-sm mb-6"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
             >
               <motion.span
                 className="w-2 h-2 rounded-full"
@@ -400,7 +400,7 @@ export function HeroSection() {
               className="text-base sm:text-lg md:text-xl text-neutral-600 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1.8, duration: 0.8 }}
+              transition={{ delay: 1.6, duration: 0.5 }}
             >
               {t("hero.sub1")}
               <span className="text-black font-medium">
@@ -415,7 +415,7 @@ export function HeroSection() {
               className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center lg:justify-start"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2.2, duration: 0.6 }}
+              transition={{ delay: 1.9, duration: 0.4 }}
             >
               <Link
                 href="/dashboard/register"
