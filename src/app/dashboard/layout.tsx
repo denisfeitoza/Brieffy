@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, LogOut, FileText, User, Package, Globe, Home, Sparkles } from 'lucide-react';
+import { LayoutDashboard, LogOut, FileText, User, Package, Globe, Home, Sparkles, MessageCircle } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -102,6 +102,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/dashboard/templates', icon: FileText, labelKey: 'nav.briefings', mobileLabel: 'Briefs', match: (p: string) => p === '/dashboard' || p.startsWith('/dashboard/templates') || !!p.match(/^\/dashboard\/[0-9a-f]/) },
     { href: '/dashboard/packages', icon: Package, labelKey: 'nav.aiPackages', mobileLabel: 'Skills', match: (p: string) => p.startsWith('/dashboard/packages') },
+    { href: '/dashboard/assistant', icon: MessageCircle, labelKey: 'nav.assistant', mobileLabel: 'IA', match: (p: string) => p.startsWith('/dashboard/assistant') },
     { href: '/dashboard/profile', icon: User, labelKey: 'nav.myAccount', mobileLabel: 'Perfil', match: (p: string) => p.startsWith('/dashboard/profile') },
   ];
 
