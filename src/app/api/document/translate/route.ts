@@ -145,7 +145,17 @@ CRITICAL RULES:
 
     return NextResponse.json({ document: translated.trim() });
   } catch (error) {
+    // Surface the actual cause to the client. The previous "Internal error" generic
+    // string was indistinguishable from network / auth / quota failures, making the
+    // UI's "Falha ao traduzir" toast meaningless for users and unhelpful for support.
+    const detail =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`.slice(0, 240)
+        : String(error).slice(0, 240);
     console.error("[translate] Internal error:", error);
-    return NextResponse.json({ error: "Internal error during translation." }, { status: 500 });
+    return NextResponse.json(
+      { error: `Falha interna ao traduzir: ${detail}` },
+      { status: 500 }
+    );
   }
 }

@@ -75,16 +75,20 @@ export function TranslateDocumentAction({
       } else {
          // Call the AI translation endpoint for the first time
          // Always translate from the base-language document (not a previously translated version)
-         const sourceDoc = originalDocument || documentContent;
+         const sourceDoc = (originalDocument || documentContent || '').trim();
+         if (!sourceDoc) {
+           // No dossier yet — fail loudly instead of letting the API return a vague 400.
+           throw new Error('Este briefing ainda não tem documento final gerado.');
+         }
          const res = await fetch('/api/document/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              documentContent: sourceDoc, 
-              targetLanguage: targetLang 
+            body: JSON.stringify({
+              documentContent: sourceDoc,
+              targetLanguage: targetLang
             })
          });
-         
+
          if (!res.ok) {
            const data = await res.json().catch(() => ({}));
            throw new Error(data?.error || `HTTP ${res.status}`);

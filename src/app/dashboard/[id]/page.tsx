@@ -213,7 +213,7 @@ async function SessionContent({ id }: { id: string }) {
             </button>
           </EditBriefingModal>
 
-          <TranslateDocumentAction 
+          <TranslateDocumentAction
             documentContent={session.final_assets?.document || ''}
             originalDocument={session.final_assets?.original_document}
             finalAssets={session.final_assets || {}}
@@ -222,7 +222,18 @@ async function SessionContent({ id }: { id: string }) {
               'use server';
               const { createServerSupabaseClient } = await import('@/lib/supabase/server');
               const supabase = await createServerSupabaseClient();
-              await supabase.from('briefing_sessions').update({ final_assets: updatedAssets }).eq('id', session.id);
+              const { data: { user: actingUser } } = await supabase.auth.getUser();
+              if (!actingUser) throw new Error('Sessão expirada. Faça login novamente.');
+              const { error: updateError } = await supabase
+                .from('briefing_sessions')
+                .update({ final_assets: updatedAssets })
+                .eq('id', session.id)
+                .eq('user_id', actingUser.id);
+              if (updateError) {
+                // Surface DB failures (RLS, schema mismatch, network) so the client toast
+                // shows what actually broke instead of "translation succeeded but vanished".
+                throw new Error(`Falha ao salvar a tradução: ${updateError.message}`);
+              }
             }}
           />
 
