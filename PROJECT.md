@@ -147,9 +147,25 @@ RLS posture: todas as tabelas têm RLS ON. Service role só usado server-side (`
 
 - Melhorar dashboard admin (descoberta pendente — exige conversa com o usuário sobre o que está doendo)
 
-### M3 — IA de texto livre (Onda 6)
+### M3 — IA de texto livre (Onda 6) ✅ v1 ENTREGUE (2026-05-28)
 
-- Feature nova: chat livre com IA dentro da Brieffy. Aciona §8 swarm discovery do [CLAUDE.md global](CLAUDE.md) + `/gsd-ai-integration-phase`. Decisões pendentes: roster de agentes, tool surface, billing impact
+Implementado autonomamente com decisões conservadoras documentadas (ver [.planning/M3/AI-SPEC.md](.planning/M3/AI-SPEC.md)):
+
+- **Escopo (decisão #1)**: chat puro, sem tools nativas. Sem acesso a briefings/templates/DB. Atualização pra assistant-with-tools fica pra v2.
+- **Modelo & custo (decisão #2)**: usa `getLLMConfig()` (mesmo que briefing — OpenRouter primary). 2000 max_tokens/turno, 10 msgs/hora + 50 msgs/mês por usuário, max 20 turnos por conversa.
+- **Persistência (decisão #3)**: tabelas `assistant_conversations` e `assistant_messages` (RLS por `user_id`, verificada empíricamente — user B vê 0 quando A insere). Retenção indefinida, user pode deletar.
+- **Contexto (decisão #4)**: assistente NÃO tem acesso aos dados do usuário. System prompt explicitamente refusa essa integração e direciona ao fluxo de briefing.
+- **UI (decisão #5)**: página dedicada em `/dashboard/assistant` com sidebar de conversas + main chat. Entrada no sidebar (desktop + mobile).
+- **Guardrails (decisão #6)**: system prompt com refusal de jailbreak / credenciais / vazamento de modelo, e aviso explícito sobre dados sensíveis (LGPD posture).
+- **Eval (decisão #7)**: deferido — instrumentação via `api_usage` (`endpoint='assistant'`) já está logando custo. Eval formal vira ação se métricas mostrarem problema.
+
+Rotas implementadas: [POST /api/assistant/chat](src/app/api/assistant/chat/route.ts), [GET /api/assistant/conversations](src/app/api/assistant/conversations/route.ts), [GET+DELETE /api/assistant/conversations/[id]](src/app/api/assistant/conversations/[id]/route.ts).
+
+Migration: [supabase/migrations/20260528_assistant_chat_tables.sql](supabase/migrations/20260528_assistant_chat_tables.sql).
+
+UI: [/dashboard/assistant](src/app/dashboard/assistant/page.tsx) + [AssistantChat.tsx](src/components/dashboard/AssistantChat.tsx).
+
+**Próximas decisões** (quando virem dados de uso): ativar tools nativas? Subir limites? Permitir contexto de briefings? — voltar ao AI-SPEC stub.
 
 ### M4 — Perfil de equipes (Onda 7)
 
