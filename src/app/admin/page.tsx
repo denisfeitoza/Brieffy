@@ -1,6 +1,6 @@
 import { getGlobalStats, getAllUsersAdmin, getAdminCostMetrics, getAdminExtendedStats } from '@/lib/services/briefingService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, FileText, CalendarDays, CheckCircle2, Shield } from 'lucide-react';
+import { Users, FileText, CalendarDays, CheckCircle2, Shield, TrendingUp } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +11,13 @@ export default async function AdminDashboardPage() {
     getAdminCostMetrics(),
     getAdminExtendedStats(),
   ]);
+
+  // Completion rate is computable from existing stats but wasn't surfaced —
+  // it's the single most important platform-health metric (briefings actually
+  // shipped vs. created), so it gets its own KPI tile next to the raw counts.
+  const completionRate = stats.totalSessions > 0
+    ? Math.round((stats.finishedSessions / stats.totalSessions) * 100)
+    : 0;
 
   const { CostCharts } = await import('./components/CostCharts');
   const { AdminExtendedCharts } = await import('./components/AdminExtendedCharts');
@@ -29,7 +36,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Global KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6">
         <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-none">
           <CardHeader className="pb-2 pt-4 px-4 md:px-6">
             <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
@@ -75,6 +82,18 @@ export default async function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4">
             <p className="text-2xl md:text-3xl font-bold text-[var(--orange)]">{stats.finishedSessions}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[var(--bg2)] border-[var(--bd)] shadow-none">
+          <CardHeader className="pb-2 pt-4 px-4 md:px-6">
+            <CardTitle className="text-xs md:text-sm text-[var(--text2)] font-normal flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-[var(--orange)]" />
+              Completion Rate
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6 pb-4">
+            <p className="text-2xl md:text-3xl font-bold text-[var(--text)]">{completionRate}<span className="text-base text-[var(--text2)] font-normal">%</span></p>
           </CardContent>
         </Card>
       </div>
