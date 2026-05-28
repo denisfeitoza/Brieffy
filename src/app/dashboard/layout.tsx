@@ -11,8 +11,10 @@ import { DashboardLanguageProvider, useDashboardLanguage } from '@/i18n/Dashboar
 import type { DashboardLanguage } from '@/i18n/dashboardTranslations';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 
-// Language flag map for switcher
-const LANG_FLAGS: Record<DashboardLanguage, string> = { pt: '🇧🇷', en: '🇺🇸', es: '🇪🇸' };
+// Language indicator — short uppercase code instead of a flag emoji. Flags
+// render inconsistently across Windows / Linux / older Android and also
+// politically equate language with country (🇺🇸 ≠ "English" speakers).
+const LANG_FLAGS: Record<DashboardLanguage, string> = { pt: 'PT', en: 'EN', es: 'ES' };
 const LANG_ORDER: DashboardLanguage[] = ['pt', 'en', 'es'];
 
 function DashboardShell({ children }: { children: React.ReactNode }) {

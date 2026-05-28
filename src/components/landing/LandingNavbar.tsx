@@ -108,9 +108,7 @@ export function LandingNavbar() {
                     }`}
                     aria-label={`Change language to ${lang}`}
                   >
-                    {lang === 'pt' && '🇧🇷'}
-                    {lang === 'en' && '🇺🇸'}
-                    {lang === 'es' && '🇪🇸'}
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{lang}</span>
                   </button>
                 ))}
               </div>
@@ -158,9 +156,7 @@ export function LandingNavbar() {
                     }`}
                     aria-label={`Change language to ${lang}`}
                   >
-                    {lang === 'pt' && '🇧🇷'}
-                    {lang === 'en' && '🇺🇸'}
-                    {lang === 'es' && '🇪🇸'}
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{lang}</span>
                   </button>
                 ))}
               </div>

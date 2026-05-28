@@ -147,7 +147,11 @@ export function BriefingProvider({
         content: "Em qual idioma você prefere que eu conduza as perguntas? / Which language should I use?",
         type: "question",
         questionType: "single_choice",
-        options: ["🇧🇷 Português", "🇺🇸 English", "🇪🇸 Español"],
+        // Flags removed in favor of text-only labels per user feedback —
+        // emoji flags render inconsistently across mobile keyboards / OS
+        // versions and add visual noise. The langMap below still accepts
+        // the old "🇧🇷 Português" answers so resumed sessions don't break.
+        options: ["Português", "English", "Español"],
         allowMoreOptions: false,
       },
     ];
@@ -503,7 +507,12 @@ export function BriefingProvider({
 
     let activeLanguage = chosenLanguage;
     if (currentStepIndex === 0 && typeof answer === 'string') {
+      // Accept both the new text-only labels and the legacy flag-prefixed
+      // labels so sessions started before the UI change still finalize.
       const langMap: Record<string, string> = {
+        'Português': 'pt',
+        'English': 'en',
+        'Español': 'es',
         '🇧🇷 Português': 'pt',
         '🇺🇸 English': 'en',
         '🇪🇸 Español': 'es',

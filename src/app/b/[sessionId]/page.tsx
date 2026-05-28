@@ -142,11 +142,16 @@ export default async function FormPage({ params }: { params: Promise<{ sessionId
     if (isInProgress && session.chosen_language) {
       return session.chosen_language as string;
     }
-    // Fallback: infer from the first interaction answer
+    // Fallback: infer from the first interaction answer. Accepts both the
+    // current text-only labels and the legacy flag-prefixed ones so resumed
+    // sessions saved before the UI change still detect language correctly.
     if (isInProgress && savedInteractions.length > 0) {
       const firstAnswer = savedInteractions[0]?.user_answer;
       if (typeof firstAnswer === 'string') {
         const langMap: Record<string, string> = {
+          'Português': 'pt',
+          'English': 'en',
+          'Español': 'es',
           '🇧🇷 Português': 'pt',
           '🇺🇸 English': 'en',
           '🇪🇸 Español': 'es',
