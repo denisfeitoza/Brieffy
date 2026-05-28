@@ -18,8 +18,30 @@ export function useAudioRecorder({ voiceLanguage, onTranscript }: UseAudioRecord
 
   const startRecording = useCallback(async () => {
     try {
+      // Pick the first MIME type the current browser actually supports.
+      // Safari (iOS especially) does not support "audio/webm" and throws a
+      // NotSupportedError as soon as `new MediaRecorder(stream, { mimeType })`
+      // runs — which surfaced as "microphone access denied" on iPhones even
+      // though the permission was granted.
+      const candidateMimes = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/mp4;codecs=mp4a.40.2",
+        "audio/ogg;codecs=opus",
+      ];
+      const supportedMime =
+        typeof MediaRecorder !== "undefined" && "isTypeSupported" in MediaRecorder
+          ? candidateMimes.find((m) => (MediaRecorder as unknown as { isTypeSupported: (t: string) => boolean }).isTypeSupported(m))
+          : undefined;
+
+      if (!supportedMime) {
+        alert("Seu navegador não suporta gravação de áudio. Tente digitar a resposta ou use outro navegador.");
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: supportedMime });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -29,15 +51,24 @@ export function useAudioRecorder({ voiceLanguage, onTranscript }: UseAudioRecord
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((track) => track.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        // Use the same MIME the recorder produced so the Blob is correctly
+        // typed for the backend transcription endpoint.
+        const audioBlob = new Blob(audioChunksRef.current, { type: supportedMime });
         if (audioBlob.size === 0) return;
 
         setIsTranscribing(true);
         const controller = new AbortController();
         abortRef.current = controller;
         try {
+          // Filename extension follows the actual container so OpenAI/Whisper
+          // accepts the upload (it sniffs both the Content-Type and the name).
+          const ext = supportedMime.startsWith("audio/mp4")
+            ? "m4a"
+            : supportedMime.startsWith("audio/ogg")
+            ? "ogg"
+            : "webm";
           const formData = new FormData();
-          formData.append("audio", audioBlob, "recording.webm");
+          formData.append("audio", audioBlob, `recording.${ext}`);
           formData.append("language", voiceLanguage);
 
           const res = await fetch("/api/transcribe", {
