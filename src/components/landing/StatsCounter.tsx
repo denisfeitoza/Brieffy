@@ -6,7 +6,12 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 const BRAND = "#ff6029";
 const ACCENT = "#ffcfbc";
+const INK = "#171717";
 
+// All four stats now sit inside the Brieffy palette (BRAND + ACCENT + INK)
+// instead of leaking unrelated greens and purples. We alternate BRAND ↔ INK
+// for the two "completion" stats so the eye reads a rhythm instead of a
+// pride flag.
 const getStats = (t: (key: string) => string) => [
   {
     value: 90,
@@ -27,14 +32,14 @@ const getStats = (t: (key: string) => string) => [
     suffix: "%",
     label: t("stats.3.label"),
     desc: t("stats.3.desc"),
-    color: "#10b981",
+    color: INK,
   },
   {
     value: 15,
     suffix: "+",
     label: t("stats.4.label"),
     desc: t("stats.4.desc"),
-    color: "#a855f7",
+    color: BRAND,
   },
 ];
 
@@ -107,10 +112,10 @@ export function StatsCounter() {
             <motion.div
               key={stat.label}
               className="text-center"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
+              transition={{ delay: i * 0.06, duration: 0.35 }}
             >
               <AnimatedCounter
                 value={stat.value}
@@ -118,12 +123,12 @@ export function StatsCounter() {
                 color={stat.color}
               />
               <h3
-                className="text-base md:text-lg font-semibold text-black mt-2"
+                className="text-base md:text-lg font-semibold text-neutral-900 dark:text-neutral-100 mt-2"
                 style={{ fontFamily: '"Outfit", sans-serif' }}
               >
                 {stat.label}
               </h3>
-              <p className="text-xs md:text-sm text-neutral-500 mt-0.5">
+              <p className="text-xs md:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                 {stat.desc}
               </p>
             </motion.div>

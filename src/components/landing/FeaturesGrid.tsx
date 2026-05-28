@@ -59,12 +59,14 @@ const containerVars = {
 };
 
 const itemVars = {
-  hidden: { opacity: 0, y: 30, scale: 0.97 },
+  // Dialed down from y:30 + scale:0.97 + duration:0.6 — the previous reveal
+  // had the same "AI landing template" feel everyone has seen 100 times.
+  // A short, mostly opacity-led fade reads more like a real product page.
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
 
@@ -139,32 +141,21 @@ export function FeaturesGrid() {
                 />
 
                 <div className="relative">
-                  {/* Icon Container */}
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
-                    style={{
-                      background: `linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.02))`,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                    }}
-                  >
-                    <div
-                      className="w-6 h-6"
-                      style={{
-                        background: feat.gradient,
-                        mask: "none",
-                      }}
-                    >
-                      <Icon className="w-6 h-6 text-black" />
-                    </div>
+                  {/* Icon container — transparent in both light and dark.
+                      The previous fixed black-tinted background was visible
+                      against dark backgrounds and added an unnecessary chip
+                      around each icon; we now let the icon stand on its own. */}
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 border border-neutral-200/70 dark:border-neutral-700/60 bg-transparent">
+                    <Icon className="w-6 h-6 text-neutral-900 dark:text-neutral-100" strokeWidth={1.75} />
                   </div>
 
                   <h3
-                    className="text-lg font-semibold text-black mb-2"
+                    className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2"
                     style={{ fontFamily: '"Outfit", sans-serif' }}
                   >
                     {feat.title}
                   </h3>
-                  <p className="text-sm text-neutral-500 leading-relaxed">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
                     {feat.desc}
                   </p>
                 </div>
