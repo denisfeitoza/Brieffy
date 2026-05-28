@@ -497,10 +497,26 @@ export async function POST(req: Request) {
       basalCoverage: isCheckpoint ? currentBasalCoverage : undefined,
     });
 
-    // PreviousQuestions — limited to last 8 for anti-repetition (saves ~2000 tokens on long sessions)
+    // PreviousQuestions — include the ENTIRE prior question list so the LLM
+    // does not repeat questions from outside a short-term window. A briefing
+    // of 25+ questions with an 8-question window let the model re-ask the
+    // same thing 20+ turns later because the original was no longer visible.
+    // We cap each line at 100 chars and the whole block at ~6000 chars
+    // (~1.5k tokens), trimming from the OLDEST first if necessary.
     const assistantMessages = history.filter((m: { role: string }) => m.role === 'assistant');
-    const recentQuestions = assistantMessages.slice(-8);
-    const previousQuestionsBlock = `<PreviousQuestions>\n${recentQuestions.map((m: { content: string }, i: number) => `${i + 1}. ${String(m.content ?? '').split('\n')[0].slice(0, 100)}`).join('\n')}\n</PreviousQuestions>`;
+    const allQuestionLines = assistantMessages.map((m: { content: string }, i: number) =>
+      `${i + 1}. ${String(m.content ?? '').split('\n')[0].slice(0, 100)}`
+    );
+    const MAX_PREV_BLOCK_CHARS = 6000;
+    const keptLines: string[] = [];
+    let runningChars = 0;
+    for (let i = allQuestionLines.length - 1; i >= 0; i--) {
+      const line = allQuestionLines[i];
+      if (runningChars + line.length + 1 > MAX_PREV_BLOCK_CHARS) break;
+      keptLines.unshift(line);
+      runningChars += line.length + 1;
+    }
+    const previousQuestionsBlock = `<PreviousQuestions>\n${keptLines.join('\n')}\n</PreviousQuestions>`;
 
     // CurrentState — compact format.
     // Why compact:
@@ -710,21 +726,45 @@ export async function POST(req: Request) {
           parsed.updates = sanitizeUpdates(parsed.updates);
 
           // ================================================================
-          // DEDUPE GUARD — Check if new question is too similar to a previous one
+          // DEDUPE GUARD — Reject questions that overlap with anything asked
+          // before. Threshold tuned down from 0.55 → 0.35 because Portuguese
+          // doesn't stem ("concorrentes" / "concorrência" are token-disjoint
+          // and the original threshold let most semantic repeats through).
+          // Last attempt: instead of silently accepting a detected duplicate,
+          // we synthesize a deterministic fallback question targeting the
+          // first uncollected basal field — or finalize if nothing is missing.
           // ================================================================
           if (parsed.nextQuestion?.text && !parsed.isFinished) {
             const newQ = parsed.nextQuestion.text;
-            const isDuplicate = previousQuestions.some((pq: string) => jaccardSimilarity(pq, newQ) > 0.55);
-            
-            if (isDuplicate && attempt < MAX_RETRIES - 1) {
-              console.warn(`[Briefing] Dedupe guard: "${newQ}" is too similar to a previous question. Retrying (attempt ${attempt + 1}).`);
-              llmMessages[llmMessages.length - 1] = {
-                role: "user",
-                content: `${typeof answer === 'string' ? answer : JSON.stringify(answer)}\n\n[SYSTEM: The question you generated ("${newQ}") is too similar to a question already asked. Generate a COMPLETELY DIFFERENT question about a DIFFERENT topic.]`
-              };
-              lastError = new Error("Duplicate question detected");
-              await new Promise(r => setTimeout(r, 200));
-              continue;
+            const isDuplicate = previousQuestions.some((pq: string) => jaccardSimilarity(pq, newQ) > 0.35);
+
+            if (isDuplicate) {
+              if (attempt < MAX_RETRIES - 1) {
+                console.warn(`[Briefing] Dedupe guard: "${newQ}" is too similar to a previous question. Retrying (attempt ${attempt + 1}). Missing: ${missing.slice(0, 5).join(', ') || '(none)'}.`);
+                llmMessages[llmMessages.length - 1] = {
+                  role: "user",
+                  content: `${typeof answer === 'string' ? answer : JSON.stringify(answer)}\n\n[SYSTEM: The question you generated ("${newQ}") is too similar to a question already asked. Generate a COMPLETELY DIFFERENT question about a DIFFERENT topic.${missing.length > 0 ? ` Prefer uncollected basal fields: ${missing.slice(0, 5).join(', ')}.` : ''}]`
+                };
+                lastError = new Error("Duplicate question detected");
+                await new Promise(r => setTimeout(r, 200));
+                continue;
+              }
+              // Last attempt and still duplicate — never let it through.
+              const nextField = missing[0];
+              if (nextField) {
+                const humanField = nextField.replace(/_/g, ' ');
+                console.warn(`[Briefing] Dedupe guard exhausted retries — replacing "${newQ}" with fallback for missing field "${nextField}".`);
+                parsed.nextQuestion = {
+                  text: `Sobre ${humanField}, pode me contar um pouco mais?`,
+                  questionType: 'text',
+                  options: [],
+                  allowMoreOptions: false,
+                };
+              } else {
+                console.warn(`[Briefing] Dedupe guard exhausted retries and no missing basal fields remain — finalizing briefing.`);
+                parsed.isFinished = true;
+                parsed.nextQuestion = undefined;
+              }
             }
           }
 
