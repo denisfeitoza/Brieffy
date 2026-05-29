@@ -1,6 +1,8 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AssistantChat } from "@/components/dashboard/AssistantChat";
+import { userHasAssistantAccess } from "@/lib/services/briefingService";
+import { Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,26 @@ export default async function AssistantPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect("/dashboard/login");
+  }
+
+  // Hard gate — admin must have flipped briefing_quotas.assistant_enabled.
+  // We render an explicit message instead of 404'ing so the user knows the
+  // feature exists and who to ask about it.
+  const hasAccess = await userHasAssistantAccess(user.id);
+  if (!hasAccess) {
+    return (
+      <div className="max-w-md mx-auto mt-16 text-center space-y-4 px-4">
+        <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--orange)]/10 border border-[var(--orange)]/20 flex items-center justify-center">
+          <Sparkles className="w-7 h-7 text-[var(--orange)]" />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--text)]">
+          Assistente <span className="text-[var(--orange)]">IA</span>
+        </h1>
+        <p className="text-sm text-[var(--text2)] leading-relaxed">
+          Esta conta ainda não tem acesso ao Assistente IA liberado. Fale com o administrador da plataforma pra ativar.
+        </p>
+      </div>
+    );
   }
 
   const params = await searchParams;

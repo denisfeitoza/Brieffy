@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Search, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Search, ExternalLink, ChevronLeft, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 
 interface AdminUsersTableProps {
@@ -17,7 +18,12 @@ interface AdminUsersTableProps {
     plan?: string;
     sessionCount: number;
     finishedCount: number;
-    quota: { max_briefings: number; used_briefings: number; is_blocked: boolean };
+    quota: {
+      max_briefings: number;
+      used_briefings: number;
+      is_blocked: boolean;
+      assistant_enabled?: boolean;
+    };
   }[];
   blockedCount: number;
 }
@@ -27,6 +33,40 @@ const PAGE_SIZE = 8;
 export function AdminUsersTable({ users, blockedCount }: AdminUsersTableProps) {
   const [userSearch, setUserSearch] = useState('');
   const [userPage, setUserPage] = useState(0);
+  // Optimistic local state for the assistant toggle so the UI flips
+  // immediately on click; rolled back if the PATCH fails. Keyed by user id
+  // so each card tracks its own pending/value independently.
+  const [assistantState, setAssistantState] = useState<Record<string, { enabled: boolean; pending: boolean }>>(() => {
+    const initial: Record<string, { enabled: boolean; pending: boolean }> = {};
+    for (const u of users) {
+      // Default true is consistent with the column default and the helper
+      // — admins read "no entry" as enabled, so the UI should reflect that.
+      initial[u.id] = { enabled: u.quota.assistant_enabled !== false, pending: false };
+    }
+    return initial;
+  });
+
+  const toggleAssistant = useCallback(async (userId: string) => {
+    const current = assistantState[userId];
+    if (!current || current.pending) return;
+    const next = !current.enabled;
+    setAssistantState(prev => ({ ...prev, [userId]: { enabled: next, pending: true } }));
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/assistant`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setAssistantState(prev => ({ ...prev, [userId]: { enabled: next, pending: false } }));
+      toast.success(next ? 'Assistente liberado.' : 'Assistente bloqueado.');
+    } catch (e) {
+      // Roll back the optimistic flip.
+      setAssistantState(prev => ({ ...prev, [userId]: { enabled: current.enabled, pending: false } }));
+      toast.error(`Falha ao salvar: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }, [assistantState]);
 
   const filteredUsers = useMemo(() => {
     const q = userSearch.toLowerCase();
@@ -125,13 +165,41 @@ export function AdminUsersTable({ users, blockedCount }: AdminUsersTableProps) {
                         <span>Quota</span>
                       </div>
                     </div>
-                    <Link 
-                      href={`/admin/users/${user.id}`}
-                      className={buttonVariants({ variant: 'ghost', size: 'sm' }) + " text-[var(--orange)] hover:text-[#000] hover:bg-[var(--orange)] rounded-lg text-xs px-2 sm:px-3 text-center"}
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 sm:mr-1" />
-                      <span className="hidden sm:inline">Manage</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {/* Assistant IA gate — admins are always allowed and
+                          don't get the toggle (matches userHasAssistantAccess
+                          which bypasses for is_admin). */}
+                      {!user.is_admin && (() => {
+                        const state = assistantState[user.id] || { enabled: true, pending: false };
+                        return (
+                          <button
+                            onClick={() => toggleAssistant(user.id)}
+                            disabled={state.pending}
+                            title={state.enabled ? 'Assistente IA: liberado — clique pra bloquear' : 'Assistente IA: bloqueado — clique pra liberar'}
+                            className={`flex items-center gap-1.5 h-7 px-2 rounded-full border text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 ${
+                              state.enabled
+                                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+                                : 'bg-[var(--bg3)] border-[var(--bd)] text-[var(--text3)] hover:bg-[var(--bg)]'
+                            }`}
+                          >
+                            {state.pending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            <span>IA {state.enabled ? 'on' : 'off'}</span>
+                          </button>
+                        );
+                      })()}
+
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className={buttonVariants({ variant: 'ghost', size: 'sm' }) + " text-[var(--orange)] hover:text-[#000] hover:bg-[var(--orange)] rounded-lg text-xs px-2 sm:px-3 text-center"}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 sm:mr-1" />
+                        <span className="hidden sm:inline">Manage</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </CardContent>

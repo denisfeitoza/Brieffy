@@ -403,6 +403,35 @@ export async function getBrandingByUserId(userId: string) {
   return data;
 }
 
+/**
+ * Whether the given user is allowed to use the AI assistant. Admin always
+ * wins (so support can test); otherwise we read briefing_quotas.assistant_enabled.
+ * Missing quota row → treat as enabled (consistent with the column default).
+ *
+ * This is the canonical access check — UI uses it to hide entry points,
+ * the chat endpoint uses it to 403 on direct calls.
+ */
+export async function userHasAssistantAccess(userId: string): Promise<boolean> {
+  const supabase = await createServerSupabaseClient();
+
+  // Admin bypass — keeps the toggle simple (admins are never accidentally
+  // locked out) and matches how is_blocked already works.
+  const { data: profile } = await supabase
+    .from('briefing_profiles')
+    .select('is_admin')
+    .eq('id', userId)
+    .maybeSingle();
+  if (profile?.is_admin) return true;
+
+  const { data: quota } = await supabase
+    .from('briefing_quotas')
+    .select('assistant_enabled')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!quota) return true; // no row → default enabled
+  return quota.assistant_enabled !== false;
+}
+
 export async function getUserQuota() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -499,8 +528,13 @@ export async function getAllUsersAdmin() {
   return profiles.map(profile => {
     const userSessions = sessions?.filter(s => s.user_id === profile.id) || [];
     
-    let quota = quotas?.find(q => q.user_id === profile.id) || { max_briefings: 10, used_briefings: 0, is_blocked: false };
-    
+    let quota = quotas?.find(q => q.user_id === profile.id) || {
+      max_briefings: 10,
+      used_briefings: 0,
+      is_blocked: false,
+      assistant_enabled: true, // matches the column default for users without a quota row
+    };
+
     // Override stale DB usage count with live session count
     quota = { ...quota, used_briefings: userSessions.length };
     

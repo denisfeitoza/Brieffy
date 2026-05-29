@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getLLMConfig, getDBSettings } from "@/lib/aiConfig";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { logApiUsage } from "@/lib/services/usageLogger";
+import { userHasAssistantAccess } from "@/lib/services/briefingService";
 
 // ────────────────────────────────────────────────────────────────
 // POST /api/assistant/chat — free-form AI chat (Wave 6, M3)
@@ -108,6 +109,16 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Admin-controlled gate. Checked BEFORE rate-limit math + LLM cost so a
+    // disabled user can't hammer Redis or our quota counters.
+    const hasAccess = await userHasAssistantAccess(user.id);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "Acesso ao Assistente IA não está liberado para esta conta. Fale com o administrador." },
+        { status: 403 }
+      );
     }
 
     // Two rate-limit windows: hourly catches abuse, monthly caps cost.

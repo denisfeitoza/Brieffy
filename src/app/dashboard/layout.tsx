@@ -27,6 +27,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     company_name: string; logo_url: string; brand_color: string; brand_accent: string; tagline: string;
   }>({ company_name: 'brieffy', logo_url: '', brand_color: '#ff6029', brand_accent: '#000000', tagline: 'simplify your requirements' });
   const [isOnboarded, setIsOnboarded] = useState(true);
+  // Default true so the nav doesn't flicker the Assistente IA entry off
+  // for users who do have access — flipped to false only if the quota
+  // query explicitly returns assistant_enabled=false.
+  const [assistantEnabled, setAssistantEnabled] = useState(true);
 
   const isLoginPage = pathname === '/dashboard/login';
   const isRegisterPage = pathname === '/dashboard/register';
@@ -46,6 +50,18 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         if (profile) {
           setIsAdmin(profile.is_admin || false);
           setIsOnboarded(profile.is_onboarded ?? false);
+
+          // Assistant gate — admin bypass, otherwise read briefing_quotas.
+          if (profile.is_admin) {
+            setAssistantEnabled(true);
+          } else {
+            const { data: quota } = await supabase
+              .from('briefing_quotas')
+              .select('assistant_enabled')
+              .eq('user_id', user.id)
+              .maybeSingle();
+            setAssistantEnabled(quota?.assistant_enabled !== false);
+          }
           setBranding({
             company_name: profile.company_name || 'brieffy',
             logo_url: profile.logo_url || '',
@@ -102,7 +118,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/dashboard/templates', icon: FileText, labelKey: 'nav.briefings', mobileLabel: 'Briefs', match: (p: string) => p === '/dashboard' || p.startsWith('/dashboard/templates') || !!p.match(/^\/dashboard\/[0-9a-f]/) },
     { href: '/dashboard/packages', icon: Package, labelKey: 'nav.aiPackages', mobileLabel: 'Skills', match: (p: string) => p.startsWith('/dashboard/packages') },
-    { href: '/dashboard/assistant', icon: MessageCircle, labelKey: 'nav.assistant', mobileLabel: 'IA', match: (p: string) => p.startsWith('/dashboard/assistant') },
+    // Conditional — admin gate via briefing_quotas.assistant_enabled.
+    ...(assistantEnabled
+      ? [{ href: '/dashboard/assistant', icon: MessageCircle, labelKey: 'nav.assistant', mobileLabel: 'IA', match: (p: string) => p.startsWith('/dashboard/assistant') }]
+      : []),
     { href: '/dashboard/profile', icon: User, labelKey: 'nav.myAccount', mobileLabel: 'Perfil', match: (p: string) => p.startsWith('/dashboard/profile') },
   ];
 

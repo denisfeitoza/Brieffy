@@ -1,4 +1,4 @@
-import { getSessionById, getInteractionsBySession } from '@/lib/services/briefingService';
+import { getSessionById, getInteractionsBySession, userHasAssistantAccess } from '@/lib/services/briefingService';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -167,7 +167,12 @@ async function SessionContent({ id }: { id: string }) {
 
   const sessionPromise = getSessionById(id, user.id).catch(() => null);
   const interactionsPromise = getInteractionsBySession(id);
-  const [session, interactions] = await Promise.all([sessionPromise, interactionsPromise]);
+  const accessPromise = userHasAssistantAccess(user.id);
+  const [session, interactions, hasAssistantAccess] = await Promise.all([
+    sessionPromise,
+    interactionsPromise,
+    accessPromise,
+  ]);
   if (!session) {
     notFound();
   }
@@ -388,8 +393,10 @@ async function SessionContent({ id }: { id: string }) {
 
       {/* Floating chat: opens an inline sheet right here on the briefing page
           so the user can converse with the AI without losing the briefing
-          context they're reading. */}
-      <BriefingChatSheet briefingId={session.id} briefingName={displayName} />
+          context they're reading. Hidden when admin disabled access. */}
+      {hasAssistantAccess && (
+        <BriefingChatSheet briefingId={session.id} briefingName={displayName} />
+      )}
 
     </div>
   );
