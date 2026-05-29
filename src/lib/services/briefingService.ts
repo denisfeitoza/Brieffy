@@ -614,7 +614,14 @@ export async function getAdminCostMetrics() {
 
   if (error) {
     console.error('Error fetching API usage logs:', error);
-    return { totalCostUSD: 0, totalCostBRL: 0, costByCompany: [], timelineData: [] };
+    return {
+      totalCostUSD: 0,
+      totalCostBRL: 0,
+      costByCompany: [],
+      timelineData: [],
+      costByEndpoint: [],
+      timelineByEndpoint: [],
+    };
   }
 
   const EXCHANGE_RATE_BRL = 6.0;
@@ -623,12 +630,23 @@ export async function getAdminCostMetrics() {
   const companyCosts: Record<string, { companyName: string; costUsd: number; tokens: number }> = {};
   const timelineCosts: Record<string, { date: string; costUsd: number; costBrl: number }> = {};
 
+  // Per-feature attribution. The endpoint column was added in a recent
+  // migration; older rows were backfilled as 'briefing'. Anything that
+  // comes back NULL despite that (race / future-feature row inserted
+  // before its endpoint is set) is grouped under 'unknown' so it's
+  // visible rather than silently discarded.
+  const endpointCosts: Record<string, { endpoint: string; costUsd: number; calls: number; tokens: number }> = {};
+  const endpointTimeline: Record<string, Record<string, number>> = {}; // date → endpoint → costUsd
+  const allDates = new Set<string>();
+  const allEndpoints = new Set<string>();
+
   (usageLogs || []).forEach(log => {
     const profile = Array.isArray(log.briefing_profiles) ? log.briefing_profiles[0] : log.briefing_profiles;
     const companyName = profile?.company_name || profile?.display_name || 'Usuário Avulso';
     const cost = Number(log.estimated_cost_usd) || 0;
     const tokens = (log.prompt_tokens || 0) + (log.completion_tokens || 0);
-    
+    const endpoint = (typeof log.endpoint === 'string' && log.endpoint.trim()) || 'unknown';
+
     totalCostUSD += cost;
 
     if (!companyCosts[companyName]) {
@@ -643,6 +661,18 @@ export async function getAdminCostMetrics() {
     }
     timelineCosts[dateStr].costUsd += cost;
     timelineCosts[dateStr].costBrl += (cost * EXCHANGE_RATE_BRL);
+
+    if (!endpointCosts[endpoint]) {
+      endpointCosts[endpoint] = { endpoint, costUsd: 0, calls: 0, tokens: 0 };
+    }
+    endpointCosts[endpoint].costUsd += cost;
+    endpointCosts[endpoint].calls += 1;
+    endpointCosts[endpoint].tokens += tokens;
+
+    if (!endpointTimeline[dateStr]) endpointTimeline[dateStr] = {};
+    endpointTimeline[dateStr][endpoint] = (endpointTimeline[dateStr][endpoint] || 0) + cost;
+    allDates.add(dateStr);
+    allEndpoints.add(endpoint);
   });
 
   const costByCompany = Object.values(companyCosts)
@@ -651,11 +681,30 @@ export async function getAdminCostMetrics() {
   const timelineData = Object.values(timelineCosts)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const costByEndpoint = Object.values(endpointCosts)
+    .sort((a, b) => b.costUsd - a.costUsd);
+
+  // Flatten endpointTimeline into one row per date with one column per
+  // endpoint — exactly the shape recharts expects for a stacked / multi-
+  // line chart. Missing values default to 0 so the chart doesn't break.
+  const sortedEndpoints = Array.from(allEndpoints).sort();
+  const timelineByEndpoint = Array.from(allDates)
+    .sort()
+    .map(date => {
+      const row: Record<string, string | number> = { date };
+      for (const ep of sortedEndpoints) {
+        row[ep] = endpointTimeline[date]?.[ep] || 0;
+      }
+      return row;
+    });
+
   return {
     totalCostUSD,
     totalCostBRL: totalCostUSD * EXCHANGE_RATE_BRL,
     costByCompany,
     timelineData,
+    costByEndpoint,
+    timelineByEndpoint,
   };
 }
 

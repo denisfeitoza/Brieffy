@@ -116,6 +116,8 @@ export default async function AdminDashboardPage() {
         totalCostBRL={costMetrics.totalCostBRL}
         costByCompany={costMetrics.costByCompany}
         timelineData={costMetrics.timelineData}
+        costByEndpoint={costMetrics.costByEndpoint}
+        timelineByEndpoint={costMetrics.timelineByEndpoint}
       />
 
       {/* Extended Stats: extra KPIs, charts, sessions, users table */}
