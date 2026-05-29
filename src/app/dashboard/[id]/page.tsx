@@ -19,7 +19,7 @@ import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
 
 import { EditBriefingModal } from '@/components/dashboard/EditBriefingModal';
 import { TranslateDocumentAction } from '@/components/dashboard/TranslateDocumentAction';
-import { BriefingAssistantFab } from '@/components/dashboard/BriefingAssistantFab';
+import { BriefingChatSheet } from '@/components/dashboard/BriefingChatSheet';
 
 export const dynamic = 'force-dynamic';
 
@@ -386,10 +386,10 @@ async function SessionContent({ id }: { id: string }) {
         )}
       </div>
 
-      {/* Floating action: open the AI assistant pre-anchored to this briefing.
-          Lives in the bottom-right corner so it's always reachable while the
-          user scrolls the document or transcript. */}
-      <BriefingAssistantFab briefingId={session.id} />
+      {/* Floating chat: opens an inline sheet right here on the briefing page
+          so the user can converse with the AI without losing the briefing
+          context they're reading. */}
+      <BriefingChatSheet briefingId={session.id} briefingName={displayName} />
 
     </div>
   );
