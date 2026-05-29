@@ -19,7 +19,7 @@ export async function GET(
     // Verify ownership upfront — clearer 404 than letting RLS return empty.
     const { data: conv, error: convError } = await supabase
       .from("assistant_conversations")
-      .select("id, title, created_at, updated_at")
+      .select("id, title, briefing_session_id, created_at, updated_at")
       .eq("id", id)
       .eq("user_id", user.id)
       .maybeSingle();

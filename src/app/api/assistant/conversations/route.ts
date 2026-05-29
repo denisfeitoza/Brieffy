@@ -9,18 +9,29 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 // User-scoped Supabase client + explicit user_id filter — same defense-in-
 // depth pattern as the rest of the codebase. RLS is the primary gate, the
 // explicit filter is the suspenders.
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { data, error } = await supabase
+    // Optional ?briefing=<id> filter so the FAB on the briefing details page
+    // can preload only the conversations attached to that briefing.
+    const url = new URL(req.url);
+    const briefingFilter = url.searchParams.get("briefing");
+
+    let query = supabase
       .from("assistant_conversations")
-      .select("id, title, created_at, updated_at")
+      .select("id, title, briefing_session_id, created_at, updated_at")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(50);
+
+    if (briefingFilter) {
+      query = query.eq("briefing_session_id", briefingFilter);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("[assistant/conversations] list error:", error);
