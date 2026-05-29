@@ -294,48 +294,177 @@ export async function POST(req: Request) {
           messages: llmMessages,
           temperature: 0.5,
           max_tokens: MAX_TOKENS_PER_TURN,
+          stream: true,
+          // OpenAI-compatible providers (incl. OpenRouter, Groq) emit the
+          // final usage stats in the last chunk when this is set. Without
+          // it, streaming responses come without usage and the admin cost
+          // dashboard under-reports.
+          stream_options: { include_usage: true },
         }),
       });
     } catch (e) {
       if ((e as Error).name === "AbortError") {
+        clearTimeout(timeoutId);
         return NextResponse.json({ error: "Assistente demorou demais. Tente de novo." }, { status: 504 });
       }
-      throw e;
-    } finally {
       clearTimeout(timeoutId);
+      throw e;
     }
 
-    if (!response.ok) {
+    if (!response.ok || !response.body) {
       const errText = await response.text().catch(() => "");
       console.error("[assistant] LLM error:", response.status, errText.slice(0, 300));
+      clearTimeout(timeoutId);
       return NextResponse.json({ error: "Provedor de IA retornou erro." }, { status: 502 });
     }
 
-    const data = await response.json();
-    const reply = data?.choices?.[0]?.message?.content;
-    if (typeof reply !== "string" || !reply.trim()) {
-      return NextResponse.json({ error: "Resposta vazia do assistente." }, { status: 502 });
-    }
+    // Bridge the provider's SSE stream into our own NDJSON stream so the
+    // browser gets a uniform protocol it can parse line-by-line. We also
+    // persist the assistant message + log usage at the end of the stream
+    // (before letting the controller close) so a disconnect mid-stream
+    // doesn't leave the DB without the assistant turn.
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const upstream = response.body.getReader();
 
-    await supabase.from("assistant_messages").insert({
-      conversation_id: activeConvId,
-      role: "assistant",
-      content: reply.trim(),
+    // Captured for the closure below.
+    const convId = activeConvId;
+    const brId = briefingId;
+    const llmProvider = llmConfig.provider;
+    const llmModel = llmConfig.model;
+    const acting = user.id;
+
+    const stream = new ReadableStream<Uint8Array>({
+      async start(streamController) {
+        // First frame: metadata so the client can capture conversation id
+        // even before the first content chunk arrives (matters for a new
+        // conversation — the client needs the id to resume later).
+        streamController.enqueue(
+          encoder.encode(
+            JSON.stringify({
+              type: "meta",
+              conversationId: convId,
+              briefingSessionId: brId,
+            }) + "\n"
+          )
+        );
+
+        let buffer = "";
+        let accumulated = "";
+        type Usage = { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+        let lastUsage: Usage | null = null;
+        let aborted = false;
+
+        try {
+          while (true) {
+            const { done, value } = await upstream.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            // Keep the trailing partial line for the next iteration.
+            buffer = lines.pop() || "";
+
+            for (const rawLine of lines) {
+              const line = rawLine.trim();
+              if (!line || !line.startsWith("data:")) continue;
+              const payload = line.slice(5).trim();
+              if (payload === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(payload) as {
+                  choices?: Array<{ delta?: { content?: string } }>;
+                  usage?: Usage | null;
+                };
+                const delta = parsed?.choices?.[0]?.delta?.content;
+                if (typeof delta === "string" && delta.length > 0) {
+                  accumulated += delta;
+                  streamController.enqueue(
+                    encoder.encode(
+                      JSON.stringify({ type: "delta", content: delta }) + "\n"
+                    )
+                  );
+                }
+                if (parsed?.usage) {
+                  lastUsage = parsed.usage;
+                }
+              } catch {
+                // Provider sometimes emits keepalive comments or malformed
+                // partial chunks; skip silently rather than abort the stream.
+              }
+            }
+          }
+        } catch (e) {
+          aborted = true;
+          console.error("[assistant] stream error:", e);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+
+        const finalContent = accumulated.trim();
+
+        // Persist whatever we got. If the stream broke mid-flight, we mark
+        // the message so future-you (and the user) can spot truncation
+        // instead of staring at a half-sentence wondering if the AI gave up.
+        if (finalContent.length > 0) {
+          const persistContent =
+            aborted ? `${finalContent}\n\n_[Resposta interrompida]_` : finalContent;
+          await supabase
+            .from("assistant_messages")
+            .insert({
+              conversation_id: convId,
+              role: "assistant",
+              content: persistContent,
+            })
+            .then(({ error }) => {
+              if (error) {
+                console.error("[assistant] failed to persist assistant message:", error);
+              }
+            });
+        }
+
+        // Cost tracking — best-effort, never blocks the stream close.
+        void logApiUsage({
+          userId: acting,
+          sessionId: null,
+          provider: llmProvider,
+          model: llmModel,
+          usage: lastUsage,
+          endpoint: "assistant",
+        });
+
+        // Final frame: signal done or error so the client knows the stream
+        // closed cleanly (and can refresh its sidebar / unlock the composer).
+        if (aborted) {
+          streamController.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                type: "error",
+                error: "Resposta interrompida no meio. Tente novamente.",
+                partial: finalContent.length > 0,
+              }) + "\n"
+            )
+          );
+        } else {
+          streamController.enqueue(
+            encoder.encode(JSON.stringify({ type: "done" }) + "\n")
+          );
+        }
+        streamController.close();
+      },
+      cancel(reason) {
+        // Client disconnected (closed tab / navigated away). Cancel the
+        // upstream read so we stop billing for tokens nobody will see.
+        console.warn("[assistant] client cancelled stream:", reason);
+        void upstream.cancel(reason).catch(() => {});
+      },
     });
 
-    void logApiUsage({
-      userId: user.id,
-      sessionId: null,
-      provider: llmConfig.provider,
-      model: llmConfig.model,
-      usage: data?.usage,
-      endpoint: "assistant",
-    });
-
-    return NextResponse.json({
-      conversationId: activeConvId,
-      briefingSessionId: briefingId,
-      reply: reply.trim(),
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+      },
     });
   } catch (error) {
     const detail =

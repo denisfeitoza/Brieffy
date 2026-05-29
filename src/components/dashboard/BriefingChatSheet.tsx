@@ -127,8 +127,23 @@ export function BriefingChatSheet({ briefingId, briefingName }: BriefingChatShee
       content: text,
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, optimisticUser]);
+    const assistantId = `tmp-asst-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      optimisticUser,
+      {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        created_at: new Date().toISOString(),
+      },
+    ]);
     setInput("");
+
+    // Track whether the stream produced any visible content. Drives the
+    // rollback policy in catch (full rollback vs. keep partial).
+    let receivedAny = false;
+    let newConversationId: string | null = null;
 
     try {
       const res = await fetch("/api/assistant/chat", {
@@ -140,29 +155,74 @@ export function BriefingChatSheet({ briefingId, briefingName }: BriefingChatShee
           briefingSessionId: activeId ? undefined : briefingId,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
+
+      // Pre-stream error: backend rejected before opening the stream (auth,
+      // rate limit, max turns, validation). Body is a single JSON object.
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || !res.body || !contentType.startsWith("application/x-ndjson")) {
+        const data = await res.json().catch(() => ({}));
         if (data?.maxTurnsReached) setMaxTurnsReached(true);
         throw new Error(data?.error || `HTTP ${res.status}`);
       }
 
-      const reply: Message = {
-        id: `tmp-${Date.now() + 1}`,
-        role: "assistant",
-        content: data.reply,
-        created_at: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, reply]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let streamError: string | null = null;
 
-      if (!activeId && data.conversationId) {
-        setActiveId(data.conversationId);
-        // Refresh list so the new conversation shows up next time the user
-        // backs out of the chat view.
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const evt = JSON.parse(trimmed) as
+              | { type: "meta"; conversationId?: string; briefingSessionId?: string }
+              | { type: "delta"; content: string }
+              | { type: "done" }
+              | { type: "error"; error?: string; partial?: boolean };
+
+            if (evt.type === "meta") {
+              if (evt.conversationId) newConversationId = evt.conversationId;
+            } else if (evt.type === "delta") {
+              receivedAny = true;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: m.content + evt.content } : m
+                )
+              );
+            } else if (evt.type === "error") {
+              streamError = evt.error || "Erro no stream";
+            }
+          } catch {
+            // Malformed line (keepalive, partial chunk) — skip.
+          }
+        }
+      }
+
+      if (streamError) throw new Error(streamError);
+      if (!receivedAny) throw new Error("Resposta vazia do assistente.");
+
+      if (!activeId && newConversationId) {
+        setActiveId(newConversationId);
         void fetchConversations();
       }
     } catch (e) {
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticUser.id));
-      setInput(text);
+      setMessages((prev) =>
+        prev.filter((m) => {
+          // Full rollback when no delta arrived: remove both bubbles.
+          if (!receivedAny) return m.id !== optimisticUser.id && m.id !== assistantId;
+          // Partial response: keep the user bubble + whatever made it into
+          // the assistant bubble so the user sees the truncated answer.
+          return true;
+        })
+      );
+      if (!receivedAny) setInput(text);
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSending(false);
@@ -317,37 +377,51 @@ export function BriefingChatSheet({ briefingId, briefingName }: BriefingChatShee
                 </div>
               )}
 
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                >
+              {messages.map((m) => {
+                // Suppress the empty assistant placeholder until the first
+                // streamed token arrives — the "Pensando…" pill below
+                // covers that interstitial state without showing an empty
+                // bubble.
+                if (m.role === "assistant" && m.content.length === 0) return null;
+                return (
                   <div
-                    className={`max-w-[92%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
-                      m.role === "user"
-                        ? "bg-[var(--orange)] text-black rounded-br-md"
-                        : "bg-[var(--bg2)] text-[var(--text)] rounded-bl-md border border-[var(--bd)]"
-                    }`}
+                    key={m.id}
+                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    {m.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{m.content}</p>
-                    )}
+                    <div
+                      className={`max-w-[92%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
+                        m.role === "user"
+                          ? "bg-[var(--orange)] text-black rounded-br-md"
+                          : "bg-[var(--bg2)] text-[var(--text)] rounded-bl-md border border-[var(--bd)]"
+                      }`}
+                    >
+                      {m.role === "assistant" ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
-              {sending && (
-                <div className="flex justify-start">
-                  <div className="px-3.5 py-2 rounded-2xl bg-[var(--bg2)] border border-[var(--bd)] flex items-center gap-2">
-                    <Loader2 className="w-3.5 h-3.5 text-[var(--orange)] animate-spin" />
-                    <span className="text-xs text-[var(--text3)]">Pensando…</span>
+              {/* "Pensando…" shows only between the user send and the first
+                  streamed token. Once any delta lands, the bubble above
+                  takes over and this indicator disappears. */}
+              {sending && (() => {
+                const last = messages[messages.length - 1];
+                const stillWaiting = last?.role === "assistant" && last.content.length === 0;
+                return stillWaiting ? (
+                  <div className="flex justify-start">
+                    <div className="px-3.5 py-2 rounded-2xl bg-[var(--bg2)] border border-[var(--bd)] flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 text-[var(--orange)] animate-spin" />
+                      <span className="text-xs text-[var(--text3)]">Pensando…</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
 
             {maxTurnsReached && (

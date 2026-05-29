@@ -147,8 +147,6 @@ export function AssistantChat({
     const text = input.trim();
     if (!text || sending) return;
 
-    // Guard: no briefing → force picker. Backend would reject this anyway,
-    // but a clear in-UI block beats a 400 toast.
     if (!activeBriefingId && !activeId) {
       setShowBriefingPicker(true);
       return;
@@ -161,8 +159,21 @@ export function AssistantChat({
       content: text,
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, optimisticUser]);
+    const assistantId = `tmp-asst-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      optimisticUser,
+      {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        created_at: new Date().toISOString(),
+      },
+    ]);
     setInput("");
+
+    let receivedAny = false;
+    let newConversationId: string | null = null;
 
     try {
       const res = await fetch("/api/assistant/chat", {
@@ -174,23 +185,59 @@ export function AssistantChat({
           briefingSessionId: activeId ? undefined : activeBriefingId,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || !res.body || !contentType.startsWith("application/x-ndjson")) {
+        const data = await res.json().catch(() => ({}));
         if (data?.maxTurnsReached) setMaxTurnsReached(true);
         throw new Error(data?.error || `HTTP ${res.status}`);
       }
 
-      const reply: Message = {
-        id: `tmp-${Date.now() + 1}`,
-        role: "assistant",
-        content: data.reply,
-        created_at: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, reply]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let streamError: string | null = null;
 
-      if (!activeId && data.conversationId) {
-        setActiveId(data.conversationId);
-        // Refresh sidebar so the newly-created conversation appears.
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const evt = JSON.parse(trimmed) as
+              | { type: "meta"; conversationId?: string; briefingSessionId?: string }
+              | { type: "delta"; content: string }
+              | { type: "done" }
+              | { type: "error"; error?: string; partial?: boolean };
+
+            if (evt.type === "meta") {
+              if (evt.conversationId) newConversationId = evt.conversationId;
+            } else if (evt.type === "delta") {
+              receivedAny = true;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: m.content + evt.content } : m
+                )
+              );
+            } else if (evt.type === "error") {
+              streamError = evt.error || "Erro no stream";
+            }
+          } catch {
+            // skip malformed chunk
+          }
+        }
+      }
+
+      if (streamError) throw new Error(streamError);
+      if (!receivedAny) throw new Error("Resposta vazia do assistente.");
+
+      if (!activeId && newConversationId) {
+        setActiveId(newConversationId);
         const listRes = await fetch("/api/assistant/conversations");
         if (listRes.ok) {
           const listData = await listRes.json();
@@ -198,8 +245,13 @@ export function AssistantChat({
         }
       }
     } catch (e) {
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticUser.id));
-      setInput(text);
+      setMessages((prev) =>
+        prev.filter((m) => {
+          if (!receivedAny) return m.id !== optimisticUser.id && m.id !== assistantId;
+          return true;
+        })
+      );
+      if (!receivedAny) setInput(text);
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSending(false);
@@ -358,37 +410,44 @@ export function AssistantChat({
             </div>
           )}
 
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-            >
+          {messages.map((m) => {
+            if (m.role === "assistant" && m.content.length === 0) return null;
+            return (
               <div
-                className={`max-w-[88%] sm:max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                  m.role === "user"
-                    ? "bg-[var(--orange)] text-black rounded-br-md"
-                    : "bg-[var(--bg2)] text-[var(--text)] rounded-bl-md border border-[var(--bd)]"
-                }`}
+                key={m.id}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {m.role === "assistant" ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="whitespace-pre-wrap">{m.content}</p>
-                )}
+                <div
+                  className={`max-w-[88%] sm:max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                    m.role === "user"
+                      ? "bg-[var(--orange)] text-black rounded-br-md"
+                      : "bg-[var(--bg2)] text-[var(--text)] rounded-bl-md border border-[var(--bd)]"
+                  }`}
+                >
+                  {m.role === "assistant" ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
-          {sending && (
-            <div className="flex justify-start">
-              <div className="px-4 py-2.5 rounded-2xl bg-[var(--bg2)] border border-[var(--bd)] flex items-center gap-2">
-                <Loader2 className="w-3.5 h-3.5 text-[var(--orange)] animate-spin" />
-                <span className="text-xs text-[var(--text3)]">Pensando…</span>
+          {sending && (() => {
+            const last = messages[messages.length - 1];
+            const stillWaiting = last?.role === "assistant" && last.content.length === 0;
+            return stillWaiting ? (
+              <div className="flex justify-start">
+                <div className="px-4 py-2.5 rounded-2xl bg-[var(--bg2)] border border-[var(--bd)] flex items-center gap-2">
+                  <Loader2 className="w-3.5 h-3.5 text-[var(--orange)] animate-spin" />
+                  <span className="text-xs text-[var(--text3)]">Pensando…</span>
+                </div>
               </div>
-            </div>
-          )}
+            ) : null;
+          })()}
         </div>
 
         {maxTurnsReached && (
