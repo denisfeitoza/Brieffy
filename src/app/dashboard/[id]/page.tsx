@@ -19,6 +19,7 @@ import { SessionResetAction } from '@/components/dashboard/SessionResetAction';
 
 import { EditBriefingModal } from '@/components/dashboard/EditBriefingModal';
 import { TranslateDocumentAction } from '@/components/dashboard/TranslateDocumentAction';
+import { BriefingAssistantFab } from '@/components/dashboard/BriefingAssistantFab';
 
 export const dynamic = 'force-dynamic';
 
@@ -384,6 +385,11 @@ async function SessionContent({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      {/* Floating action: open the AI assistant pre-anchored to this briefing.
+          Lives in the bottom-right corner so it's always reachable while the
+          user scrolls the document or transcript. */}
+      <BriefingAssistantFab briefingId={session.id} />
 
     </div>
   );
