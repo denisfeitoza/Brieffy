@@ -16,7 +16,7 @@ Backlog vivo. Fonte da verdade pra ondas/fases. Atualizado a cada commit que fec
 | **3** | Polish landing (ícones, paleta, anti-IA-vibe) | ⏳ Backlog | — |
 | **4** | Polish briefing UX (ENTER, sem bandeiras, skills, calibragem prompt) | ⏳ Backlog | — |
 | **5** | Melhorar dash do admin (#12 do backlog do usuário) | ⏳ Backlog — discovery pendente | — |
-| **6** | IA de texto livre (#5 do backlog) | ✅ v1 entregue (chat puro, sem tools) | `69180ea` + `a8e7edf` + `ae43485` |
+| **6** | IA de texto livre (#5 do backlog) | ✅ v3 entregue (briefing-anchored + chat inline) | `69180ea` → `5c48990` |
 | **7** | Perfil de equipes (#4 do backlog) | ⏳ Backlog — PRD detalhado + threat model **(intencionalmente não implementada)** | — |
 
 ## Itens não priorizados (parking lot)

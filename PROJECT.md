@@ -147,9 +147,18 @@ RLS posture: todas as tabelas têm RLS ON. Service role só usado server-side (`
 
 - Melhorar dashboard admin (descoberta pendente — exige conversa com o usuário sobre o que está doendo)
 
-### M3 — IA de texto livre (Onda 6) ✅ v1 ENTREGUE (2026-05-28)
+### M3 — IA de texto livre (Onda 6) ✅ v3 ENTREGUE (2026-05-29)
 
-Implementado autonomamente com decisões conservadoras documentadas (ver [.planning/M3/AI-SPEC.md](.planning/M3/AI-SPEC.md)):
+**v3 (2026-05-29)** — refinamentos de produto solicitados:
+- FAB no [/dashboard/[id]](src/app/dashboard/[id]/page.tsx) agora abre **chat inline** ([BriefingChatSheet.tsx](src/components/dashboard/BriefingChatSheet.tsx)) via Sheet lateral em vez de navegar pra outra tela — usuário não perde o contexto do briefing que está lendo.
+- Cor do FAB respeita tema (claro/escuro) via `var(--bg)` + `var(--bd)` + `var(--text)`.
+
+**v2 (2026-05-29)** — chat ancorado a briefing:
+- Schema: `assistant_conversations.briefing_session_id NOT NULL` com `ON DELETE CASCADE` + RLS reescrita exigindo ownership do briefing (`auth.uid() = user_id AND EXISTS(briefing.user_id = auth.uid())`).
+- System prompt agora inclui `<BriefingContext>` com nome, status, propósito, company_info, concorrentes, diferencial, skills ativos e excerto do documento final (até 4k chars).
+- UI: picker de briefing obrigatório em `Nova conversa`, pill "Briefing: …" acima das mensagens, e query param `?briefing=<id>` pra pré-seleção.
+
+**v1 (2026-05-28)** — chat puro implementado com decisões conservadoras documentadas (ver [.planning/M3/AI-SPEC.md](.planning/M3/AI-SPEC.md)):
 
 - **Escopo (decisão #1)**: chat puro, sem tools nativas. Sem acesso a briefings/templates/DB. Atualização pra assistant-with-tools fica pra v2.
 - **Modelo & custo (decisão #2)**: usa `getLLMConfig()` (mesmo que briefing — OpenRouter primary). 2000 max_tokens/turno, 10 msgs/hora + 50 msgs/mês por usuário, max 20 turnos por conversa.
