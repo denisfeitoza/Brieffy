@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { getLLMConfig, getDBSettings, estimateCost } from "@/lib/aiConfig";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
-// Use the centralized loud-failing admin client. The previous fallback to
-// NEXT_PUBLIC_SUPABASE_ANON_KEY would silently downgrade onboarding writes
-// to RLS-limited reads — an extremely confusing failure mode in prod.
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+// Onboarding completion writes target the user's OWN profile row, so they go
+// through the session client (RLS: auth.uid() = id) — no service_role needed.
+// The soft admin is used ONLY for best-effort cost telemetry (api_usage) and
+// degrades to null when service_role/env is unavailable, so it can never 500
+// the finish.
+import { getSupabaseAdminOptional } from "@/lib/supabase/admin";
 
 // ============================================================================
 // DETERMINISTIC ONBOARDING SCRIPT
@@ -108,51 +110,46 @@ export async function POST(req: Request) {
     }
 
     // ----- FINISHING -----
-    // Order matters: flip is_onboarded BEFORE the (slow, flaky) summary call so
-    // a page reload during summary generation can never bounce the user back to
-    // onboarding. The summary itself runs at most once.
-    const admin = getSupabaseAdmin();
+    // Every completion write targets the user's OWN profile row, so the session
+    // client (RLS: auth.uid() = id) is the correct and most reliable tool — no
+    // service_role required. Coupling completion to getSupabaseAdmin() was the
+    // bug: that path runs assertServerEnv(), which throws on a cold serverless
+    // instance whenever ANY required env var (e.g. NEXT_PUBLIC_APP_URL) is unset,
+    // 500-ing the finish intermittently. The session client cannot hit that path.
 
-    const { data: existingProfile } = await admin
+    const { data: existingProfile } = await supabaseSession
       .from("briefing_profiles")
       .select("is_onboarded, company_summary")
       .eq("id", user.id)
       .single();
 
+    // The ONE write that must land: flip is_onboarded BEFORE the (slow, optional)
+    // summary call so a page reload during enrichment can never bounce the user
+    // back into onboarding (the loop). On own row via RLS this is the most
+    // reliable write available; if it still errors we log but never 500 — a 500
+    // would trap the user just as badly as the old loop.
     if (!existingProfile?.is_onboarded) {
-      const { error: markErr, data: markRows } = await admin
+      const { error: markErr } = await supabaseSession
         .from("briefing_profiles")
         .update({ is_onboarded: true })
-        .eq("id", user.id)
-        .select("id");
-
-      // If the admin update matched 0 rows (RLS rejection when service_role is
-      // missing), retry with the authenticated session client which passes RLS
-      // via auth.uid(). This is the guard against the infinite-onboarding loop.
-      if (markErr || !markRows || markRows.length === 0) {
-        if (markErr) console.error("[Onboarding] Admin is_onboarded update failed:", markErr);
-        else console.warn("[Onboarding] Admin update matched 0 rows — retrying with session client.");
-        const { error: sessionRetryError } = await supabaseSession
-          .from("briefing_profiles")
-          .update({ is_onboarded: true })
-          .eq("id", user.id);
-        if (sessionRetryError) console.error("[Onboarding] CRITICAL: is_onboarded session retry also failed:", sessionRetryError);
-      }
+        .eq("id", user.id);
+      if (markErr) console.error("[Onboarding] CRITICAL: is_onboarded mark failed:", markErr);
     }
 
-    // The client's final "anything else?" / "upload?" steps re-hit this branch.
-    // If the summary already exists, skip the LLM entirely so we never fire it
-    // more than once per onboarding.
+    // The client's tail steps can re-hit this branch. If the summary already
+    // exists, skip the LLM entirely so it fires at most once per onboarding.
     if (existingProfile?.company_summary) {
       return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
     }
 
-    // Generate the operational summary (best-effort — is_onboarded is already set,
-    // so a failure here never traps the user).
-    const dbSettings = await getDBSettings();
-    const llmConfig = getLLMConfig(dbSettings);
+    // Everything below is BEST-EFFORT enrichment. is_onboarded is already set,
+    // so a single try/catch returning 200 guarantees the finish can never 500 —
+    // not on env, not on the LLM, not on bad JSON, not on a write error.
+    try {
+      const dbSettings = await getDBSettings();
+      const llmConfig = getLLMConfig(dbSettings);
 
-    const summaryPrompt = `Based on the following onboarding questions and answers, generate a concise company summary and identify the primary brand color.
+      const summaryPrompt = `Based on the following onboarding questions and answers, generate a concise company summary and identify the primary brand color.
 
     The 'company_summary' MUST BE an OPERATIONAL summary focused on HOW they work and WHAT they do (products, services, target audience, technical methods). It MUST be formatted in Markdown (.md), utilizing headings, bullet points, and bold text for easy readability.
     DO NOT include elements of personalization, internal struggles, emotional tone, or how Brieffy will help them. This summary will be strictly used by the AI to understand the company's business model and operational capacity. Make it highly objective, direct, and focused exclusively on their business capabilities.
@@ -166,34 +163,26 @@ export async function POST(req: Request) {
       "brand_color": "#hexcode"
     }`;
 
-    const summaryController = new AbortController();
-    const summaryTimeout = setTimeout(() => summaryController.abort(), 30_000);
-    let summaryRes: Response;
-    try {
-      summaryRes = await fetch(llmConfig.baseUrl, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${llmConfig.apiKey}`, ...llmConfig.headers },
-        body: JSON.stringify({
-          model: llmConfig.model,
-          response_format: { type: "json_object" },
-          temperature: 0.3,
-          max_tokens: 1000,
-          messages: [{ role: "system", content: summaryPrompt }],
-        }),
-        signal: summaryController.signal,
-      });
-    } catch (e) {
-      // ANY fetch failure (timeout, network, DNS) is non-fatal — is_onboarded is
-      // already committed above, so the user finishes regardless of enrichment.
-      clearTimeout(summaryTimeout);
-      console.error("[Onboarding] Summary fetch failed (non-fatal):", (e as Error)?.message);
-      return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
-    }
-    clearTimeout(summaryTimeout);
+      const summaryController = new AbortController();
+      const summaryTimeout = setTimeout(() => summaryController.abort(), 30_000);
+      let summaryRes: Response;
+      try {
+        summaryRes = await fetch(llmConfig.baseUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${llmConfig.apiKey}`, ...llmConfig.headers },
+          body: JSON.stringify({
+            model: llmConfig.model,
+            response_format: { type: "json_object" },
+            temperature: 0.3,
+            max_tokens: 1000,
+            messages: [{ role: "system", content: summaryPrompt }],
+          }),
+          signal: summaryController.signal,
+        });
+      } finally {
+        clearTimeout(summaryTimeout);
+      }
 
-    // Enrichment is best-effort and must NEVER 500 the finish call: is_onboarded
-    // is already true, so any error here (bad JSON, write failure) is swallowed.
-    try {
       const summaryUpdate: Record<string, unknown> = {};
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
@@ -212,8 +201,11 @@ export async function POST(req: Request) {
 
         if (usage) {
           const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
-          getSupabaseAdmin()
-            .from("api_usage")
+          // Cost telemetry is non-critical. The soft admin returns null when
+          // service_role/env is unavailable, and optional chaining short-circuits
+          // the whole insert chain — so this can never throw and abort the write.
+          getSupabaseAdminOptional()
+            ?.from("api_usage")
             .insert({
               user_id: user.id,
               session_id: null,
@@ -232,16 +224,15 @@ export async function POST(req: Request) {
         summaryUpdate.company_summary = "Empresa cadastrada via onboarding.";
       }
 
-      const { error: enrichErr, data: enrichRows } = await admin
-        .from("briefing_profiles")
-        .update(summaryUpdate)
-        .eq("id", user.id)
-        .select("id");
-      if (enrichErr || !enrichRows || enrichRows.length === 0) {
-        await supabaseSession.from("briefing_profiles").update({ company_summary: summaryUpdate.company_summary }).eq("id", user.id);
+      if (Object.keys(summaryUpdate).length > 0) {
+        const { error: enrichErr } = await supabaseSession
+          .from("briefing_profiles")
+          .update(summaryUpdate)
+          .eq("id", user.id);
+        if (enrichErr) console.error("[Onboarding] Summary enrichment write failed (non-fatal):", enrichErr);
       }
-    } catch (wrapErr) {
-      console.error("[Onboarding] Summary enrichment failed (non-fatal, user is onboarded):", (wrapErr as Error)?.message);
+    } catch (enrichErr) {
+      console.error("[Onboarding] Enrichment failed (non-fatal, user is onboarded):", (enrichErr as Error)?.message);
     }
 
     return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
