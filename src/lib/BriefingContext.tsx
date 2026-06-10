@@ -712,8 +712,12 @@ export function BriefingProvider({
         }
 
         if (isOnboarding) {
-          try { localStorage.setItem('brieffy_just_onboarded', Date.now().toString()); } catch {}
-          window.location.href = '/dashboard';
+          // Go straight to /dashboard/templates. Hitting '/dashboard' triggered
+          // its server redirect('/dashboard/templates'), which double-mounted the
+          // gate and consumed the old localStorage race-flag on the first mount —
+          // bouncing the user back to onboarding. is_onboarded is now set
+          // server-side before this point, so the DB gate alone is enough.
+          window.location.href = '/dashboard/templates';
         }
       } else {
         if (data.engagement_level) setEngagementLevel(data.engagement_level);

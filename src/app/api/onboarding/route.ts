@@ -7,6 +7,107 @@ import { checkRateLimit, getRequestIP } from "@/lib/rateLimit";
 // to RLS-limited reads — an extremely confusing failure mode in prod.
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
+// ============================================================================
+// DETERMINISTIC ONBOARDING SCRIPT
+// ----------------------------------------------------------------------------
+// The previous version let the LLM decide WHICH question to ask on every turn.
+// The model ignored the "don't repeat" rules and re-asked the brand color and
+// "biggest challenge" 3-5× each, with no hard cap. This replaces that with a
+// fixed, ordered script: the server serves SCRIPT[index] BY POSITION, so every
+// component appears exactly once and the flow is hard-capped at script.length.
+// The LLM is now used ONLY to write the final company summary.
+//
+// Each question already carries its options in the chosen language, so there is
+// no per-question LLM call (faster, zero repetition, fully predictable).
+// ============================================================================
+type ScriptQuestion = {
+  text: string;
+  questionType: "text" | "card_selector" | "color_picker" | "multi_slider" | "multiple_choice";
+  options?: unknown[];
+  allowMoreOptions?: boolean;
+};
+
+const ONBOARDING_SCRIPT: Record<string, ScriptQuestion[]> = {
+  pt: [
+    { text: "Para começar, o que a sua empresa faz?", questionType: "text" },
+    {
+      text: "Quem é o seu público principal?",
+      questionType: "card_selector",
+      options: ["Empresas (B2B)", "Consumidor final (B2C)", "Setor público / governo", "Outras agências", "Profissionais autônomos", "Público misto"],
+    },
+    {
+      text: "Qual é a cor principal da sua marca? Não precisa acertar agora — você pode ajustar as cores manualmente depois, no seu perfil.",
+      questionType: "color_picker",
+    },
+    {
+      text: "Como é a personalidade da sua marca?",
+      questionType: "multi_slider",
+      options: [
+        { label: "Tom", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },
+        { label: "Ousadia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
+        { label: "Comunicação", min: 1, max: 5, minLabel: "Técnica", maxLabel: "Emocional" },
+      ],
+    },
+    {
+      text: "Qual é o seu maior desafio hoje?",
+      questionType: "multiple_choice",
+      options: ["Gerar mais leads", "Aumentar as vendas", "Organizar os processos", "Fortalecer a marca", "Reter clientes", "Escalar a operação"],
+    },
+  ],
+  en: [
+    { text: "To start, what does your company do?", questionType: "text" },
+    {
+      text: "Who is your main audience?",
+      questionType: "card_selector",
+      options: ["Businesses (B2B)", "End consumers (B2C)", "Public sector / government", "Other agencies", "Freelancers / solo pros", "Mixed audience"],
+    },
+    {
+      text: "What's your brand's main color? Don't worry about getting it perfect now — you can adjust the colors manually later, in your profile.",
+      questionType: "color_picker",
+    },
+    {
+      text: "How would you describe your brand's personality?",
+      questionType: "multi_slider",
+      options: [
+        { label: "Tone", min: 1, max: 5, minLabel: "Casual", maxLabel: "Corporate" },
+        { label: "Boldness", min: 1, max: 5, minLabel: "Traditional", maxLabel: "Disruptive" },
+        { label: "Communication", min: 1, max: 5, minLabel: "Technical", maxLabel: "Emotional" },
+      ],
+    },
+    {
+      text: "What's your biggest challenge right now?",
+      questionType: "multiple_choice",
+      options: ["Generate more leads", "Increase sales", "Organize processes", "Strengthen the brand", "Retain customers", "Scale operations"],
+    },
+  ],
+  es: [
+    { text: "Para empezar, ¿qué hace tu empresa?", questionType: "text" },
+    {
+      text: "¿Quién es tu público principal?",
+      questionType: "card_selector",
+      options: ["Empresas (B2B)", "Consumidor final (B2C)", "Sector público / gobierno", "Otras agencias", "Profesionales autónomos", "Público mixto"],
+    },
+    {
+      text: "¿Cuál es el color principal de tu marca? No te preocupes por acertar ahora — puedes ajustar los colores manualmente después, en tu perfil.",
+      questionType: "color_picker",
+    },
+    {
+      text: "¿Cómo es la personalidad de tu marca?",
+      questionType: "multi_slider",
+      options: [
+        { label: "Tono", min: 1, max: 5, minLabel: "Relajado", maxLabel: "Corporativo" },
+        { label: "Audacia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
+        { label: "Comunicación", min: 1, max: 5, minLabel: "Técnica", maxLabel: "Emocional" },
+      ],
+    },
+    {
+      text: "¿Cuál es tu mayor desafío hoy?",
+      questionType: "multiple_choice",
+      options: ["Generar más leads", "Aumentar las ventas", "Organizar los procesos", "Fortalecer la marca", "Retener clientes", "Escalar la operación"],
+    },
+  ],
+};
+
 export async function POST(req: Request) {
   try {
     // Rate limit: 15 requests per minute for onboarding
@@ -15,280 +116,171 @@ export async function POST(req: Request) {
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Please wait before trying again." },
-        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
       );
     }
 
     const supabaseSession = await createServerSupabaseClient();
     const { data: { user } } = await supabaseSession.auth.getUser();
-    
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { answer, currentState, history, generateMore, chosenLanguage } = body;
-    const activeLang = chosenLanguage || "pt";
+    const { history, chosenLanguage } = body;
+    const activeLang = chosenLanguage === "en" || chosenLanguage === "es" ? chosenLanguage : "pt";
+    const script = ONBOARDING_SCRIPT[activeLang] || ONBOARDING_SCRIPT.pt;
 
+    // Count only real user answers. The client hardcodes the language question
+    // as message[0], so the language pick IS step 1 — the first scripted
+    // question is therefore index (step - 1). Empty/whitespace answers are
+    // ignored so a malformed payload can't skew the count or force isFinished.
+    const userMessages = Array.isArray(history)
+      ? history.filter((m: { role: string; content?: string }) => m.role === "user" && m.content && m.content.trim().length > 0)
+      : [];
+    const step = userMessages.length;
+    const questionIndex = step - 1;
+    const isFinished = questionIndex >= script.length;
+
+    // ----- STILL ASKING: serve the next fixed question (no LLM call) -----
+    if (!isFinished) {
+      const nextQuestion = script[Math.max(0, questionIndex)];
+      return NextResponse.json({ updates: {}, nextQuestion, isFinished: false });
+    }
+
+    // ----- FINISHING -----
+    // Order matters: flip is_onboarded BEFORE the (slow, flaky) summary call so
+    // a page reload during summary generation can never bounce the user back to
+    // onboarding. The summary itself runs at most once.
+    const admin = getSupabaseAdmin();
+
+    const { data: existingProfile } = await admin
+      .from("briefing_profiles")
+      .select("is_onboarded, company_summary")
+      .eq("id", user.id)
+      .single();
+
+    if (!existingProfile?.is_onboarded) {
+      const { error: markErr, data: markRows } = await admin
+        .from("briefing_profiles")
+        .update({ is_onboarded: true })
+        .eq("id", user.id)
+        .select("id");
+
+      // If the admin update matched 0 rows (RLS rejection when service_role is
+      // missing), retry with the authenticated session client which passes RLS
+      // via auth.uid(). This is the guard against the infinite-onboarding loop.
+      if (markErr || !markRows || markRows.length === 0) {
+        if (markErr) console.error("[Onboarding] Admin is_onboarded update failed:", markErr);
+        else console.warn("[Onboarding] Admin update matched 0 rows — retrying with session client.");
+        const { error: sessionRetryError } = await supabaseSession
+          .from("briefing_profiles")
+          .update({ is_onboarded: true })
+          .eq("id", user.id);
+        if (sessionRetryError) console.error("[Onboarding] CRITICAL: is_onboarded session retry also failed:", sessionRetryError);
+      }
+    }
+
+    // The client's final "anything else?" / "upload?" steps re-hit this branch.
+    // If the summary already exists, skip the LLM entirely so we never fire it
+    // more than once per onboarding.
+    if (existingProfile?.company_summary) {
+      return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
+    }
+
+    // Generate the operational summary (best-effort — is_onboarded is already set,
+    // so a failure here never traps the user).
     const dbSettings = await getDBSettings();
     const llmConfig = getLLMConfig(dbSettings);
 
-    // BUG-04 FIX: Count only 'user' role messages to determine step number.
-    // This prevents depth_questions (assistant-only) from skewing the count
-    // and causing premature or delayed termination of the onboarding session.
-    // BUG-04 & ZERO-TRUST FIX: Count only 'user' role messages that contain actual content.
-    // This prevents malicious empty arrays or phantom data from forcing 'isFinished'.
-    const userMessages = history ? history.filter((m: { role: string, content?: string }) => m.role === 'user' && m.content && m.content.trim().length > 0) : [];
-    const step = userMessages.length;
-    const isFinished = step >= 8;
+    const summaryPrompt = `Based on the following onboarding questions and answers, generate a concise company summary and identify the primary brand color.
 
-    // If step is exactly 8, the user just answered the 8th question. Let's process the summary and finish.
-    if (isFinished) {
-      // 1. Generate Summary
-      const summaryPrompt = `Based on the following 8 onboarding questions and answers, generate a concise company summary and identify the primary brand color.
-      
-      The 'company_summary' MUST BE an OPERATIONAL summary focused on HOW they work and WHAT they do (products, services, target audience, technical methods). It MUST be formatted in Markdown (.md), utilizing headings, bullet points, and bold text for easy readability.
-      DO NOT include elements of personalization, internal struggles, emotional tone, or how Brieffy will help them. This summary will be strictly used by the AI to understand the company's business model and operational capacity. Make it highly objective, direct, and focused exclusively on their business capabilities.
-      
-      History:
-      ${JSON.stringify(history, null, 2)}
-      
-      Return ONLY valid JSON format:
-      {
-        "company_summary": "# Company Name\\n\\n## Operational Overview\\n...",
-        "brand_color": "#hexcode"
-      }`;
+    The 'company_summary' MUST BE an OPERATIONAL summary focused on HOW they work and WHAT they do (products, services, target audience, technical methods). It MUST be formatted in Markdown (.md), utilizing headings, bullet points, and bold text for easy readability.
+    DO NOT include elements of personalization, internal struggles, emotional tone, or how Brieffy will help them. This summary will be strictly used by the AI to understand the company's business model and operational capacity. Make it highly objective, direct, and focused exclusively on their business capabilities.
 
-      const summaryController = new AbortController();
-      const summaryTimeout = setTimeout(() => summaryController.abort(), 30_000);
-      let summaryRes: Response;
-      try {
-        summaryRes = await fetch(llmConfig.baseUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${llmConfig.apiKey}`,
-            ...llmConfig.headers,
-          },
-          body: JSON.stringify({
-            model: llmConfig.model,
-            response_format: { type: "json_object" },
-            temperature: 0.3,
-            max_tokens: 1000,
-            messages: [{ role: "system", content: summaryPrompt }],
-          }),
-          signal: summaryController.signal,
-        });
-      } catch (e) {
-        clearTimeout(summaryTimeout);
-        if ((e as Error).name === "AbortError") {
-          // Soft-fail: keep onboarding going with default summary instead of dropping the user.
-          summaryRes = new Response(null, { status: 504 });
-        } else {
-          throw e;
-        }
-      }
+    History:
+    ${JSON.stringify(history, null, 2)}
+
+    Return ONLY valid JSON format:
+    {
+      "company_summary": "# Company Name\\n\\n## Operational Overview\\n...",
+      "brand_color": "#hexcode"
+    }`;
+
+    const summaryController = new AbortController();
+    const summaryTimeout = setTimeout(() => summaryController.abort(), 30_000);
+    let summaryRes: Response;
+    try {
+      summaryRes = await fetch(llmConfig.baseUrl, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${llmConfig.apiKey}`, ...llmConfig.headers },
+        body: JSON.stringify({
+          model: llmConfig.model,
+          response_format: { type: "json_object" },
+          temperature: 0.3,
+          max_tokens: 1000,
+          messages: [{ role: "system", content: summaryPrompt }],
+        }),
+        signal: summaryController.signal,
+      });
+    } catch (e) {
       clearTimeout(summaryTimeout);
+      if ((e as Error).name === "AbortError") {
+        // Soft-fail: onboarding is already complete; just skip enrichment.
+        return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
+      }
+      throw e;
+    }
+    clearTimeout(summaryTimeout);
 
-      // BUG-13 FIX: ALWAYS mark user as onboarded, regardless of summary generation success.
-      // Previously, is_onboarded was only set inside the `if (summaryRes.ok)` block,
-      // causing an infinite redirect loop when the LLM summary call failed.
-      const profileUpdate: Record<string, unknown> = { is_onboarded: true };
+    const summaryUpdate: Record<string, unknown> = {};
+    if (summaryRes.ok) {
+      const summaryData = await summaryRes.json();
+      let contentStr = summaryData.choices?.[0]?.message?.content || "";
+      const usage = summaryData.usage;
 
-      if (summaryRes.ok) {
-        const summaryData = await summaryRes.json();
-        let contentStr = summaryData.choices?.[0]?.message?.content || "";
-        const usage = summaryData.usage;
-        
-        let content;
-        try {
-          contentStr = contentStr.replace(/```json/g, "").replace(/```/g, "").trim();
-          content = JSON.parse(contentStr);
-        } catch(e) {
-          console.error("Summary Parse Error:", e, contentStr);
-          content = {
-            company_summary: "Agência/Empresa identificada durante o onboarding.",
-            brand_color: "#06b6d4"
-          };
-        }
-        
-        // Enrich with summary data when available
-        profileUpdate.company_summary = content.company_summary;
-        profileUpdate.brand_color = content.brand_color;
+      try {
+        contentStr = contentStr.replace(/```json/g, "").replace(/```/g, "").trim();
+        const content = JSON.parse(contentStr);
+        summaryUpdate.company_summary = content.company_summary;
+        if (content.brand_color) summaryUpdate.brand_color = content.brand_color;
+      } catch (e) {
+        console.error("Summary Parse Error:", e, contentStr);
+        summaryUpdate.company_summary = "Agência/Empresa identificada durante o onboarding.";
+      }
 
-        if (usage) {
-          const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
-          getSupabaseAdmin().from('api_usage').insert({
+      if (usage) {
+        const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
+        getSupabaseAdmin()
+          .from("api_usage")
+          .insert({
             user_id: user.id,
             session_id: null,
             provider: llmConfig.provider,
             model: llmConfig.model,
             prompt_tokens: usage.prompt_tokens || 0,
             completion_tokens: usage.completion_tokens || 0,
-            estimated_cost_usd: cost
-          }).then(({ error }: { error: { message: string } | null }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
-        }
-      } else {
-        console.error("[Onboarding] Summary LLM call failed:", summaryRes.status, await summaryRes.text().catch(() => 'N/A'));
-        // Still mark as onboarded with a fallback summary
-        profileUpdate.company_summary = "Empresa cadastrada via onboarding.";
+            estimated_cost_usd: cost,
+          })
+          .then(({ error }: { error: { message: string } | null }) => {
+            if (error) console.error("[API_USAGE] Failed to log usage:", error);
+          });
       }
-
-      // Save to briefing_profiles — ALWAYS sets is_onboarded = true
-      // Try admin client first (bypasses RLS with service_role key)
-      const { error: profileUpdateError, data: updatedRows } = await getSupabaseAdmin()
-        .from("briefing_profiles")
-        .update(profileUpdate)
-        .eq("id", user.id)
-        .select('id');
-
-      // BUG-13 FIX: If admin client silently updated 0 rows (RLS rejection when 
-      // SUPABASE_SERVICE_ROLE_KEY is missing and fallback to ANON_KEY has no auth context),
-      // retry with the authenticated session client which passes RLS via auth.uid().
-      if (profileUpdateError || !updatedRows || updatedRows.length === 0) {
-        if (profileUpdateError) {
-          console.error("[Onboarding] Admin update failed:", profileUpdateError);
-        } else {
-          console.warn("[Onboarding] Admin update matched 0 rows — likely RLS rejection. Retrying with session client.");
-        }
-        const { error: sessionRetryError } = await supabaseSession
-          .from("briefing_profiles")
-          .update({ is_onboarded: true, company_summary: profileUpdate.company_summary })
-          .eq("id", user.id);
-        if (sessionRetryError) {
-          console.error("[Onboarding] CRITICAL: Session retry also failed:", sessionRetryError);
-        }
-      }
-
-      return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
+    } else {
+      console.error("[Onboarding] Summary LLM call failed:", summaryRes.status, await summaryRes.text().catch(() => "N/A"));
+      summaryUpdate.company_summary = "Empresa cadastrada via onboarding.";
     }
 
-    // Interactive Onboarding System Prompt
-    const systemPrompt = `Você é o Consultor de Onboarding da Brieffy. Seu objetivo é entender a empresa do usuário em EXATAMENTE 8 interações curtas.
-    Pergunta atual: ${step + 1} de 8.
-    
-    OBJETIVO PRINCIPAL: DEMONSTRAR CAPACIDADE DE UI E LEVANTAR DADOS BÁSICOS.
-    O onboarding deve ser RÁPIDO e focado em mostrar a variedade de formatos de pergunta da nossa plataforma.
-    NUNCA OFEREÇA, prometa ou pergunte se o usuário deseja receber um "plano de ação", "relatório", "diagnóstico" ou entregáveis. A Brieffy não faz isso neste momento. Seja objetivo e avance para a próxima pergunta.
-
-    Durante as 8 interações, você deve cobrir assuntos para usar TODOS os componentes visuais sem repetí-los:
-    Sugestão de fluxo: O que a empresa faz (text) -> Tempo de mercado (slider) -> Público-alvo (card_selector) -> Posicionamento (multi_slider) -> Cor (color_picker) -> Identidade/Fonte (multiple_choice) -> Desafios (multiple_choice) -> Decisão Estratégica (boolean_toggle).
-
-    REGRA CRÍTICA - IDIOMA OBRIGATÓRIO:
-    O usuário selecionou o idioma ISO '${activeLang}'. TODAS as suas respostas, perguntas e opções do array MUST BE IN THIS EXACT LANGUAGE ('${activeLang}'). If '${activeLang}' is 'en', answer in English. If 'es', answer in Spanish.
-    
-    REGRA CRÍTICA - TOM CONVERSACIONAL E NATURAL (PROIBIDO SER ROBÔ):
-    1. É ESTRITAMENTE PROIBIDO fazer resumos de validação chatos como: "Considerando os serviços que..."
-    2. Não seja prolixo. Faça a pergunta de forma mais limpa e direta humanamente possível.
-    
-    REGRA CRÍTICA - EXPERIÊNCIA VISUAL MÁGICA: Para que a experiência surpreenda, você DEVE usar cada um dos 8 componentes (questionType) listados abaixo APENAS UMA VEZ durante o onboarding de 8 perguntas:
-    - \`multiple_choice\` (Para estilos, opções excludentes. REGRA ESPECIAL PARA TIPOGRAFIA: Se a pergunta for sobre tipografia/fonte, forneça EXATAMENTE 6 opções usando fontes REAIS do Google Fonts no formato "NomeDaFonte - Descrição Curta". Exemplos: "Inter - Moderna Neutra", "Playfair Display - Elegante Clássica", "Outfit - Geométrica Tech", "Merriweather - Tradicional Confiável", "Space Grotesk - Futurista Limpa", "Nenhuma dessas - Padrão do Sistema". A ÚLTIMA opção SEMPRE deve ser "Nenhuma dessas - Padrão do Sistema". Use o nome da empresa na pergunta para que o preview mostre como fica. NUNCA use categorias genéricas como "Sans Serif Moderno" — use NOMES REAIS de fontes.)
-    - \`multiple_choice\` (Para múltiplas seleções: serviços, desafios, canais. Forneça EXATAMENTE 6 opções por padrão.)
-    - \`boolean_toggle\` (Para dilemas Sim/Não ou decisões estratégicas binárias)
-    - \`card_selector\` (Excelente para escolher Persona/Perfil do Cliente Ideal - exatamente 6 cartas descritivas)
-    - 'multi_slider' (Excelente para DNA de Marca, Perfil de Marketing. Defina de 3 a 5 dimensões numéricas numa escala OBRIGATÓRIA de 1 a 5)
-    - 'color_picker' (Exclusivo para tom de identidade visual/cor base. Peça apenas 1 vez)
-    - 'slider' (Para maturidade, preço ou escalas simples de 0 a 10)
-    - 'text' (Para nome, site, e respostas curtas abertas)
-    
-    REGRA CRÍTICA - PROIBIDO REPETIR PERGUNTAS DE CORES: 
-    Se a questão for sobre cores, paletas de cores ou identidade visual, VOCÊ DEVE USAR EXCLUSIVAMENTE o questionType 'color_picker'.
-    
-    REGRA CRÍTICA - VALID OPTIONS: Para 'multiple_choice', 'multiple_choice', e 'card_selector', você PRECISA fornecer um array 'options' com EXATAMENTE 6 opções por padrão (mínimo 4, máximo 8).
-    Para 'multi_slider', você DEVE fornecer um array de objetos, onde CADA objeto possui os campos: "label" (string), "min" (numero 1), "max" (numero 5), "minLabel" (string) e "maxLabel" (string). Exemplo: {"label": "Design", "min": 1, "max": 5, "minLabel": "Clássico", "maxLabel": "Moderno"}.
-    
-    Se 'generateMore' for true, preserve o texto da pergunta mas reinvente completamente o array de 'options' para entregar novas opções criativas.
-    
-    Histórico da conversa: ${JSON.stringify(history)}
-    Estado acumulado: ${JSON.stringify(currentState)}
-    
-    Responda EXCLUSIVAMENTE em JSON válido, garantindo o formato e obedecendo o idioma '${activeLang}':
-    {"updates":{},"nextQuestion":{"text":"Pergunta curta humana direta...","questionType":"tipo_aqui","options":["Opção 1", "Opção 2"], "allowMoreOptions": false},"isFinished":false}`;
-
-
-    const onbController = new AbortController();
-    const onbTimeout = setTimeout(() => onbController.abort(), 30_000);
-    let res: Response;
-    try {
-      res = await fetch(llmConfig.baseUrl, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${llmConfig.apiKey}`,
-          ...llmConfig.headers,
-        },
-        body: JSON.stringify({
-          model: llmConfig.model,
-          response_format: { type: "json_object" },
-          temperature: llmConfig.temperature,
-          max_tokens: llmConfig.maxTokens,
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...((history || []).map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))),
-            { role: "user", content: typeof answer === 'string' ? answer : JSON.stringify(answer || "Begin onboarding") }
-          ],
-        }),
-        signal: onbController.signal,
-      });
-    } catch (e) {
-      clearTimeout(onbTimeout);
-      if ((e as Error).name === "AbortError") {
-        return NextResponse.json({ error: "Onboarding AI timed out." }, { status: 504 });
-      }
-      throw e;
-    }
-    clearTimeout(onbTimeout);
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`${llmConfig.provider} API failed: ${res.status} - ${errorText}`);
+    // Persist the enrichment. is_onboarded is already true from above, so even
+    // if this write fails the user is not trapped.
+    const { error: enrichErr, data: enrichRows } = await admin
+      .from("briefing_profiles")
+      .update(summaryUpdate)
+      .eq("id", user.id)
+      .select("id");
+    if (enrichErr || !enrichRows || enrichRows.length === 0) {
+      await supabaseSession.from("briefing_profiles").update({ company_summary: summaryUpdate.company_summary }).eq("id", user.id);
     }
 
-    const data = await res.json();
-    let content = data.choices?.[0]?.message?.content;
-    const usage = data.usage;
-    
-    if (!content || content.trim() === '') {
-      console.error("[Onboarding] LLM returned empty content. Full response:", JSON.stringify(data));
-      return NextResponse.json({ error: "AI returned empty response. Please try again." }, { status: 500 });
-    }
-
-    let parsed;
-    try {
-      content = content.replace(/```json/g, "").replace(/```/g, "").trim();
-      parsed = JSON.parse(content);
-    } catch (parseError) {
-      console.error("[Onboarding parse error]:", parseError, "Raw content:", content);
-      return NextResponse.json({ error: "Invalid response from AI. Please try again." }, { status: 500 });
-    }
-
-    if (usage) {
-      const { estimateCost } = await import('@/lib/aiConfig');
-      const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
-      getSupabaseAdmin().from('api_usage').insert({
-        user_id: user.id,
-        session_id: null,
-        provider: llmConfig.provider,
-        model: llmConfig.model,
-        prompt_tokens: usage.prompt_tokens || 0,
-        completion_tokens: usage.completion_tokens || 0,
-        estimated_cost_usd: cost
-      }).then(({ error }: { error: { message: string } | null }) => { if (error) console.error("[API_USAGE] Failed to log usage:", error); });
-    }
-    
-    // Safety auto-fill for UI components (only when there IS a next question)
-    if (parsed.nextQuestion) {
-      if (parsed.nextQuestion.questionType === "multi_slider" && (!parsed.nextQuestion.options || typeof parsed.nextQuestion.options[0] !== 'object')) {
-          parsed.nextQuestion.options = [
-              { label: "Formalidade", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },
-              { label: "Ousadia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
-              { label: "Comunicação", min: 1, max: 5, minLabel: "Direta/Técnica", maxLabel: "Emocional" }
-          ];
-      }
-    } else if (!parsed.isFinished) {
-      // AI returned no nextQuestion but didn't mark as finished — force safe fallback
-      console.warn("[Onboarding] AI returned null nextQuestion without isFinished=true. Forcing text fallback.");
-      parsed.nextQuestion = { text: "Conte mais sobre sua empresa.", questionType: "text", options: [] };
-    }
-
-    return NextResponse.json(parsed);
-
+    return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Onboarding API Error:", message, error);

@@ -11,10 +11,11 @@ export default async function OnboardingPage() {
   if (!user) redirect("/auth");
 
   return (
-    <BriefingProvider 
+    <BriefingProvider
        apiEndpoint="/api/onboarding"
        isOnboarding={true}
        initialContext="Onboarding inicial da agência/empresa para capturar perfil e identidade visual."
+       initialMaxQuestions={6}
     >
       <main className="h-screen w-full bg-[var(--bg)] font-inter">
         <TypeformWizard />

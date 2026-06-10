@@ -70,27 +70,18 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             tagline: profile.tagline || 'simplify your requirements',
           });
 
-          // BUG-13 FIX: Prevent infinite onboarding redirect loop
+          // Onboarding gate. is_onboarded is now flipped server-side BEFORE the
+          // slow summary call (see /api/onboarding), so the DB is the single
+          // source of truth — the old localStorage 30s race-flag is gone. One
+          // recheck covers the brief window between the finish write and this
+          // read on a fresh navigation.
           if (!profile.is_onboarded && !pathname.startsWith('/dashboard/onboarding')) {
-            try {
-              const justOnboarded = localStorage.getItem('brieffy_just_onboarded');
-              if (justOnboarded) {
-                const elapsed = Date.now() - parseInt(justOnboarded);
-                if (elapsed < 30000) {
-                  localStorage.removeItem('brieffy_just_onboarded');
-                  setIsOnboarded(true);
-                  return;
-                }
-                localStorage.removeItem('brieffy_just_onboarded');
-              }
-            } catch {}
-
             const { data: recheck } = await supabase
               .from('briefing_profiles')
               .select('is_onboarded')
               .eq('id', user.id)
               .single();
-            
+
             if (recheck?.is_onboarded) {
               setIsOnboarded(true);
               return;
