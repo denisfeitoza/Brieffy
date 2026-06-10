@@ -1,4 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // ========================
 // SESSIONS
@@ -499,11 +501,50 @@ export async function getUserDashboardExtras() {
 }
 
 // ========================
+// ADMIN — AUTHORIZATION GATE
+// ========================
+
+/**
+ * Server-side authorization gate for the cross-user /admin reads below.
+ *
+ * Why this exists: every getXxxAdmin function aggregates data ACROSS all users.
+ * RLS (correctly) scopes the session client to the caller's own rows, so before
+ * this gate those functions silently returned only the admin's own row — the
+ * "1 user" the dashboard showed. The fix is to read with the service-role
+ * client, which bypasses RLS — but that is exactly what would leak every user's
+ * PII if any authenticated visitor could trigger it. The /admin layout's
+ * is_admin check is CLIENT-side (it runs after the server already rendered), so
+ * it cannot be the guard for a service-role read.
+ *
+ * This helper makes the leak structurally impossible: the ONLY way to obtain
+ * the service-role client is to first pass the server-side is_admin check. It
+ * fails closed (throws) on no session, no profile, or is_admin !== true — the
+ * thrown page segment still renders the layout, whose effect redirects the
+ * non-admin away. Mirrors the gate already live in
+ * /api/admin/users/[id]/assistant.
+ */
+async function requireAdminClient(): Promise<SupabaseClient> {
+  const session = await createServerSupabaseClient();
+  const { data: { user } } = await session.auth.getUser();
+  if (!user) throw new Error('[admin] Unauthorized: no session');
+
+  const { data: profile } = await session
+    .from('briefing_profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (!profile?.is_admin) throw new Error('[admin] Forbidden: caller is not an admin');
+
+  // Authorized — hand back the RLS-bypassing client for the cross-user reads.
+  return getSupabaseAdmin();
+}
+
+// ========================
 // ADMIN — ALL USERS
 // ========================
 
 export async function getAllUsersAdmin() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await requireAdminClient();
 
   const { data: profiles } = await supabase
     .from('briefing_profiles')
@@ -548,7 +589,7 @@ export async function getAllUsersAdmin() {
 }
 
 export async function getAllSessionsAdmin() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await requireAdminClient();
 
   const { data, error } = await supabase
     .from('briefing_sessions')
@@ -564,7 +605,7 @@ export async function getAllSessionsAdmin() {
 }
 
 export async function getGlobalStats() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await requireAdminClient();
 
   const { data: profiles } = await supabase.from('briefing_profiles').select('id');
   const { data: sessions } = await supabase
@@ -605,7 +646,7 @@ export async function getGlobalStats() {
 // ========================
 
 export async function getAdminCostMetrics() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await requireAdminClient();
 
   const { data: usageLogs, error } = await supabase
     .from('api_usage')
@@ -713,7 +754,7 @@ export async function getAdminCostMetrics() {
 // ========================
 
 export async function getAdminExtendedStats() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await requireAdminClient();
 
   const { data: profiles } = await supabase
     .from('briefing_profiles')
