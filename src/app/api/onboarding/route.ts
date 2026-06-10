@@ -87,14 +87,17 @@ export async function POST(req: Request) {
     const activeLang = chosenLanguage === "en" || chosenLanguage === "es" ? chosenLanguage : "pt";
     const script = ONBOARDING_SCRIPT[activeLang] || ONBOARDING_SCRIPT.pt;
 
-    // Count only real user answers. The client hardcodes the language question
-    // as message[0], so the language pick IS step 1 — the first scripted
-    // question is therefore index (step - 1). Empty/whitespace answers are
-    // ignored so a malformed payload can't skew the count or force isFinished.
-    const userMessages = Array.isArray(history)
-      ? history.filter((m: { role: string; content?: string }) => m.role === "user" && m.content && m.content.trim().length > 0)
+    // Count answered questions. The client sends EVERY message with role
+    // "assistant" and embeds the user's reply inline as "...\n\nRespondi: <ans>",
+    // so there are NO role:"user" entries — filtering on role==="user" always
+    // returned 0, which pinned step at 0 and re-served the first question forever
+    // (the production loop Eliezer hit). Count the "Respondi:" answer marker
+    // instead. The language pick is the first answer, so the first scripted
+    // question is index (step - 1).
+    const answered = Array.isArray(history)
+      ? history.filter((m: { content?: string }) => typeof m?.content === "string" && m.content.includes("Respondi:"))
       : [];
-    const step = userMessages.length;
+    const step = answered.length;
     const questionIndex = step - 1;
     const isFinished = questionIndex >= script.length;
 
