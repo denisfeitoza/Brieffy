@@ -22,7 +22,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 // ============================================================================
 type ScriptQuestion = {
   text: string;
-  questionType: "text" | "card_selector" | "color_picker" | "multi_slider" | "multiple_choice";
+  questionType: "text" | "card_selector" | "color_picker";
   options?: unknown[];
   allowMoreOptions?: boolean;
 };
@@ -39,20 +39,6 @@ const ONBOARDING_SCRIPT: Record<string, ScriptQuestion[]> = {
       text: "Qual é a cor principal da sua marca? Não precisa acertar agora — você pode ajustar as cores manualmente depois, no seu perfil.",
       questionType: "color_picker",
     },
-    {
-      text: "Como é a personalidade da sua marca?",
-      questionType: "multi_slider",
-      options: [
-        { label: "Tom", min: 1, max: 5, minLabel: "Descontraído", maxLabel: "Corporativo" },
-        { label: "Ousadia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
-        { label: "Comunicação", min: 1, max: 5, minLabel: "Técnica", maxLabel: "Emocional" },
-      ],
-    },
-    {
-      text: "Qual é o seu maior desafio hoje?",
-      questionType: "multiple_choice",
-      options: ["Gerar mais leads", "Aumentar as vendas", "Organizar os processos", "Fortalecer a marca", "Reter clientes", "Escalar a operação"],
-    },
   ],
   en: [
     { text: "To start, what does your company do?", questionType: "text" },
@@ -65,20 +51,6 @@ const ONBOARDING_SCRIPT: Record<string, ScriptQuestion[]> = {
       text: "What's your brand's main color? Don't worry about getting it perfect now — you can adjust the colors manually later, in your profile.",
       questionType: "color_picker",
     },
-    {
-      text: "How would you describe your brand's personality?",
-      questionType: "multi_slider",
-      options: [
-        { label: "Tone", min: 1, max: 5, minLabel: "Casual", maxLabel: "Corporate" },
-        { label: "Boldness", min: 1, max: 5, minLabel: "Traditional", maxLabel: "Disruptive" },
-        { label: "Communication", min: 1, max: 5, minLabel: "Technical", maxLabel: "Emotional" },
-      ],
-    },
-    {
-      text: "What's your biggest challenge right now?",
-      questionType: "multiple_choice",
-      options: ["Generate more leads", "Increase sales", "Organize processes", "Strengthen the brand", "Retain customers", "Scale operations"],
-    },
   ],
   es: [
     { text: "Para empezar, ¿qué hace tu empresa?", questionType: "text" },
@@ -90,20 +62,6 @@ const ONBOARDING_SCRIPT: Record<string, ScriptQuestion[]> = {
     {
       text: "¿Cuál es el color principal de tu marca? No te preocupes por acertar ahora — puedes ajustar los colores manualmente después, en tu perfil.",
       questionType: "color_picker",
-    },
-    {
-      text: "¿Cómo es la personalidad de tu marca?",
-      questionType: "multi_slider",
-      options: [
-        { label: "Tono", min: 1, max: 5, minLabel: "Relajado", maxLabel: "Corporativo" },
-        { label: "Audacia", min: 1, max: 5, minLabel: "Tradicional", maxLabel: "Disruptivo" },
-        { label: "Comunicación", min: 1, max: 5, minLabel: "Técnica", maxLabel: "Emocional" },
-      ],
-    },
-    {
-      text: "¿Cuál es tu mayor desafío hoy?",
-      questionType: "multiple_choice",
-      options: ["Generar más leads", "Aumentar las ventas", "Organizar los procesos", "Fortalecer la marca", "Retener clientes", "Escalar la operación"],
     },
   ],
 };

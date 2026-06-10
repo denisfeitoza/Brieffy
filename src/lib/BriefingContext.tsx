@@ -365,7 +365,8 @@ export function BriefingProvider({
       }
 
       if (data.isFinished) {
-        if (!isFinalTextStep) {
+        // Onboarding finishes immediately — no optional tail steps (resume path).
+        if (!isOnboarding && !isFinalTextStep) {
           setIsFinalTextStep(true);
           const textMsg: Message = {
             id: crypto.randomUUID(),
@@ -385,7 +386,7 @@ export function BriefingProvider({
           return;
         }
 
-        if (!isUploadStep) {
+        if (!isOnboarding && !isUploadStep) {
           setIsUploadStep(true);
           const uploadMsg: Message = {
             id: crypto.randomUUID(),
@@ -652,7 +653,10 @@ export function BriefingProvider({
       }
 
       if (data.isFinished) {
-        if (!isFinalTextStep) {
+        // Onboarding finishes immediately — skip the optional "anything else?"
+        // and "upload?" steps to stay as short as possible. The regular briefing
+        // flow keeps both steps.
+        if (!isOnboarding && !isFinalTextStep) {
           setIsFinalTextStep(true);
           const textMsg: Message = {
             id: crypto.randomUUID(),
@@ -671,7 +675,7 @@ export function BriefingProvider({
           return;
         }
 
-        if (!isUploadStep) {
+        if (!isOnboarding && !isUploadStep) {
           setIsUploadStep(true);
           const uploadMsg: Message = {
             id: crypto.randomUUID(),
