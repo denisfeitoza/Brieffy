@@ -183,62 +183,65 @@ export async function POST(req: Request) {
         signal: summaryController.signal,
       });
     } catch (e) {
+      // ANY fetch failure (timeout, network, DNS) is non-fatal — is_onboarded is
+      // already committed above, so the user finishes regardless of enrichment.
       clearTimeout(summaryTimeout);
-      if ((e as Error).name === "AbortError") {
-        // Soft-fail: onboarding is already complete; just skip enrichment.
-        return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
-      }
-      throw e;
+      console.error("[Onboarding] Summary fetch failed (non-fatal):", (e as Error)?.message);
+      return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
     }
     clearTimeout(summaryTimeout);
 
-    const summaryUpdate: Record<string, unknown> = {};
-    if (summaryRes.ok) {
-      const summaryData = await summaryRes.json();
-      let contentStr = summaryData.choices?.[0]?.message?.content || "";
-      const usage = summaryData.usage;
+    // Enrichment is best-effort and must NEVER 500 the finish call: is_onboarded
+    // is already true, so any error here (bad JSON, write failure) is swallowed.
+    try {
+      const summaryUpdate: Record<string, unknown> = {};
+      if (summaryRes.ok) {
+        const summaryData = await summaryRes.json();
+        let contentStr = summaryData.choices?.[0]?.message?.content || "";
+        const usage = summaryData.usage;
 
-      try {
-        contentStr = contentStr.replace(/```json/g, "").replace(/```/g, "").trim();
-        const content = JSON.parse(contentStr);
-        summaryUpdate.company_summary = content.company_summary;
-        if (content.brand_color) summaryUpdate.brand_color = content.brand_color;
-      } catch (e) {
-        console.error("Summary Parse Error:", e, contentStr);
-        summaryUpdate.company_summary = "Agência/Empresa identificada durante o onboarding.";
+        try {
+          contentStr = contentStr.replace(/```json/g, "").replace(/```/g, "").trim();
+          const content = JSON.parse(contentStr);
+          summaryUpdate.company_summary = content.company_summary;
+          if (content.brand_color) summaryUpdate.brand_color = content.brand_color;
+        } catch (parseErr) {
+          console.error("Summary Parse Error:", parseErr, contentStr);
+          summaryUpdate.company_summary = "Agência/Empresa identificada durante o onboarding.";
+        }
+
+        if (usage) {
+          const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
+          getSupabaseAdmin()
+            .from("api_usage")
+            .insert({
+              user_id: user.id,
+              session_id: null,
+              provider: llmConfig.provider,
+              model: llmConfig.model,
+              prompt_tokens: usage.prompt_tokens || 0,
+              completion_tokens: usage.completion_tokens || 0,
+              estimated_cost_usd: cost,
+            })
+            .then(({ error }: { error: { message: string } | null }) => {
+              if (error) console.error("[API_USAGE] Failed to log usage:", error);
+            });
+        }
+      } else {
+        console.error("[Onboarding] Summary LLM call failed:", summaryRes.status, await summaryRes.text().catch(() => "N/A"));
+        summaryUpdate.company_summary = "Empresa cadastrada via onboarding.";
       }
 
-      if (usage) {
-        const cost = estimateCost(llmConfig.provider, llmConfig.model, usage.prompt_tokens || 0, usage.completion_tokens || 0);
-        getSupabaseAdmin()
-          .from("api_usage")
-          .insert({
-            user_id: user.id,
-            session_id: null,
-            provider: llmConfig.provider,
-            model: llmConfig.model,
-            prompt_tokens: usage.prompt_tokens || 0,
-            completion_tokens: usage.completion_tokens || 0,
-            estimated_cost_usd: cost,
-          })
-          .then(({ error }: { error: { message: string } | null }) => {
-            if (error) console.error("[API_USAGE] Failed to log usage:", error);
-          });
+      const { error: enrichErr, data: enrichRows } = await admin
+        .from("briefing_profiles")
+        .update(summaryUpdate)
+        .eq("id", user.id)
+        .select("id");
+      if (enrichErr || !enrichRows || enrichRows.length === 0) {
+        await supabaseSession.from("briefing_profiles").update({ company_summary: summaryUpdate.company_summary }).eq("id", user.id);
       }
-    } else {
-      console.error("[Onboarding] Summary LLM call failed:", summaryRes.status, await summaryRes.text().catch(() => "N/A"));
-      summaryUpdate.company_summary = "Empresa cadastrada via onboarding.";
-    }
-
-    // Persist the enrichment. is_onboarded is already true from above, so even
-    // if this write fails the user is not trapped.
-    const { error: enrichErr, data: enrichRows } = await admin
-      .from("briefing_profiles")
-      .update(summaryUpdate)
-      .eq("id", user.id)
-      .select("id");
-    if (enrichErr || !enrichRows || enrichRows.length === 0) {
-      await supabaseSession.from("briefing_profiles").update({ company_summary: summaryUpdate.company_summary }).eq("id", user.id);
+    } catch (wrapErr) {
+      console.error("[Onboarding] Summary enrichment failed (non-fatal, user is onboarded):", (wrapErr as Error)?.message);
     }
 
     return NextResponse.json({ isFinished: true, updates: {}, nextQuestion: null, assets: null });
