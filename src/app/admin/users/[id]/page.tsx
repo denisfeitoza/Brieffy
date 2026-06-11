@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Loader2, Ban, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { updateUserAdminRecord } from '../actions';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -51,31 +50,16 @@ export default function AdminUserDetailPage() {
 
   useEffect(() => {
     async function loadUser() {
-      const supabase = createClient();
-
-      const { data: profile } = await supabase
-        .from('briefing_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      const { data: quotaData } = await supabase
-        .from('briefing_quotas')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      const { count: sessionCount } = await supabase
-        .from('briefing_sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .not('template_id', 'is', null);
-
-      const { data: sessionsData } = await supabase
-        .from('briefing_sessions')
-        .select('id, session_name, status, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Fetch via the admin-gated API (service_role) instead of the browser
+      // client: RLS would scope these reads to the admin's OWN row, so every
+      // other user rendered as "User not found." The route authorizes is_admin
+      // server-side, then reads across users.
+      const res = await fetch(`/api/admin/users/${userId}`);
+      if (!res.ok) {
+        setLoading(false); // 404/403 → user stays null → "User not found."
+        return;
+      }
+      const { profile, quota: quotaData, sessionCount, sessions: sessionsData } = await res.json();
 
       if (profile) setUser(profile);
       if (quotaData) {
